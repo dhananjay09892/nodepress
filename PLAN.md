@@ -213,11 +213,11 @@ Requirements:
 Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 0: Foundations (weeks 1–2)
-- [ ] Monorepo setup (pnpm, Turborepo, TypeScript, ESLint/Prettier, Vitest)
-- [ ] CI on GitHub Actions (lint, typecheck, test)
-- [ ] Decide license (see §8)
-- [ ] `packages/core`: kernel boot + hook system with full tests
-- [ ] `packages/db`: Drizzle schema v1 + migrations (SQLite + Postgres)
+- [x] Monorepo setup (pnpm, Turborepo, TypeScript, ESLint/Prettier, Vitest)
+- [x] CI on GitHub Actions (lint, typecheck, test)
+- [x] Decide license → MIT
+- [x] `packages/core`: kernel boot + hook system with full tests
+- [~] `packages/db`: Drizzle schema v1 (SQLite done; Postgres variant + committed migrations pending)
 
 **Exit:** `pnpm dev` boots a server that runs hooks and connects to a DB.
 
@@ -308,7 +308,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 | # | Decision | Options | Notes |
 |---|---|---|---|
-| 1 | License | MIT · GPLv3 · AGPL | MIT = max adoption; GPL/AGPL protects against closed forks of a hosted service |
+| 1 | License | ✅ **MIT** (decided 2026-11-08) | Maximum adoption for plugins, themes and agencies |
 | 2 | Editor engine | Lexical · Tiptap | Decide after Phase 2 spike |
 | 3 | Theme rendering | Server React (TSX) · Hono JSX · template engine | Proposal: server TSX for familiarity |
 | 4 | Name/trademark | NodePress | Check npm, domains, GitHub org, trademark |

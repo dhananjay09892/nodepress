@@ -1,0 +1,20 @@
+{
+  "name": "@nodepress/server",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "@nodepress/core": "workspace:*",
+    "@nodepress/db": "workspace:*",
+    "@nodepress/plugin-hello": "workspace:*",
+    "hono": "^4.6.0"
+  }
+}
