@@ -33,6 +33,8 @@ jobs:
         run: pnpm --filter @nodepress/db db:generate
       - name: Build
         run: pnpm build
+      - name: Format check
+        run: pnpm format:check
       - name: Lint
         run: pnpm lint
       - name: Typecheck
