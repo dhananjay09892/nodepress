@@ -6,6 +6,7 @@ import { createApp } from './app.js';
 
 const port = Number(process.env.PORT ?? 3000);
 
+// DATABASE_URL picks the dialect: file:… / libsql://… (SQLite) or postgres://… (PostgreSQL).
 const database = createDatabase({
   url: process.env.DATABASE_URL ?? 'file:./nodepress.db',
   ...(process.env.DATABASE_AUTH_TOKEN ? { authToken: process.env.DATABASE_AUTH_TOKEN } : {}),
@@ -32,7 +33,7 @@ async function stop(signal: string) {
   np.logger.info(`Received ${signal}, shutting down…`);
   server.close();
   await np.shutdown();
-  database.close();
+  await database.close();
   process.exit(0);
 }
 

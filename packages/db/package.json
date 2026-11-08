@@ -1,7 +1,7 @@
 {
   "name": "@nodepress/db",
   "version": "0.0.0",
-  "description": "NodePress database schema, migrations and client",
+  "description": "NodePress database schema, migrations and client (SQLite/libSQL and PostgreSQL)",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -17,14 +17,18 @@
     "drizzle"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate"
+    "test": "vitest run",
+    "db:generate": "pnpm db:generate:sqlite && pnpm db:generate:postgres",
+    "db:generate:sqlite": "drizzle-kit generate --config drizzle.sqlite.config.ts",
+    "db:generate:postgres": "drizzle-kit generate --config drizzle.postgres.config.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
-    "drizzle-orm": "^0.38.0"
+    "drizzle-orm": "^0.38.0",
+    "postgres": "^3.4.5"
   },
   "devDependencies": {
     "drizzle-kit": "^0.30.0"

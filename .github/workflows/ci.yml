@@ -18,6 +18,20 @@ jobs:
       fail-fast: false
       matrix:
         node: [22, 24]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: nodepress
+          POSTGRES_PASSWORD: nodepress
+          POSTGRES_DB: nodepress_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nodepress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -29,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Generate DB migrations (until they are committed)
-        if: hashFiles('packages/db/drizzle/**') == ''
+        if: hashFiles('packages/db/drizzle/sqlite/**') == '' || hashFiles('packages/db/drizzle/postgres/**') == ''
         run: pnpm --filter @nodepress/db db:generate
       - name: Build
         run: pnpm build
@@ -39,7 +53,9 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
-      - name: Unit tests
+      - name: Unit tests (SQLite in memory + PostgreSQL service)
+        env:
+          TEST_POSTGRES_URL: postgres://nodepress:nodepress@localhost:5432/nodepress_test
         run: pnpm test
 
   smoke:
@@ -54,7 +70,7 @@ jobs:
           node-version: 22
           package-manager-cache: ${{ hashFiles('pnpm-lock.yaml') != '' }}
       - run: pnpm install --no-frozen-lockfile
-      - if: hashFiles('packages/db/drizzle/**') == ''
+      - if: hashFiles('packages/db/drizzle/sqlite/**') == '' || hashFiles('packages/db/drizzle/postgres/**') == ''
         run: pnpm --filter @nodepress/db db:generate
       - run: pnpm build
       - name: Start server and check it responds
