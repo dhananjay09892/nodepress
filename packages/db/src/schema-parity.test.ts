@@ -12,7 +12,13 @@ import * as sqlite from './schema.js';
 type Shape = ReturnType<typeof describeSqlite>;
 
 function columns(
-  cols: { name: string; notNull: boolean; primary: boolean; isUnique: boolean; hasDefault: boolean }[],
+  cols: {
+    name: string;
+    notNull: boolean;
+    primary: boolean;
+    isUnique: boolean;
+    hasDefault: boolean;
+  }[],
 ) {
   return cols
     .map((c) => ({

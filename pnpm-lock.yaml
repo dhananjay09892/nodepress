@@ -62,7 +62,10 @@ importers:
         version: 0.14.0
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@libsql/client@0.14.0)
+        version: 0.38.4(@libsql/client@0.14.0)(postgres@3.4.9)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.9
     devDependencies:
       drizzle-kit:
         specifier: ^0.30.0
@@ -2231,7 +2234,6 @@ packages:
       {
         integrity: sha512-T9eIRCs6b0J1SHKYIvD8+KCJMcWZ900iZyxdnSCdqxN12Z1ijzT+jY5nrk72Jw4B0HGzms2NgpryArlJqvc3Lw==,
       }
-    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   locate-path@6.0.0:
@@ -2381,6 +2383,13 @@ packages:
         integrity: sha512-LJlKCCAUFKOuZxipUdYw1NzIITEsPcgyOG9LkvRJvuKj/bRzbuRY0ARXvL0pWGpsZvn8jku+LMep2eU0seHp8g==,
       }
     engines: { node: ^10 || ^12 || >=14 }
+
+  postgres@3.4.9:
+    resolution:
+      {
+        integrity: sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw==,
+      }
+    engines: { node: '>=12' }
 
   prelude-ls@1.2.1:
     resolution:
@@ -3496,9 +3505,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.38.4(@libsql/client@0.14.0):
+  drizzle-orm@0.38.4(@libsql/client@0.14.0)(postgres@3.4.9):
     optionalDependencies:
       '@libsql/client': 0.14.0
+      postgres: 3.4.9
 
   env-paths@3.0.0: {}
 
@@ -3883,6 +3893,8 @@ snapshots:
       nanoid: 3.3.20
       picocolors: 1.1.1
       source-map-js: 1.2.2
+
+  postgres@3.4.9: {}
 
   prelude-ls@1.2.1: {}
 

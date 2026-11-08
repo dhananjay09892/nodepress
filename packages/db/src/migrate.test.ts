@@ -1,7 +1,13 @@
 import { eq, sql } from 'drizzle-orm';
 import { existsSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createDatabase, migrationsFolder, pgSchema, schema, type DatabaseHandle } from './index.js';
+import {
+  createDatabase,
+  migrationsFolder,
+  pgSchema,
+  schema,
+  type DatabaseHandle,
+} from './index.js';
 
 /**
  * Runs the shipped migrations for each dialect. SQLite always runs (in memory);
