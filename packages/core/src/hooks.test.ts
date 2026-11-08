@@ -109,7 +109,10 @@ describe('filters', () => {
 
   it('gives listeners the context', async () => {
     const hooks = new HookRegistry();
-    hooks.addFilter('content', (html, ctx) => `${html as string} by ${(ctx as { author: string }).author}`);
+    hooks.addFilter(
+      'content',
+      (html, ctx) => `${html as string} by ${(ctx as { author: string }).author}`,
+    );
     expect(await hooks.applyFilters('content', 'Post', { author: 'Ada' })).toBe('Post by Ada');
   });
 

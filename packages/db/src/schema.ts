@@ -78,7 +78,10 @@ export const content = sqliteTable(
     status: text('status').$type<ContentStatus>().notNull().default('draft'),
     title: text('title').notNull().default(''),
     slug: text('slug').notNull(),
-    body: text('body', { mode: 'json' }).$type<Block[]>().notNull().default(sql`'[]'`),
+    body: text('body', { mode: 'json' })
+      .$type<Block[]>()
+      .notNull()
+      .default(sql`'[]'`),
     excerpt: text('excerpt'),
     authorId: integer('author_id').references(() => users.id, { onDelete: 'set null' }),
     parentId: integer('parent_id').references((): AnySQLiteColumn => content.id, {

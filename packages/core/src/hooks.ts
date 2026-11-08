@@ -217,9 +217,7 @@ export class HookRegistry {
 
   /** Per-listener-source timings, slowest first. Use this to find slow plugins. */
   getTimings(): HookTiming[] {
-    return [...this.#timings.values()]
-      .map((t) => ({ ...t }))
-      .sort((a, b) => b.totalMs - a.totalMs);
+    return [...this.#timings.values()].map((t) => ({ ...t })).sort((a, b) => b.totalMs - a.totalMs);
   }
 
   resetTimings(): void {

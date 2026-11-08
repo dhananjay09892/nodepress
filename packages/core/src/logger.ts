@@ -26,7 +26,8 @@ export function createConsoleLogger(level: LogLevel = 'info', scope?: string): L
     info: log('info'),
     warn: log('warn'),
     error: log('error'),
-    child: (childScope) => createConsoleLogger(level, scope ? `${scope}:${childScope}` : childScope),
+    child: (childScope) =>
+      createConsoleLogger(level, scope ? `${scope}:${childScope}` : childScope),
   };
 }
 

@@ -64,7 +64,9 @@ export class PluginManager {
     }
     const { name } = definition;
     if (typeof name !== 'string' || !NAME_PATTERN.test(name) || RESERVED.has(name)) {
-      throw new TypeError(`Invalid plugin name "${String(name)}" (use kebab-case, e.g. "my-plugin")`);
+      throw new TypeError(
+        `Invalid plugin name "${String(name)}" (use kebab-case, e.g. "my-plugin")`,
+      );
     }
     if (this.#plugins.has(name)) {
       throw new Error(`Plugin "${name}" is already registered`);

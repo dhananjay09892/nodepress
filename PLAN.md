@@ -12,15 +12,15 @@ NodePress is an open-source, self-hostable CMS written in TypeScript. A non-deve
 
 ### Why it should exist
 
-| Product | What it does well | What it leaves out |
-|---|---|---|
-| WordPress | Ease of use, themes, 60k+ plugins | Legacy PHP, slow by default, security debt |
-| Ghost | Beautiful publishing | No general plugin system, blog-only |
-| Strapi | Headless content API | No themes/front end; developers required |
-| Payload | Developer experience, Next.js native | Developer-only; no theme/plugin marketplace |
-| KeystoneJS | GraphQL data framework | Small ecosystem, developer-only |
+| Product    | What it does well                    | What it leaves out                          |
+| ---------- | ------------------------------------ | ------------------------------------------- |
+| WordPress  | Ease of use, themes, 60k+ plugins    | Legacy PHP, slow by default, security debt  |
+| Ghost      | Beautiful publishing                 | No general plugin system, blog-only         |
+| Strapi     | Headless content API                 | No themes/front end; developers required    |
+| Payload    | Developer experience, Next.js native | Developer-only; no theme/plugin marketplace |
+| KeystoneJS | GraphQL data framework               | Small ecosystem, developer-only             |
 
-**NodePress fills the gap:** full website + themes + installable plugins (like WordPress), with headless as an *option*, built on modern JS.
+**NodePress fills the gap:** full website + themes + installable plugins (like WordPress), with headless as an _option_, built on modern JS.
 
 ### Target users (in order of priority)
 
@@ -40,22 +40,22 @@ NodePress is an open-source, self-hostable CMS written in TypeScript. A non-deve
 
 ## 2. Tech stack (proposed)
 
-| Concern | Choice | Why |
-|---|---|---|
-| Language | TypeScript (strict) | Safety for core and a typed API for plugin authors |
-| Runtime | Node.js 22 LTS+ (Bun/Deno compatible where possible) | Largest hosting support |
-| Monorepo | pnpm workspaces + Turborepo | Fast installs, cached builds |
-| HTTP server | Hono | Tiny, fast, runs on Node, Bun, Cloudflare, Vercel |
-| Database | Drizzle ORM: SQLite (default), PostgreSQL, MySQL | SQLite = zero-config installs; Postgres/MySQL for scale |
-| Validation | Zod | Shared schemas for API, admin forms, and plugins |
-| Admin UI | React + Vite + TanStack Router/Query + Tailwind | Large hiring/contributor pool |
-| Editor | Block editor on Lexical (or Tiptap; decide in Phase 2 spike) | Gutenberg-style blocks, JSON storage |
-| Themes | TSX components rendered on the server; optional "islands" for interactivity | Simple HTML output, familiar to JS devs |
-| Auth | Session cookies (+ API tokens), Argon2 password hashing | Proven, simple |
-| Media | `sharp` for resizing; local disk or S3-compatible storage | Standard and fast |
-| Jobs/Cron | Built-in job queue on DB table (pluggable: BullMQ/Redis) | No extra infra for small sites |
-| Testing | Vitest (unit), Playwright (end-to-end) | Fast and modern |
-| Docs | Starlight (Astro) | Good docs sites with little effort |
+| Concern     | Choice                                                                      | Why                                                     |
+| ----------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Language    | TypeScript (strict)                                                         | Safety for core and a typed API for plugin authors      |
+| Runtime     | Node.js 22 LTS+ (Bun/Deno compatible where possible)                        | Largest hosting support                                 |
+| Monorepo    | pnpm workspaces + Turborepo                                                 | Fast installs, cached builds                            |
+| HTTP server | Hono                                                                        | Tiny, fast, runs on Node, Bun, Cloudflare, Vercel       |
+| Database    | Drizzle ORM: SQLite (default), PostgreSQL, MySQL                            | SQLite = zero-config installs; Postgres/MySQL for scale |
+| Validation  | Zod                                                                         | Shared schemas for API, admin forms, and plugins        |
+| Admin UI    | React + Vite + TanStack Router/Query + Tailwind                             | Large hiring/contributor pool                           |
+| Editor      | Block editor on Lexical (or Tiptap; decide in Phase 2 spike)                | Gutenberg-style blocks, JSON storage                    |
+| Themes      | TSX components rendered on the server; optional "islands" for interactivity | Simple HTML output, familiar to JS devs                 |
+| Auth        | Session cookies (+ API tokens), Argon2 password hashing                     | Proven, simple                                          |
+| Media       | `sharp` for resizing; local disk or S3-compatible storage                   | Standard and fast                                       |
+| Jobs/Cron   | Built-in job queue on DB table (pluggable: BullMQ/Redis)                    | No extra infra for small sites                          |
+| Testing     | Vitest (unit), Playwright (end-to-end)                                      | Fast and modern                                         |
+| Docs        | Starlight (Astro)                                                           | Good docs sites with little effort                      |
 
 ---
 
@@ -119,10 +119,14 @@ import { definePlugin } from '@nodepress/sdk';
 export default definePlugin({
   name: 'reading-time',
   setup({ hooks }) {
-    hooks.addFilter('post:content', async (html, { post }) => {
-      const minutes = Math.ceil(post.wordCount / 200);
-      return `<p class="reading-time">${minutes} min read</p>` + html;
-    }, { priority: 10 });
+    hooks.addFilter(
+      'post:content',
+      async (html, { post }) => {
+        const minutes = Math.ceil(post.wordCount / 200);
+        return `<p class="reading-time">${minutes} min read</p>` + html;
+      },
+      { priority: 10 },
+    );
 
     hooks.addAction('post:published', async (post) => {
       // e.g. ping a webhook
@@ -132,6 +136,7 @@ export default definePlugin({
 ```
 
 Requirements:
+
 - Priorities (lower runs first), and listeners can be removed.
 - Typed hook names and payloads, so plugin authors get autocomplete.
 - Errors in one listener are caught and logged; they don't crash the site.
@@ -148,18 +153,18 @@ Requirements:
 
 ### 4.4 Database schema (first pass)
 
-| Table | Key columns |
-|---|---|
-| `users` | id, email, password_hash, display_name, role, created_at |
-| `sessions` / `api_tokens` | id, user_id, token_hash, expires_at |
-| `content` | id, type, status, title, slug, body (JSON blocks), excerpt, author_id, parent_id, published_at, updated_at |
-| `content_meta` | content_id, key, value (JSON) |
-| `revisions` | id, content_id, snapshot (JSON), author_id, created_at |
-| `terms` / `term_relations` | taxonomy, name, slug, parent_id / content_id, term_id |
-| `media` | id, path, mime, size, width, height, alt, variants (JSON) |
-| `options` | key, value (JSON), autoload |
-| `plugins` | name, version, enabled, settings (JSON) |
-| `jobs` | id, type, payload, run_at, attempts, status |
+| Table                      | Key columns                                                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `users`                    | id, email, password_hash, display_name, role, created_at                                                   |
+| `sessions` / `api_tokens`  | id, user_id, token_hash, expires_at                                                                        |
+| `content`                  | id, type, status, title, slug, body (JSON blocks), excerpt, author_id, parent_id, published_at, updated_at |
+| `content_meta`             | content_id, key, value (JSON)                                                                              |
+| `revisions`                | id, content_id, snapshot (JSON), author_id, created_at                                                     |
+| `terms` / `term_relations` | taxonomy, name, slug, parent_id / content_id, term_id                                                      |
+| `media`                    | id, path, mime, size, width, height, alt, variants (JSON)                                                  |
+| `options`                  | key, value (JSON), autoload                                                                                |
+| `plugins`                  | name, version, enabled, settings (JSON)                                                                    |
+| `jobs`                     | id, type, payload, run_at, attempts, status                                                                |
 
 ### 4.5 Users, roles, capabilities
 
@@ -213,6 +218,7 @@ Requirements:
 Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 0: Foundations (weeks 1–2)
+
 - [x] Monorepo setup (pnpm, Turborepo, TypeScript, ESLint/Prettier, Vitest)
 - [x] CI on GitHub Actions (lint, typecheck, test)
 - [x] Decide license → MIT
@@ -222,6 +228,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 **Exit:** `pnpm dev` boots a server that runs hooks and connects to a DB.
 
 ### Phase 1: Content core & API (weeks 3–6)
+
 - [ ] Content CRUD service, revisions, drafts, scheduling
 - [ ] Taxonomies, permalinks, options/settings
 - [ ] Users, sessions, roles/capabilities
@@ -232,6 +239,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 **Exit:** create/publish content through the API, with tests >80% on core.
 
 ### Phase 2: Admin dashboard (weeks 7–11)
+
 - [ ] Admin shell: login, navigation, dashboard
 - [ ] Editor spike: Lexical vs Tiptap → pick one
 - [ ] Block editor with core blocks (paragraph, heading, image, list, quote, code, embed, columns, button)
@@ -242,6 +250,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 **Exit:** a non-developer can write and publish a post entirely in the admin.
 
 ### Phase 3: Themes & front end (weeks 12–14)
+
 - [ ] Theme loader + template hierarchy
 - [ ] Default theme **Aurora** (blog + business layouts, responsive, accessible)
 - [ ] Menus & widgets/sidebar areas
@@ -251,6 +260,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 **Exit:** a fresh install shows a polished, fast website.
 
 ### Phase 4: Plugin system (weeks 15–18)
+
 - [ ] Plugin manifest, loader, lifecycle, plugin migrations
 - [ ] Install/activate/deactivate from admin (upload .zip or from registry)
 - [ ] `nodepress plugin create` scaffolder
@@ -260,6 +270,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 **Exit:** a third-party developer can build and install a plugin in under an hour using the docs.
 
 ### Phase 5: Install, deploy, migrate (weeks 19–21)
+
 - [ ] `create-nodepress` CLI + web installer
 - [ ] Docker image + one-click deploy templates
 - [ ] Built-in updater
@@ -267,6 +278,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] Backup/export (JSON + media zip)
 
 ### Phase 6: Beta → 1.0 (weeks 22–26)
+
 - [ ] Private beta with 10–20 real sites (bloggers, small businesses, 2–3 agencies)
 - [ ] Security review (auth, uploads, XSS/CSRF/SQLi, plugin permissions)
 - [ ] Performance budget: <100 ms TTFB cached, Lighthouse 95+ on default theme
@@ -275,6 +287,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] **v1.0 public release**
 
 ### After 1.0
+
 - Theme & plugin **marketplace** (with review + signing)
 - Comments, memberships, newsletters (plugins)
 - Multilingual content
@@ -306,25 +319,25 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ## 8. Open decisions
 
-| # | Decision | Options | Notes |
-|---|---|---|---|
-| 1 | License | ✅ **MIT** (decided 2026-11-08) | Maximum adoption for plugins, themes and agencies |
-| 2 | Editor engine | Lexical · Tiptap | Decide after Phase 2 spike |
-| 3 | Theme rendering | Server React (TSX) · Hono JSX · template engine | Proposal: server TSX for familiarity |
-| 4 | Name/trademark | NodePress | Check npm, domains, GitHub org, trademark |
-| 5 | Primary v1 audience | Bloggers/SMBs (proposed) · agencies | Shapes default theme & first plugins |
+| #   | Decision            | Options                                         | Notes                                             |
+| --- | ------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| 1   | License             | ✅ **MIT** (decided 2026-11-08)                 | Maximum adoption for plugins, themes and agencies |
+| 2   | Editor engine       | Lexical · Tiptap                                | Decide after Phase 2 spike                        |
+| 3   | Theme rendering     | Server React (TSX) · Hono JSX · template engine | Proposal: server TSX for familiarity              |
+| 4   | Name/trademark      | NodePress                                       | Check npm, domains, GitHub org, trademark         |
+| 5   | Primary v1 audience | Bloggers/SMBs (proposed) · agencies             | Shapes default theme & first plugins              |
 
 ---
 
 ## 9. Risks
 
-| Risk | Mitigation |
-|---|---|
-| Scope is huge (WordPress took 20 years) | Strict phase exit criteria; ship v1 to one audience |
+| Risk                                              | Mitigation                                                                   |
+| ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Scope is huge (WordPress took 20 years)           | Strict phase exit criteria; ship v1 to one audience                          |
 | Ecosystem chicken-and-egg (no plugins → no users) | First-party plugins for top needs; WordPress importer; excellent plugin docs |
-| In-process plugins = security risk | Reviewed marketplace, signing, permission manifests, future sandboxing |
-| Competitors move into this space | Move fast on the non-developer experience, which they aren't focused on |
-| Maintainer burnout | Small, clear roadmap; invite contributors early with good-first-issues |
+| In-process plugins = security risk                | Reviewed marketplace, signing, permission manifests, future sandboxing       |
+| Competitors move into this space                  | Move fast on the non-developer experience, which they aren't focused on      |
+| Maintainer burnout                                | Small, clear roadmap; invite contributors early with good-first-issues       |
 
 ---
 

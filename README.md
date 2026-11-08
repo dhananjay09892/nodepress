@@ -24,13 +24,13 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 
 ## Repository layout
 
-| Path | What it is |
-|---|---|
-| `packages/core` | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
-| `packages/sdk` | Public API for plugin and theme authors (`definePlugin`, types) |
-| `packages/db` | Drizzle schema v1 (SQLite/libSQL) and database client |
-| `apps/server` | Hono HTTP server that boots a NodePress site |
-| `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own |
+| Path                      | What it is                                                               |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `packages/core`           | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
+| `packages/sdk`            | Public API for plugin and theme authors (`definePlugin`, types)          |
+| `packages/db`             | Drizzle schema v1 (SQLite/libSQL) and database client                    |
+| `apps/server`             | Hono HTTP server that boots a NodePress site                             |
+| `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
 
 ## Writing a plugin
 
@@ -50,7 +50,7 @@ A plugin that throws during setup is marked as failed and its hooks are removed 
 
 ## Status
 
-- [ ] Phase 0 — Foundations *(in progress)*
+- [ ] Phase 0 — Foundations _(in progress)_
 - [ ] Phase 1 — Content core & API
 - [ ] Phase 2 — Admin dashboard
 - [ ] Phase 3 — Themes & front end

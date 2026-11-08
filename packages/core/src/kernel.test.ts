@@ -137,7 +137,9 @@ describe('plugins', () => {
 
   it('rejects invalid and duplicate plugins', () => {
     const np = createNodePress(quiet);
-    expect(() => np.plugins.register({ name: 'Bad Name', setup() {} })).toThrow(/Invalid plugin name/);
+    expect(() => np.plugins.register({ name: 'Bad Name', setup() {} })).toThrow(
+      /Invalid plugin name/,
+    );
     expect(() => np.plugins.register({ name: 'core', setup() {} })).toThrow(/Invalid plugin name/);
     expect(() => np.plugins.register({ name: 'x' } as never)).toThrow(/setup/);
     np.plugins.register({ name: 'dup', setup() {} });
