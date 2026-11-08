@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           # Cache only once pnpm-lock.yaml is committed.
-          cache: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm' || '' }}
+          package-manager-cache: ${{ hashFiles('pnpm-lock.yaml') != '' }}
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Generate DB migrations (until they are committed)
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm' || '' }}
+          package-manager-cache: ${{ hashFiles('pnpm-lock.yaml') != '' }}
       - run: pnpm install --no-frozen-lockfile
       - if: hashFiles('packages/db/drizzle/**') == ''
         run: pnpm --filter @nodepress/db db:generate
