@@ -23,7 +23,7 @@ jobs:
           package-manager-cache: false
       - run: pnpm install --no-frozen-lockfile
       - name: Generate DB migrations if missing
-        if: hashFiles('packages/db/drizzle/**') == ''
+        if: hashFiles('packages/db/drizzle/sqlite/**') == '' || hashFiles('packages/db/drizzle/postgres/**') == ''
         run: pnpm --filter @nodepress/db db:generate
       - run: pnpm format
       - name: Commit changes

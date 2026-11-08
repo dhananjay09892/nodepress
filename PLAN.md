@@ -223,7 +223,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] CI on GitHub Actions (lint, typecheck, test)
 - [x] Decide license → MIT
 - [x] `packages/core`: kernel boot + hook system with full tests
-- [~] `packages/db`: Drizzle schema v1 + migrations (SQLite done; Postgres variant pending, see queue N01)
+- [x] `packages/db`: Drizzle schema v1 + migrations (SQLite and PostgreSQL, dialect picked from `DATABASE_URL`)
 
 **Exit:** `pnpm dev` boots a server that runs hooks and connects to a DB.
 

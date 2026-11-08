@@ -11,7 +11,8 @@ import {
 
 /**
  * NodePress schema v1 (SQLite dialect — the zero-config default).
- * A PostgreSQL/MySQL variant with the same shape will follow.
+ * The PostgreSQL variant with the same shape lives in `schema.pg.ts`;
+ * keep the two in step (`schema-parity.test.ts` fails if they drift).
  */
 
 const timestamps = {

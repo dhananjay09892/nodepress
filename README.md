@@ -12,13 +12,14 @@ Requirements: Node.js 22+, pnpm 9+.
 
 ```bash
 pnpm install
-pnpm --filter @nodepress/db db:generate   # first time only: create DB migrations
 pnpm build
 pnpm dev                                  # http://localhost:3000
 ```
 
 - `GET /` — temporary front page (shows plugin filters in action)
 - `GET /api/health` — kernel, database and plugin status
+
+The database is chosen by `DATABASE_URL`: `file:./nodepress.db` (SQLite, the default), `libsql://…` (Turso) or `postgres://user:pass@host:5432/db` (PostgreSQL). Migrations for each dialect ship in `packages/db/drizzle/<dialect>/`; after changing a schema run `pnpm --filter @nodepress/db db:generate`, which regenerates both.
 
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 
@@ -28,7 +29,7 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 | ------------------------- | ------------------------------------------------------------------------ |
 | `packages/core`           | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
 | `packages/sdk`            | Public API for plugin and theme authors (`definePlugin`, types)          |
-| `packages/db`             | Drizzle schema v1 (SQLite/libSQL) and database client                    |
+| `packages/db`             | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
 | `apps/server`             | Hono HTTP server that boots a NodePress site                             |
 | `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
 
