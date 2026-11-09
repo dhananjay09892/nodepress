@@ -32,3 +32,14 @@ export {
   type KernelState,
 } from './kernel.js';
 export { createConsoleLogger, silentLogger, type Logger, type LogLevel } from './logger.js';
+export {
+  OptionsService,
+  createOptionsService,
+  type OptionMap,
+  type OptionKey,
+  type OptionValue,
+  type OptionRow,
+  type OptionsStore,
+  type OptionsServiceOptions,
+  type SetOptionOptions,
+} from './options.js';
