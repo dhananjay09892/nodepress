@@ -113,9 +113,9 @@ describe('API tokens service', () => {
     await expect(service.create(1, { name: 'a', expiresAt: new Date(0) })).rejects.toThrow(
       /future/,
     );
-    await expect(
-      service.create(1, { name: 'a', expiresAt: new Date(Number.NaN) }),
-    ).rejects.toThrow(/future/);
+    await expect(service.create(1, { name: 'a', expiresAt: new Date(Number.NaN) })).rejects.toThrow(
+      /future/,
+    );
     await service.create(1, { name: 'one' });
     await service.create(1, { name: 'two' });
     await expect(service.create(1, { name: 'three' })).rejects.toThrow(/at most 2/);
@@ -138,7 +138,9 @@ describe('API tokens service', () => {
     expect(await service.authenticate('npt_short')).toBeNull();
     expect(await service.authenticate(`npt_${'a'.repeat(43)}`)).toBeNull();
     expect(await service.authenticate(token.slice(4))).toBeNull(); // prefix missing
-    expect(await service.authenticate(`${token.slice(0, -1)}${token.endsWith('A') ? 'B' : 'A'}`)).toBeNull();
+    expect(
+      await service.authenticate(`${token.slice(0, -1)}${token.endsWith('A') ? 'B' : 'A'}`),
+    ).toBeNull();
   });
 
   it('stops working once revoked, and fires the hook', async () => {
@@ -171,7 +173,10 @@ describe('API tokens service', () => {
 
   it('rejects expired tokens', async () => {
     const { service, advance, now } = setup();
-    const { token } = await service.create(1, { name: 'short', expiresAt: new Date(now() + 1_000) });
+    const { token } = await service.create(1, {
+      name: 'short',
+      expiresAt: new Date(now() + 1_000),
+    });
     expect(await service.authenticate(token)).not.toBeNull();
     advance(1_000);
     expect(await service.authenticate(token)).toBeNull();
@@ -184,7 +189,7 @@ describe('API tokens service', () => {
     expect(await service.authenticate(token)).toBeNull();
   });
 
-  it('lists a user\'s tokens without hashes', async () => {
+  it("lists a user's tokens without hashes", async () => {
     const { service } = setup();
     await service.create(1, { name: 'a' });
     await service.create(1, { name: 'b' });

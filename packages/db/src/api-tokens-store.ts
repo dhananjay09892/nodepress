@@ -59,11 +59,7 @@ function build(
       return created;
     },
     async findByHash(tokenHash) {
-      const [row] = await db
-        .select()
-        .from(tokens)
-        .where(eq(tokens.tokenHash, tokenHash))
-        .limit(1);
+      const [row] = await db.select().from(tokens).where(eq(tokens.tokenHash, tokenHash)).limit(1);
       return row;
     },
     async listByUser(userId) {

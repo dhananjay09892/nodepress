@@ -109,7 +109,9 @@ describe('/api/v1/tokens', () => {
     expect(created.token).toMatch(/^npt_[A-Za-z0-9_-]{43}$/);
     expect(created.record).toMatchObject({ name: 'deploy', expiresAt: null, lastUsedAt: null });
 
-    const listRes = await app.request(`${BASE}/api/v1/tokens`, { headers: { cookie: session.cookie } });
+    const listRes = await app.request(`${BASE}/api/v1/tokens`, {
+      headers: { cookie: session.cookie },
+    });
     expect(listRes.status).toBe(200);
     const text = await listRes.text();
     expect(text).not.toContain(created.token);
@@ -276,7 +278,9 @@ describe('Bearer authentication', () => {
   it('answers 401 with a challenge for an invalid token', async () => {
     const app = build();
     for (const value of ['Bearer', 'Bearer nope', `Bearer npt_${'a'.repeat(43)}`]) {
-      const res = await app.request(`${BASE}/api/v1/auth/me`, { headers: { authorization: value } });
+      const res = await app.request(`${BASE}/api/v1/auth/me`, {
+        headers: { authorization: value },
+      });
       expect(res.status).toBe(401);
       expect(res.headers.get('www-authenticate')).toContain('Bearer');
     }
@@ -316,7 +320,9 @@ describe('Bearer authentication', () => {
     const session = await signIn(app);
     const token = ((await (await createToken(app, session)).json()) as { token: string }).token;
     await app.request(`${BASE}/api/v1/auth/me`, { headers: { authorization: `Bearer ${token}` } });
-    const list = await app.request(`${BASE}/api/v1/tokens`, { headers: { cookie: session.cookie } });
+    const list = await app.request(`${BASE}/api/v1/tokens`, {
+      headers: { cookie: session.cookie },
+    });
     const { tokens } = (await list.json()) as { tokens: { lastUsedAt: string | null }[] };
     expect(tokens[0]!.lastUsedAt).not.toBeNull();
   });
@@ -364,7 +370,9 @@ describe('Bearer authentication', () => {
     it('still enforces CSRF for cookie sessions', async () => {
       const app = protectedApp();
       const session = await signIn(app);
-      const read = await app.request(`${BASE}/api/v1/thing`, { headers: { cookie: session.cookie } });
+      const read = await app.request(`${BASE}/api/v1/thing`, {
+        headers: { cookie: session.cookie },
+      });
       expect(await read.json()).toMatchObject({ via: 'session' });
       const noCsrf = await app.request(`${BASE}/api/v1/thing`, {
         method: 'POST',

@@ -24,8 +24,7 @@ export interface AuthContext {
 
 /** Who is making a request, however they proved it. Set by the `authenticate` middleware. */
 export type Principal =
-  | { via: 'session'; user: User }
-  | { via: 'token'; user: User; token: ApiToken };
+  { via: 'session'; user: User } | { via: 'token'; user: User; token: ApiToken };
 
 export interface AuthEnv {
   Variables: { auth: AuthContext | null; principal: Principal | null };
