@@ -2,12 +2,16 @@ import { serve } from '@hono/node-server';
 import {
   createApiTokensService,
   createArgon2Hasher,
+  createCapabilities,
   createContentService,
+  createLocalStorage,
+  createMediaService,
   createJobQueue,
   createNodePress,
   createOptionsService,
   createPermalinkService,
   createScheduledPublisher,
+  createSharpProcessor,
   createSessionsService,
   createUsersService,
 } from '@nodepress/core';
@@ -16,6 +20,7 @@ import {
   createContentStore,
   createDatabase,
   createJobsStore,
+  createMediaStore,
   createOptionsStore,
   createSessionsStore,
   createSlugRedirectsStore,
@@ -111,8 +116,20 @@ const purgeTimer = setInterval(
 );
 purgeTimer.unref();
 
+// Uploaded files live on local disk; MEDIA_DIR moves them (mount a volume there in Docker).
+const mediaStorage = createLocalStorage(process.env.MEDIA_DIR ?? './media');
+const media = createMediaService({
+  store: createMediaStore(database),
+  storage: mediaStorage,
+  processor: createSharpProcessor(),
+  hooks: np.hooks,
+  logger: np.logger.child('media'),
+  ...(process.env.MAX_UPLOAD_BYTES ? { maxBytes: Number(process.env.MAX_UPLOAD_BYTES) } : {}),
+});
+
 const app = createApp(np, database, {
   permalinks,
+  media: { service: media, storage: mediaStorage, capabilities: createCapabilities(np.hooks) },
   auth: {
     users,
     sessions,

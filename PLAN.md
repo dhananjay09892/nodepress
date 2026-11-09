@@ -233,7 +233,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] Taxonomies (categories, tags, custom, hierarchical terms)
 - [x] Permalinks, options/settings
 - [x] Users, sessions, roles/capabilities
-- [ ] Media upload + image variants
+- [x] Media upload + image variants
 - [ ] REST API v1 + API tokens
 - [x] Job queue + scheduled publishing
 

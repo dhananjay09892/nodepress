@@ -1,7 +1,14 @@
-import type { NodePress, PermalinkService } from '@nodepress/core';
+import type {
+  Capabilities,
+  MediaService,
+  NodePress,
+  PermalinkService,
+  StorageAdapter,
+} from '@nodepress/core';
 import type { DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
 import { createAuth, type AuthOptions } from './auth.js';
+import { createMediaRoutes, createUploadsHandler } from './media.js';
 
 declare module '@nodepress/core' {
   interface FilterMap {
@@ -19,6 +26,10 @@ export interface AppOptions {
    * redirected (301, e.g. after a slug change) or answered with a 404 page.
    */
   permalinks?: PermalinkService;
+  /**
+   * Enables media uploads: `/api/v1/media` (needs `auth`) and public files at `/uploads/*`.
+   */
+  media?: { service: MediaService; storage: StorageAdapter; capabilities: Capabilities };
 }
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
@@ -28,7 +39,18 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     const auth = createAuth(options.auth);
     app.route('/api/v1/auth', auth.routes);
     if (options.auth.apiTokens) app.route('/api/v1/tokens', auth.tokenRoutes);
+    if (options.media) {
+      app.route(
+        '/api/v1/media',
+        createMediaRoutes(auth, {
+          media: options.media.service,
+          storage: options.media.storage,
+          capabilities: options.media.capabilities,
+        }),
+      );
+    }
   }
+  if (options.media) app.get('/uploads/*', createUploadsHandler(options.media.storage));
 
   app.get('/api/health', async (c) => {
     const dbOk = await database.ping();

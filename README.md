@@ -34,6 +34,8 @@ Cookie-authenticated writes must send the CSRF token in the `X-CSRF-Token` heade
 
 The database is chosen by `DATABASE_URL`: `file:./nodepress.db` (SQLite, the default), `libsql://…` (Turso) or `postgres://user:pass@host:5432/db` (PostgreSQL). Migrations for each dialect ship in `packages/db/drizzle/<dialect>/`; after changing a schema run `pnpm --filter @nodepress/db db:generate`, which regenerates both.
 
+Uploads are stored on local disk in `MEDIA_DIR` (default `./media`) and served from `/uploads/…`; `MAX_UPLOAD_BYTES` caps the file size (default 10 MiB). Allowed types: JPEG, PNG, GIF, WebP and PDF; SVG is blocked. The API is `POST /api/v1/media` (multipart `file` field, optional `alt`) plus list/get/patch/delete under the same path.
+
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 
 ## Repository layout
