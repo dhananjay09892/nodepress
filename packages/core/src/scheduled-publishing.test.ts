@@ -49,6 +49,9 @@ function contentStore(): ContentStore {
         .filter((r) => !query.statuses || query.statuses.includes(r.status))
         .slice(query.offset, query.offset + query.limit);
     },
+    async count() {
+      return rows.size;
+    },
     async insertRevision(row) {
       const rev: RevisionRecord = { id: revisions.length + 1, ...row, createdAt: T0 };
       revisions.push(rev);

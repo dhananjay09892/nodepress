@@ -90,6 +90,36 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   ).toEqual([a.id]);
   expect((await store.list({ limit: 1, offset: 1 })).map((r) => r.id)).toEqual([page.id]);
 
+  // Counting ignores paging; sorting has a stable tie-break; search is literal and case-insensitive.
+  expect(await store.count({})).toBe(3);
+  expect(await store.count({ type: 'post' })).toBe(2);
+  expect(await store.count({ statuses: ['published'] })).toBe(1);
+  expect(await store.count({ authorId: author.id })).toBe(1);
+  expect(await store.count({ slug: 'hello' })).toBe(2);
+  expect(
+    (await store.list({ orderBy: 'title', direction: 'asc', limit: 10, offset: 0 })).map(
+      (r) => r.title,
+    ),
+  ).toEqual(['B2', 'Hello', 'Hello']);
+  expect(
+    (await store.list({ orderBy: 'id', direction: 'asc', limit: 10, offset: 0 })).map((r) => r.id),
+  ).toEqual([a.id, page.id, b.id]);
+  expect(
+    (await store.list({ orderBy: 'publishedAt', direction: 'desc', limit: 1, offset: 0 })).map(
+      (r) => r.id,
+    ),
+  ).toHaveLength(1);
+  expect((await store.list({ slug: 'b', limit: 10, offset: 0 })).map((r) => r.id)).toEqual([b.id]);
+  await store.insert({ ...base, type: 'post', title: '100% Sure_thing \\ end', slug: 'sure' });
+  expect(await store.count({ search: 'HELLO' })).toBe(2);
+  expect(await store.count({ search: '100%' })).toBe(1);
+  expect(await store.count({ search: '%' })).toBe(1);
+  expect(await store.count({ search: 'sure_thing' })).toBe(1);
+  expect(await store.count({ search: 'sure-thing' })).toBe(0);
+  expect(await store.count({ search: '_' })).toBe(1);
+  expect(await store.count({ search: '\\' })).toBe(1);
+  expect(await store.count({ search: "' or 1=1 --" })).toBe(0);
+
   // Revisions.
   expect(await store.listRevisions(a.id)).toEqual([]);
   const r1 = await store.insertRevision({

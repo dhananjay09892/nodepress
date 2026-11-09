@@ -93,6 +93,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: auto-generated routes for every content type (list with filter, sort, pagination and field selection; get; create; update; delete) with capability checks; `api:response` filter; OpenAPI document at `/api/v1/openapi.json`.
 - Done when: API tests cover each route and permission denial.
 
+### N43 · Content API: custom fields, terms and public reads
+
+- Depends on: N12
+- Scope: follow-up to N12. Store and return custom field values (the `content_meta` table, validated by the content type registry) through the content routes; assign and return taxonomy terms (`categories`, `tags`, custom taxonomies) on create/update/get with `manage_categories` checks; optional anonymous `GET` of published items for headless sites (off by default, a setting turns it on); document all of it in the OpenAPI document.
+- Done when: API tests cover field validation errors, term assignment and permission denial, and anonymous reads when enabled and disabled.
+
 ### N13 · Webhooks
 
 - Depends on: N12, N10

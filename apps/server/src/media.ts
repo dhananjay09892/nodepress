@@ -58,7 +58,7 @@ export function publicMedia(media: Media) {
  * Read a request body but give up as soon as it exceeds `limit` bytes, so an oversized upload
  * is never held in memory. Returns `null` when the limit is exceeded.
  */
-async function readLimited(request: Request, limit: number): Promise<Buffer | null> {
+export async function readLimited(request: Request, limit: number): Promise<Buffer | null> {
   const declared = Number(request.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > limit) return null;
   if (!request.body) return Buffer.alloc(0);

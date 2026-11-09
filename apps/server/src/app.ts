@@ -1,5 +1,7 @@
 import type {
   Capabilities,
+  ContentService,
+  ContentTypeRegistry,
   MediaService,
   NodePress,
   PermalinkService,
@@ -8,6 +10,7 @@ import type {
 import type { DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
 import { createAuth, type AuthOptions } from './auth.js';
+import { createContentRoutes } from './content-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 
 declare module '@nodepress/core' {
@@ -30,6 +33,11 @@ export interface AppOptions {
    * Enables media uploads: `/api/v1/media` (needs `auth`) and public files at `/uploads/*`.
    */
   media?: { service: MediaService; storage: StorageAdapter; capabilities: Capabilities };
+  /**
+   * Enables the content REST API (needs `auth`): `/api/v1/content/:type`,
+   * `/api/v1/content-types` and the OpenAPI document at `/api/v1/openapi.json`.
+   */
+  content?: { service: ContentService; types: ContentTypeRegistry; capabilities: Capabilities };
 }
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
@@ -39,6 +47,17 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     const auth = createAuth(options.auth);
     app.route('/api/v1/auth', auth.routes);
     if (options.auth.apiTokens) app.route('/api/v1/tokens', auth.tokenRoutes);
+    if (options.content) {
+      app.route(
+        '/api/v1',
+        createContentRoutes(auth, {
+          content: options.content.service,
+          types: options.content.types,
+          capabilities: options.content.capabilities,
+          hooks: np.hooks,
+        }),
+      );
+    }
     if (options.media) {
       app.route(
         '/api/v1/media',
