@@ -58,8 +58,7 @@ export interface Auth {
 export function createAuth(options: AuthOptions): Auth {
   const secure = options.secureCookies ?? true;
   const cookieName = secure ? '__Host-np_session' : 'np_session';
-  const byIp =
-    options.loginLimitByIp ?? new RateLimiter({ max: 20, windowMs: LOGIN_WINDOW_MS });
+  const byIp = options.loginLimitByIp ?? new RateLimiter({ max: 20, windowMs: LOGIN_WINDOW_MS });
   const byEmail =
     options.loginLimitByEmail ?? new RateLimiter({ max: 5, windowMs: LOGIN_WINDOW_MS });
   const allowedOrigins = new Set((options.allowedOrigins ?? []).map((o) => o.toLowerCase()));
@@ -209,6 +208,7 @@ function clientIp(c: Context<AuthEnv>, trustProxy: boolean): string {
     const forwarded = c.req.header('x-forwarded-for')?.split(',').pop()?.trim();
     if (forwarded) return forwarded;
   }
-  const env = c.env as unknown as { incoming?: { socket?: { remoteAddress?: string } } } | undefined;
+  const env = c.env as unknown as
+    { incoming?: { socket?: { remoteAddress?: string } } } | undefined;
   return env?.incoming?.socket?.remoteAddress ?? 'unknown';
 }

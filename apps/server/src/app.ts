@@ -16,11 +16,7 @@ export interface AppOptions {
   auth?: AuthOptions;
 }
 
-export function createApp(
-  np: NodePress,
-  database: DatabaseHandle,
-  options: AppOptions = {},
-): Hono {
+export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
   const app = new Hono();
 
   if (options.auth) app.route('/api/v1/auth', createAuth(options.auth).routes);

@@ -48,7 +48,11 @@ export class RateLimiter {
     const entry = this.#live(key);
     const count = entry?.count ?? 0;
     if (entry && count >= this.#max) {
-      return { allowed: false, remaining: 0, retryAfterMs: Math.max(0, entry.resetAt - this.#now()) };
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterMs: Math.max(0, entry.resetAt - this.#now()),
+      };
     }
     return { allowed: true, remaining: this.#max - count, retryAfterMs: 0 };
   }

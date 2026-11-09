@@ -61,7 +61,12 @@ function build(extra: { secureCookies?: boolean } = {}) {
 
 type Requester = { request: (input: string, init?: RequestInit) => Response | Promise<Response> };
 
-function login(app: Requester, email: string, password: string, headers: Record<string, string> = {}) {
+function login(
+  app: Requester,
+  email: string,
+  password: string,
+  headers: Record<string, string> = {},
+) {
   return app.request('http://localhost/api/v1/auth/login', {
     method: 'POST',
     headers: { ...JSON_HEADERS, ...headers },
@@ -301,9 +306,9 @@ describe('requireAuth middleware', () => {
     const { csrfToken } = (await loginRes.json()) as { csrfToken: string };
     const cookie = cookiePair(loginRes);
 
-    expect((await app.request('http://localhost/api/v1/thing', { headers: { cookie } })).status).toBe(
-      200,
-    );
+    expect(
+      (await app.request('http://localhost/api/v1/thing', { headers: { cookie } })).status,
+    ).toBe(200);
     const noToken = await app.request('http://localhost/api/v1/thing', {
       method: 'POST',
       headers: { cookie },

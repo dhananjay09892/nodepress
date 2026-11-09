@@ -90,8 +90,4 @@ export {
   type CreatedSession,
   type ActiveSession,
 } from './sessions.js';
-export {
-  RateLimiter,
-  type RateLimiterOptions,
-  type RateLimitStatus,
-} from './rate-limit.js';
+export { RateLimiter, type RateLimiterOptions, type RateLimitStatus } from './rate-limit.js';
