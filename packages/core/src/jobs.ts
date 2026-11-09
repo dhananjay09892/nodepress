@@ -368,9 +368,13 @@ export class JobQueue {
     if (job.attempts >= maxAttempts) {
       this.#logger.error(`Job ${job.id} (${job.type}) failed for good`, { error: message });
       if (await this.#store.fail(job.id, job.attempts, message)) {
-        await this.#emit('job:failed', { ...job, status: 'failed', lastError: message }, {
-          error: message,
-        });
+        await this.#emit(
+          'job:failed',
+          { ...job, status: 'failed', lastError: message },
+          {
+            error: message,
+          },
+        );
       }
       return 'failed';
     }
@@ -387,10 +391,14 @@ export class JobQueue {
       error: message,
     });
     if (await this.#store.retry(job.id, job.attempts, runAt, message)) {
-      await this.#emit('job:retry', { ...job, status: 'pending', lastError: message, runAt }, {
-        error: message,
-        runAt,
-      });
+      await this.#emit(
+        'job:retry',
+        { ...job, status: 'pending', lastError: message, runAt },
+        {
+          error: message,
+          runAt,
+        },
+      );
     }
     return 'retried';
   }

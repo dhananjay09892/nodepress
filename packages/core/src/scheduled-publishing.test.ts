@@ -93,7 +93,12 @@ describe('scheduled publishing', () => {
   it('publishes a scheduled post when its time comes, not before', async () => {
     const { content, jobs, advance, published } = setup();
     const when = new Date(T0.getTime() + 2 * HOUR);
-    const post = await content.create({ type: 'post', title: 'Soon', status: 'scheduled', publishedAt: when });
+    const post = await content.create({
+      type: 'post',
+      title: 'Soon',
+      status: 'scheduled',
+      publishedAt: when,
+    });
     expect(post.status).toBe('scheduled');
 
     expect(await jobs.list({ type: PUBLISH_JOB_TYPE })).toHaveLength(1);

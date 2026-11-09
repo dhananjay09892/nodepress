@@ -3,12 +3,7 @@ import { HookRegistry } from './hooks.js';
 import { silentLogger } from './logger.js';
 import { PluginManager } from './plugins.js';
 import { memoryJobStore } from './testing/memory-job-store.js';
-import {
-  createJobQueue,
-  defaultBackoff,
-  JobValidationError,
-  LEASE_GRACE_MS,
-} from './jobs.js';
+import { createJobQueue, defaultBackoff, JobValidationError, LEASE_GRACE_MS } from './jobs.js';
 
 const T0 = new Date('2030-01-01T00:00:00.000Z');
 
@@ -197,7 +192,10 @@ describe('JobQueue', () => {
     });
     const job = await queue.enqueue('demo');
     // Simulate a crashed worker: claimed, never finished.
-    const claimed = await store.claim((await store.findById(job.id))!, new Date(now().getTime() + 1000 + LEASE_GRACE_MS));
+    const claimed = await store.claim(
+      (await store.findById(job.id))!,
+      new Date(now().getTime() + 1000 + LEASE_GRACE_MS),
+    );
     expect(claimed?.status).toBe('running');
 
     expect((await queue.runDue()).processed).toBe(0);
@@ -268,9 +266,7 @@ describe('JobQueue', () => {
     const cyclic: Record<string, unknown> = {};
     cyclic.self = cyclic;
     await expect(queue.enqueue('dup', cyclic)).rejects.toThrow(/JSON-serializable/);
-    await expect(queue.enqueue('dup', undefined, { delayMs: -5 })).rejects.toThrow(
-      /non-negative/,
-    );
+    await expect(queue.enqueue('dup', undefined, { delayMs: -5 })).rejects.toThrow(/non-negative/);
     await expect(queue.enqueue('dup', 1, { runAt: new Date('nope') })).rejects.toThrow(
       /valid date/,
     );

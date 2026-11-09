@@ -79,7 +79,10 @@ export function memoryJobStore(): JobStore & { rows: Map<number, JobRecord> } {
     },
     async list(query) {
       return [...rows.values()]
-        .filter((r) => (!query.status || r.status === query.status) && (!query.type || r.type === query.type))
+        .filter(
+          (r) =>
+            (!query.status || r.status === query.status) && (!query.type || r.type === query.type),
+        )
         .sort((a, b) => b.id - a.id)
         .slice(0, query.limit)
         .map((r) => ({ ...r }));

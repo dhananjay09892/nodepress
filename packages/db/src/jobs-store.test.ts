@@ -26,7 +26,7 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   expect(await store.findClaimable([], at(0))).toBeUndefined();
   expect((await store.findClaimable(['a', 'b'], at(0)))?.id).toBe(b.id);
   expect((await store.findClaimable(['a'], at(0)))?.id).toBe(a.id);
-  expect((await store.findClaimable(['a'], at(-5000)))).toBeUndefined();
+  expect(await store.findClaimable(['a'], at(-5000))).toBeUndefined();
 
   // Claiming is compare-and-set: the second worker loses.
   const claimed = await store.claim(a, at(30_000));
@@ -35,7 +35,7 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   expect(await store.claim(a, at(30_000))).toBeUndefined();
 
   // A running job with a live lease is not claimable; with an expired lease it is.
-  expect((await store.findClaimable(['a'], at(10_000)))).toBeUndefined();
+  expect(await store.findClaimable(['a'], at(10_000))).toBeUndefined();
   const stale = await store.findClaimable(['a'], at(31_000));
   expect(stale).toMatchObject({ id: a.id, status: 'running', attempts: 1 });
   const reclaimed = await store.claim(stale!, at(60_000));
