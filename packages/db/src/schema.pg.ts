@@ -120,6 +120,25 @@ export const revisions = pgTable(
   (t) => [index('revisions_content_idx').on(t.contentId)],
 );
 
+/** Old slugs of content whose slug changed, so the old URL can redirect to the new one. */
+export const slugRedirects = pgTable(
+  'slug_redirects',
+  {
+    id: id(),
+    contentId: integer('content_id')
+      .notNull()
+      .references(() => content.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    /** The slug the content used to have. */
+    slug: text('slug').notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    uniqueIndex('slug_redirects_type_slug_idx').on(t.type, t.slug),
+    index('slug_redirects_content_idx').on(t.contentId),
+  ],
+);
+
 export const terms = pgTable(
   'terms',
   {

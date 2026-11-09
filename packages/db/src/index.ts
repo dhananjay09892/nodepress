@@ -168,6 +168,12 @@ export {
   type ContentTableStore,
 } from './content-store.js';
 export {
+  createSlugRedirectsStore,
+  type SlugRedirectRow,
+  type NewSlugRedirectRow,
+  type SlugRedirectsTableStore,
+} from './slug-redirects-store.js';
+export {
   createTaxonomyStore,
   type TermRow,
   type NewTermRow,

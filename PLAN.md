@@ -231,7 +231,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 - [ ] Content CRUD service, revisions, drafts, scheduling
 - [x] Taxonomies (categories, tags, custom, hierarchical terms)
-- [ ] Permalinks, options/settings
+- [x] Permalinks, options/settings
 - [x] Users, sessions, roles/capabilities
 - [ ] Media upload + image variants
 - [ ] REST API v1 + API tokens

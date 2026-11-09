@@ -1,7 +1,7 @@
 name: Refresh lockfile and formatting
 
 # Run manually on a branch (Actions tab → "Run workflow", or the REST API).
-# Installs dependencies, regenerates missing DB migrations, formats the code,
+# Installs dependencies, generates DB migrations for schema changes, formats the code,
 # and commits pnpm-lock.yaml / migrations / formatting changes back to that branch.
 # Used by the daily builder, whose environment cannot reach the npm registry.
 
@@ -22,8 +22,9 @@ jobs:
           node-version: 22
           package-manager-cache: false
       - run: pnpm install --no-frozen-lockfile
-      - name: Generate DB migrations if missing
-        if: hashFiles('packages/db/drizzle/sqlite/**') == '' || hashFiles('packages/db/drizzle/postgres/**') == ''
+      # Generates a new migration only when the schema differs from the last snapshot
+      # (drizzle-kit prints "nothing to migrate" otherwise).
+      - name: Generate DB migrations
         run: pnpm --filter @nodepress/db db:generate
       - run: pnpm format
       - name: Commit changes

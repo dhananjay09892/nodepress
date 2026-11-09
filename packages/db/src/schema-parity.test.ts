@@ -112,6 +112,9 @@ describe('schema parity (SQLite ↔ PostgreSQL)', () => {
     expectTypeOf<typeof pg.revisions.$inferSelect>().toEqualTypeOf<
       typeof sqlite.revisions.$inferSelect
     >();
+    expectTypeOf<typeof pg.slugRedirects.$inferSelect>().toEqualTypeOf<
+      typeof sqlite.slugRedirects.$inferSelect
+    >();
     expectTypeOf<typeof pg.terms.$inferSelect>().toEqualTypeOf<typeof sqlite.terms.$inferSelect>();
     expectTypeOf<typeof pg.termRelations.$inferSelect>().toEqualTypeOf<
       typeof sqlite.termRelations.$inferSelect

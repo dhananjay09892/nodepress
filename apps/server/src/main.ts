@@ -3,13 +3,18 @@ import {
   createApiTokensService,
   createArgon2Hasher,
   createNodePress,
+  createOptionsService,
+  createPermalinkService,
   createSessionsService,
   createUsersService,
 } from '@nodepress/core';
 import {
   createApiTokensStore,
+  createContentStore,
   createDatabase,
+  createOptionsStore,
   createSessionsStore,
+  createSlugRedirectsStore,
   createUsersStore,
 } from '@nodepress/db';
 import helloPlugin from '@nodepress/plugin-hello';
@@ -53,6 +58,18 @@ const apiTokens = createApiTokensService({
   hooks: np.hooks,
 });
 
+const options = createOptionsService({ store: createOptionsStore(database), hooks: np.hooks });
+const contentStore = createContentStore(database);
+const permalinks = createPermalinkService({
+  store: contentStore,
+  redirects: createSlugRedirectsStore(database),
+  options,
+  hooks: np.hooks,
+  logger: np.logger,
+});
+// Remembers old slugs whenever content is saved with a new one (the content API arrives in N12).
+permalinks.attach();
+
 // Expired sessions are rejected on use; this just keeps the table small.
 const purgeTimer = setInterval(
   () => void sessions.purgeExpired().catch((error) => np.logger.warn(String(error))),
@@ -61,6 +78,7 @@ const purgeTimer = setInterval(
 purgeTimer.unref();
 
 const app = createApp(np, database, {
+  permalinks,
   auth: {
     users,
     sessions,
