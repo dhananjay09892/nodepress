@@ -55,13 +55,31 @@ export interface NewContentRecord extends Omit<ContentFields, 'status'> {
 
 export type ContentPatchRecord = Partial<Omit<NewContentRecord, 'type'>>;
 
+/** Columns a list can be sorted by. */
+export const CONTENT_SORT_FIELDS = ['id', 'title', 'createdAt', 'updatedAt', 'publishedAt'] as const;
+export type ContentSortField = (typeof CONTENT_SORT_FIELDS)[number];
+
 export interface ContentRecordQuery {
   type?: string;
   statuses?: string[];
   authorId?: number;
+  /** Exact slug. */
+  slug?: string;
+  /** Case-insensitive text the title must contain. Treated literally, never as a pattern. */
+  search?: string;
+  /** Default `id`. */
+  orderBy?: ContentSortField;
+  /** Default `desc` (newest first). */
+  direction?: 'asc' | 'desc';
   limit: number;
   offset: number;
 }
+
+/** The part of a query that decides which items match (no paging or ordering). */
+export type ContentRecordFilter = Omit<
+  ContentRecordQuery,
+  'limit' | 'offset' | 'orderBy' | 'direction'
+>;
 
 /** What a revision stores: the editable fields as they were saved. */
 export interface ContentSnapshot {
@@ -101,8 +119,10 @@ export interface ContentStore {
   slugExists(type: string, slug: string, excludeId?: number): Promise<boolean>;
   update(id: number, patch: ContentPatchRecord): Promise<ContentRecord | undefined>;
   delete(id: number): Promise<boolean>;
-  /** Newest first. */
+  /** Newest first unless the query says otherwise. */
   list(query: ContentRecordQuery): Promise<ContentRecord[]>;
+  /** How many items match, ignoring paging. */
+  count(filter: ContentRecordFilter): Promise<number>;
   insertRevision(row: {
     contentId: number;
     snapshot: unknown;
@@ -176,6 +196,14 @@ export interface ListContentOptions {
   /** Defaults to every status except `trash`. */
   status?: ContentStatusName | ContentStatusName[];
   authorId?: number;
+  /** Exact slug. */
+  slug?: string;
+  /** Case-insensitive text the title must contain. */
+  search?: string;
+  /** Default `id`. */
+  orderBy?: ContentSortField;
+  /** Default `desc`. */
+  direction?: 'asc' | 'desc';
   limit?: number;
   offset?: number;
 }
@@ -308,17 +336,26 @@ export class ContentService {
     if (!Number.isInteger(offset) || offset < 0) {
       throw new ContentValidationError('offset must be a non-negative integer');
     }
-    const requested =
-      options.status === undefined
-        ? CONTENT_STATUSES.filter((s) => s !== 'trash')
-        : Array.isArray(options.status)
-          ? options.status
-          : [options.status];
-    for (const status of requested) this.#assertStatus(status);
-    const query: ContentRecordQuery = { statuses: [...requested], limit, offset };
-    if (options.type !== undefined) query.type = options.type;
-    if (options.authorId !== undefined) query.authorId = options.authorId;
-    return this.#store.list(query);
+    const orderBy = options.orderBy ?? 'id';
+    if (!CONTENT_SORT_FIELDS.includes(orderBy)) {
+      throw new ContentValidationError(`orderBy must be one of ${CONTENT_SORT_FIELDS.join(', ')}`);
+    }
+    const direction = options.direction ?? 'desc';
+    if (direction !== 'asc' && direction !== 'desc') {
+      throw new ContentValidationError('direction must be "asc" or "desc"');
+    }
+    return this.#store.list({
+      ...this.#filter(options),
+      orderBy,
+      direction,
+      limit,
+      offset,
+    });
+  }
+
+  /** How many items `list()` would match with the same filters, ignoring paging and order. */
+  async count(options: ListContentOptions = {}): Promise<number> {
+    return this.#store.count(this.#filter(options));
   }
 
   async listRevisions(contentId: number): Promise<Revision[]> {
@@ -421,6 +458,22 @@ export class ContentService {
   }
 
   // ── Internals ────────────────────────────────────────────────────────
+
+  #filter(options: ListContentOptions): ContentRecordFilter {
+    const requested =
+      options.status === undefined
+        ? CONTENT_STATUSES.filter((s) => s !== 'trash')
+        : Array.isArray(options.status)
+          ? options.status
+          : [options.status];
+    for (const status of requested) this.#assertStatus(status);
+    const filter: ContentRecordFilter = { statuses: [...requested] };
+    if (options.type !== undefined) filter.type = options.type;
+    if (options.authorId !== undefined) filter.authorId = options.authorId;
+    if (options.slug !== undefined) filter.slug = options.slug;
+    if (options.search !== undefined && options.search !== '') filter.search = options.search;
+    return filter;
+  }
 
   #assertStatus(status: unknown): asserts status is ContentStatusName {
     if (!CONTENT_STATUSES.includes(status as ContentStatusName)) {

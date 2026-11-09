@@ -34,6 +34,18 @@ Cookie-authenticated writes must send the CSRF token in the `X-CSRF-Token` heade
 
 The database is chosen by `DATABASE_URL`: `file:./nodepress.db` (SQLite, the default), `libsql://…` (Turso) or `postgres://user:pass@host:5432/db` (PostgreSQL). Migrations for each dialect ship in `packages/db/drizzle/<dialect>/`; after changing a schema run `pnpm --filter @nodepress/db db:generate`, which regenerates both.
 
+Content is available for every registered content type (`post`, `page` and any type a plugin adds) under `/api/v1/content/:type`. Authenticate with a Bearer API token (or a session cookie plus CSRF token). Every route checks the user's capabilities, and non-published items are visible only to their author and to users who may edit others' items:
+
+- `GET /api/v1/content/:type` — list. Query: `status` (comma-separated), `author` (id or `me`), `slug`, `q` (title search), `sort` (`id`, `title`, `createdAt`, `updatedAt`, `publishedAt`; prefix `-` for descending), `limit` (1–100, default 20), `offset`, `fields` (comma-separated). Returns `{ items, total, limit, offset }`
+- `GET /api/v1/content/:type/:id` — one item (also accepts `fields`)
+- `POST /api/v1/content/:type` — create; JSON `{ title, slug?, status?, body?, excerpt?, authorId?, parentId?, publishedAt? }`
+- `PATCH /api/v1/content/:type/:id` — update the fields you send
+- `DELETE /api/v1/content/:type/:id` — move to the trash; delete a trashed item (or pass `?force=true`) to remove it for good
+- `GET /api/v1/content-types` — the registered types
+- `GET /api/v1/openapi.json` — OpenAPI 3.1 description (public)
+
+Plugins can reshape every successful response with the `api:response` filter.
+
 Uploads are stored on local disk in `MEDIA_DIR` (default `./media`) and served from `/uploads/…`; `MAX_UPLOAD_BYTES` caps the file size (default 10 MiB). Allowed types: JPEG, PNG, GIF, WebP and PDF; SVG is blocked. The API is `POST /api/v1/media` (multipart `file` field, optional `alt`) plus list/get/patch/delete under the same path.
 
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.

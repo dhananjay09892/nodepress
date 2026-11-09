@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, ne, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseHandle } from './index.js';
 import * as pgSchema from './schema.pg.js';
 import * as sqliteSchema from './schema.js';
@@ -42,11 +42,23 @@ export interface NewContentRow {
 /** Fields that may change after creation. The content type never changes. */
 export type ContentRowPatch = Partial<Omit<NewContentRow, 'type'>>;
 
-export interface ContentRowQuery {
+/** Which rows match. */
+export interface ContentRowFilter {
   type?: string;
   /** Match any of these statuses. */
   statuses?: string[];
   authorId?: number;
+  /** Exact slug. */
+  slug?: string;
+  /** Case-insensitive text the title must contain. `%`, `_` and `\` are matched literally. */
+  search?: string;
+}
+
+export interface ContentRowQuery extends ContentRowFilter {
+  /** Default `id`. */
+  orderBy?: 'id' | 'title' | 'createdAt' | 'updatedAt' | 'publishedAt';
+  /** Default `desc`. */
+  direction?: 'asc' | 'desc';
   limit: number;
   offset: number;
 }
@@ -72,8 +84,10 @@ export interface ContentTableStore {
   slugExists(type: string, slug: string, excludeId?: number): Promise<boolean>;
   update(id: number, patch: ContentRowPatch): Promise<ContentRow | undefined>;
   delete(id: number): Promise<boolean>;
-  /** Newest first (highest id first). */
+  /** Newest first (highest id first) unless the query says otherwise. */
   list(query: ContentRowQuery): Promise<ContentRow[]>;
+  /** How many rows match, ignoring paging. */
+  count(filter: ContentRowFilter): Promise<number>;
   insertRevision(row: {
     contentId: number;
     snapshot: unknown;
@@ -102,6 +116,21 @@ function build(
   const db = dbAny as Extract<DatabaseHandle, { dialect: 'sqlite' }>['db'];
   const content = contentAny as typeof sqliteSchema.content;
   const revisions = revisionsAny as typeof sqliteSchema.revisions;
+
+  const where = (filter: ContentRowFilter): SQL | undefined => {
+    const conditions: SQL[] = [];
+    if (filter.type !== undefined) conditions.push(eq(content.type, filter.type));
+    if (filter.statuses && filter.statuses.length > 0) {
+      conditions.push(inArray(content.status, filter.statuses as sqliteSchema.ContentStatus[]));
+    }
+    if (filter.authorId !== undefined) conditions.push(eq(content.authorId, filter.authorId));
+    if (filter.slug !== undefined) conditions.push(eq(content.slug, filter.slug));
+    if (filter.search !== undefined && filter.search !== '') {
+      const pattern = `%${filter.search.replace(/[\\%_]/g, '\\$&').toLowerCase()}%`;
+      conditions.push(sql`lower(${content.title}) like ${pattern} escape '\\'`);
+    }
+    return conditions.length > 0 ? and(...conditions) : undefined;
+  };
 
   return {
     async insert(row) {
@@ -149,19 +178,20 @@ function build(
       return removed.length > 0;
     },
     async list(query) {
-      const conditions: SQL[] = [];
-      if (query.type !== undefined) conditions.push(eq(content.type, query.type));
-      if (query.statuses && query.statuses.length > 0) {
-        conditions.push(inArray(content.status, query.statuses as sqliteSchema.ContentStatus[]));
-      }
-      if (query.authorId !== undefined) conditions.push(eq(content.authorId, query.authorId));
+      const direction = query.direction === 'asc' ? asc : desc;
+      const column = content[query.orderBy ?? 'id'];
       return db
         .select()
         .from(content)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
-        .orderBy(desc(content.id))
+        .where(where(query))
+        // The id breaks ties so paging is stable when many rows share a value.
+        .orderBy(direction(column), direction(content.id))
         .limit(query.limit)
         .offset(query.offset);
+    },
+    async count(filter) {
+      const [row] = await db.select({ value: count() }).from(content).where(where(filter));
+      return Number(row?.value ?? 0);
     },
     async insertRevision(row) {
       const [created] = await db.insert(revisions).values(row).returning();

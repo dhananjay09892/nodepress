@@ -4,6 +4,7 @@ import {
   createArgon2Hasher,
   createCapabilities,
   createContentService,
+  createContentTypeRegistry,
   createLocalStorage,
   createMediaService,
   createJobQueue,
@@ -84,15 +85,21 @@ const permalinks = createPermalinkService({
   hooks: np.hooks,
   logger: np.logger,
 });
-// Remembers old slugs whenever content is saved with a new one (the content API arrives in N12).
+// Remembers old slugs whenever content is saved with a new one through the content API.
 permalinks.attach();
 
-// Scheduled posts publish themselves when their time comes (the content API arrives in N12).
+// Scheduled posts publish themselves when their time comes.
 const content = createContentService({
   store: contentStore,
   hooks: np.hooks,
   logger: np.logger.child('content'),
 });
+// Plugins add content types through a filter; pick them up now that they are activated.
+const contentTypes = createContentTypeRegistry({
+  hooks: np.hooks,
+  logger: np.logger.child('content-types'),
+});
+await contentTypes.refresh();
 const scheduledPublisher = createScheduledPublisher({
   content,
   jobs,
@@ -127,9 +134,11 @@ const media = createMediaService({
   ...(process.env.MAX_UPLOAD_BYTES ? { maxBytes: Number(process.env.MAX_UPLOAD_BYTES) } : {}),
 });
 
+const capabilities = createCapabilities(np.hooks);
 const app = createApp(np, database, {
   permalinks,
-  media: { service: media, storage: mediaStorage, capabilities: createCapabilities(np.hooks) },
+  content: { service: content, types: contentTypes, capabilities },
+  media: { service: media, storage: mediaStorage, capabilities },
   auth: {
     users,
     sessions,

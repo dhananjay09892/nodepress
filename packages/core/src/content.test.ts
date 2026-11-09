@@ -19,6 +19,13 @@ function memoryStore(): ContentStore & {
   const revisions: RevisionRecord[] = [];
   let nextId = 1;
   let nextRevision = 1;
+  const matching = (q: Parameters<ContentStore['count']>[0]) =>
+    [...rows.values()]
+      .filter((r) => q.type === undefined || r.type === q.type)
+      .filter((r) => !q.statuses || q.statuses.includes(r.status))
+      .filter((r) => q.authorId === undefined || r.authorId === q.authorId)
+      .filter((r) => q.slug === undefined || r.slug === q.slug)
+      .filter((r) => q.search === undefined || r.title.toLowerCase().includes(q.search.toLowerCase()));
   const store = {
     rows,
     failInsertOnce: false,
@@ -69,12 +76,16 @@ function memoryStore(): ContentStore & {
       return rows.delete(id);
     },
     async list(query: Parameters<ContentStore['list']>[0]) {
-      return [...rows.values()]
-        .filter((r) => query.type === undefined || r.type === query.type)
-        .filter((r) => !query.statuses || query.statuses.includes(r.status))
-        .filter((r) => query.authorId === undefined || r.authorId === query.authorId)
-        .sort((a, b) => b.id - a.id)
+      const key = query.orderBy ?? 'id';
+      const sign = query.direction === 'asc' ? 1 : -1;
+      const value = (r: ContentRecord): number | string =>
+        key === 'title' ? r.title : (r[key]?.valueOf() ?? 0);
+      return matching(query)
+        .sort((a, b) => (value(a) < value(b) ? -sign : value(a) > value(b) ? sign : a.id - b.id))
         .slice(query.offset, query.offset + query.limit);
+    },
+    async count(filter: Parameters<ContentStore['count']>[0]) {
+      return matching(filter).length;
     },
     async insertRevision(row: Parameters<ContentStore['insertRevision']>[0]) {
       const rev: RevisionRecord = {
@@ -282,6 +293,44 @@ describe('statuses', () => {
     ).toEqual([b.id]);
     expect((await content.list({ authorId: 2 })).map((p) => p.id)).toEqual([b.id]);
     expect(await content.list({ limit: 1, offset: 1 })).toHaveLength(1);
+  });
+
+  it('list sorts, searches, filters by slug and counts without paging', async () => {
+    const { content } = setup();
+    const b = await content.create({ type: 'post', title: 'Banana split' });
+    const a = await content.create({ type: 'post', title: 'apple_pie 100%' });
+    const c = await content.create({ type: 'post', title: 'Cherry' });
+    const titles = async (o: Parameters<ContentService['list']>[0]) =>
+      (await content.list(o)).map((p) => p.title);
+    expect(await titles({ orderBy: 'title', direction: 'asc' })).toEqual([
+      'Banana split',
+      'Cherry',
+      'apple_pie 100%',
+    ]);
+    expect(await titles({ orderBy: 'id', direction: 'asc' })).toEqual([
+      'Banana split',
+      'apple_pie 100%',
+      'Cherry',
+    ]);
+    expect(await titles({ search: 'BANANA' })).toEqual(['Banana split']);
+    expect(await titles({ slug: c.slug })).toEqual(['Cherry']);
+    expect(await content.count({})).toBe(3);
+    expect(await content.count({ search: 'an' })).toBe(1);
+    expect(await content.count({ authorId: 99 })).toBe(0);
+    // paging does not change the count
+    expect(await content.list({ limit: 1 })).toHaveLength(1);
+    expect(await content.count({ limit: 1 })).toBe(3);
+    expect([a.id, b.id, c.id]).toHaveLength(3);
+  });
+
+  it('list validates sorting', async () => {
+    const { content } = setup();
+    await expect(content.list({ orderBy: 'body' as never })).rejects.toBeInstanceOf(
+      ContentValidationError,
+    );
+    await expect(content.list({ direction: 'up' as never })).rejects.toBeInstanceOf(
+      ContentValidationError,
+    );
   });
 
   it('list validates paging and statuses', async () => {

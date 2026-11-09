@@ -162,6 +162,7 @@ export {
   type ContentRow,
   type NewContentRow,
   type ContentRowPatch,
+  type ContentRowFilter,
   type ContentRowQuery,
   type ContentBlockRow,
   type RevisionRow,
