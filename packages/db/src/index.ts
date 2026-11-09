@@ -145,3 +145,9 @@ export {
   type UserRowPatch,
   type UsersTableStore,
 } from './users-store.js';
+export {
+  createSessionsStore,
+  type SessionRow,
+  type NewSessionRow,
+  type SessionsTableStore,
+} from './sessions-store.js';

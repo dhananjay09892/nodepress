@@ -1,6 +1,7 @@
 import type { NodePress } from '@nodepress/core';
 import type { DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
+import { createAuth, type AuthOptions } from './auth.js';
 
 declare module '@nodepress/core' {
   interface FilterMap {
@@ -10,8 +11,19 @@ declare module '@nodepress/core' {
 }
 
 /** Build the HTTP app. Kept separate from `main.ts` so it can be tested without a port. */
-export function createApp(np: NodePress, database: DatabaseHandle): Hono {
+export interface AppOptions {
+  /** Enables `/api/v1/auth/*` (login, logout, me). */
+  auth?: AuthOptions;
+}
+
+export function createApp(
+  np: NodePress,
+  database: DatabaseHandle,
+  options: AppOptions = {},
+): Hono {
   const app = new Hono();
+
+  if (options.auth) app.route('/api/v1/auth', createAuth(options.auth).routes);
 
   app.get('/api/health', async (c) => {
     const dbOk = await database.ping();

@@ -75,3 +75,23 @@ export {
   type UpdateUserInput,
   type UsersServiceOptions,
 } from './users.js';
+export {
+  SessionsService,
+  createSessionsService,
+  hashSessionToken,
+  csrfTokenFor,
+  verifyCsrfToken,
+  DEFAULT_SESSION_TTL_MS,
+  type SessionRecord,
+  type NewSessionRecord,
+  type SessionsStore,
+  type SessionUsers,
+  type SessionsServiceOptions,
+  type CreatedSession,
+  type ActiveSession,
+} from './sessions.js';
+export {
+  RateLimiter,
+  type RateLimiterOptions,
+  type RateLimitStatus,
+} from './rate-limit.js';
