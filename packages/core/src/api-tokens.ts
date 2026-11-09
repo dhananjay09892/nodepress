@@ -96,8 +96,14 @@ export function hashApiToken(token: string): string {
 }
 
 function toPublic(record: ApiTokenRecord): ApiToken {
-  const { tokenHash: _tokenHash, ...rest } = record;
-  return rest;
+  return {
+    id: record.id,
+    userId: record.userId,
+    name: record.name,
+    lastUsedAt: record.lastUsedAt,
+    expiresAt: record.expiresAt,
+    createdAt: record.createdAt,
+  };
 }
 
 export class ApiTokensService {
