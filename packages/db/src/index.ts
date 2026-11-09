@@ -167,3 +167,10 @@ export {
   type RevisionRow,
   type ContentTableStore,
 } from './content-store.js';
+export {
+  createTaxonomyStore,
+  type TermRow,
+  type NewTermRow,
+  type TermRowPatch,
+  type TaxonomyTableStore,
+} from './taxonomy-store.js';
