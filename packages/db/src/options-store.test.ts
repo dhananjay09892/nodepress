@@ -15,7 +15,16 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   const store = createOptionsStore(h);
   expect(await store.get('missing')).toBeUndefined();
 
-  const values: unknown[] = ['text', '{"looks":"like json"}', 7, 0, false, true, [1, 'a'], { a: { b: 1 } }];
+  const values: unknown[] = [
+    'text',
+    '{"looks":"like json"}',
+    7,
+    0,
+    false,
+    true,
+    [1, 'a'],
+    { a: { b: 1 } },
+  ];
   for (const [i, value] of values.entries()) {
     await store.upsert({ key: `k${i}`, value, autoload: true });
     expect(await store.get(`k${i}`)).toEqual({ key: `k${i}`, value, autoload: true });
@@ -25,7 +34,12 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   expect(await store.get('k0')).toEqual({ key: 'k0', value: 'changed', autoload: false });
 
   const autoloaded = await store.getAutoloaded();
-  expect(autoloaded.map((r) => r.key).sort()).toEqual(values.slice(1).map((_, i) => `k${i + 1}`).sort());
+  expect(autoloaded.map((r) => r.key).sort()).toEqual(
+    values
+      .slice(1)
+      .map((_, i) => `k${i + 1}`)
+      .sort(),
+  );
 
   expect(await store.delete('k0')).toBe(true);
   expect(await store.delete('k0')).toBe(false);
