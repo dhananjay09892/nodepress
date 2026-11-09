@@ -127,7 +127,10 @@ export function createMediaRoutes(auth: Auth, options: MediaRoutesOptions): Hono
     const file = form.get('file');
     const alt = form.get('alt');
     if (!(file instanceof File) || (alt !== null && typeof alt !== 'string')) {
-      return c.json({ error: 'invalid_request', message: 'send the upload as a "file" field' }, 400);
+      return c.json(
+        { error: 'invalid_request', message: 'send the upload as a "file" field' },
+        400,
+      );
     }
     try {
       const created = await media.upload({
@@ -140,10 +143,7 @@ export function createMediaRoutes(auth: Auth, options: MediaRoutesOptions): Hono
       return c.json({ media: publicMedia(created) }, 201);
     } catch (error) {
       if (error instanceof MediaValidationError) {
-        return c.json(
-          { error: error.code, message: error.message },
-          ERROR_STATUS[error.code],
-        );
+        return c.json({ error: error.code, message: error.message }, ERROR_STATUS[error.code]);
       }
       throw error;
     }

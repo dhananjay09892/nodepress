@@ -116,9 +116,7 @@ export function detectType(data: Uint8Array): DetectedType | undefined {
     [...value].every((ch, i) => data[start + i] === ch.charCodeAt(0));
   let mime: string | undefined;
   if (at(0) === 0xff && at(1) === 0xd8 && at(2) === 0xff) mime = 'image/jpeg';
-  else if (
-    [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((byte, i) => data[i] === byte)
-  ) {
+  else if ([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((byte, i) => data[i] === byte)) {
     mime = 'image/png';
   } else if (text(0, 'GIF87a') || text(0, 'GIF89a')) mime = 'image/gif';
   else if (text(0, 'RIFF') && text(8, 'WEBP')) mime = 'image/webp';
@@ -127,12 +125,7 @@ export function detectType(data: Uint8Array): DetectedType | undefined {
 }
 
 export type MediaErrorCode =
-  | 'empty'
-  | 'too_large'
-  | 'unsupported_type'
-  | 'type_mismatch'
-  | 'invalid_image'
-  | 'invalid_alt';
+  'empty' | 'too_large' | 'unsupported_type' | 'type_mismatch' | 'invalid_image' | 'invalid_alt';
 
 export class MediaValidationError extends Error {
   readonly code: MediaErrorCode;

@@ -227,7 +227,9 @@ describe('library routes', () => {
   it('lists only own files for authors, everything for editors and admins', async () => {
     const a = await uploadAs('author@example.com');
     await uploadAs('author2@example.com');
-    const own = (await (await app.request(`${BASE}/api/v1/media`, { headers: a.session })).json()) as {
+    const own = (await (
+      await app.request(`${BASE}/api/v1/media`, { headers: a.session })
+    ).json()) as {
       media: { id: number }[];
     };
     expect(own.media.map((m) => m.id)).toEqual([a.id]);
@@ -241,12 +243,17 @@ describe('library routes', () => {
   it('hides other authors files and lets admins manage them', async () => {
     const a = await uploadAs('author@example.com');
     const other = await signIn('author2@example.com');
-    expect((await app.request(`${BASE}/api/v1/media/${a.id}`, { headers: other })).status).toBe(404);
+    expect((await app.request(`${BASE}/api/v1/media/${a.id}`, { headers: other })).status).toBe(
+      404,
+    );
     expect(
-      (await app.request(`${BASE}/api/v1/media/${a.id}`, { method: 'DELETE', headers: other })).status,
+      (await app.request(`${BASE}/api/v1/media/${a.id}`, { method: 'DELETE', headers: other }))
+        .status,
     ).toBe(404);
     const admin = await signIn('admin@example.com');
-    expect((await app.request(`${BASE}/api/v1/media/${a.id}`, { headers: admin })).status).toBe(200);
+    expect((await app.request(`${BASE}/api/v1/media/${a.id}`, { headers: admin })).status).toBe(
+      200,
+    );
   });
 
   it('updates alt text', async () => {
@@ -278,7 +285,9 @@ describe('library routes', () => {
     expect((await app.request(`${BASE}/api/v1/media/${a.id}`, { headers: a.session })).status).toBe(
       404,
     );
-    expect((await app.request(`${BASE}/api/v1/media/abc`, { headers: a.session })).status).toBe(404);
+    expect((await app.request(`${BASE}/api/v1/media/abc`, { headers: a.session })).status).toBe(
+      404,
+    );
   });
 });
 

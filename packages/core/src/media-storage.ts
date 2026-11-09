@@ -17,7 +17,8 @@ export function createLocalStorage(root: string): StorageAdapter {
   const locate = (key: string): string => {
     assertStorageKey(key);
     const full = resolve(base, key);
-    if (!full.startsWith(base + sep)) throw new Error(`Invalid storage key: ${JSON.stringify(key)}`);
+    if (!full.startsWith(base + sep))
+      throw new Error(`Invalid storage key: ${JSON.stringify(key)}`);
     return full;
   };
   return {
