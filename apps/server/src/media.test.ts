@@ -144,10 +144,10 @@ describe('POST /api/v1/media', () => {
 
   it('works with a Bearer API token and no CSRF header', async () => {
     const admin = await signIn('admin@example.com');
-    const created = await apiTokens.create(
-      (await (await app.request(`${BASE}/api/v1/auth/me`, { headers: admin })).json()).user.id,
-      { name: 'ci' },
-    );
+    const me = (await (await app.request(`${BASE}/api/v1/auth/me`, { headers: admin })).json()) as {
+      user: { id: number };
+    };
+    const created = await apiTokens.create(me.user.id, { name: 'ci' });
     const res = await upload({ authorization: `Bearer ${created.token}` });
     expect(res.status).toBe(201);
   });
