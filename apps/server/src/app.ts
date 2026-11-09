@@ -1,4 +1,4 @@
-import type { NodePress } from '@nodepress/core';
+import type { NodePress, PermalinkService } from '@nodepress/core';
 import type { DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
 import { createAuth, type AuthOptions } from './auth.js';
@@ -14,6 +14,11 @@ declare module '@nodepress/core' {
 export interface AppOptions {
   /** Enables `/api/v1/auth/*` (login, logout, me) and, with `apiTokens`, `/api/v1/tokens`. */
   auth?: AuthOptions;
+  /**
+   * Enables the front-end resolver: any other GET path is looked up as content (200),
+   * redirected (301, e.g. after a slug change) or answered with a 404 page.
+   */
+  permalinks?: PermalinkService;
 }
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
@@ -56,6 +61,40 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
 </html>`;
     return c.html(await np.hooks.applyFilters('render:html', html, { path: c.req.path }));
   });
+
+  const { permalinks } = options;
+  if (permalinks) {
+    // Registered last so every API and system route above wins.
+    app.get('*', async (c) => {
+      const path = c.req.path;
+      if (path === '/api' || path.startsWith('/api/')) return c.json({ error: 'not_found' }, 404);
+      const route = await permalinks.resolve(path);
+      if (route.kind === 'redirect') {
+        const query = new URL(c.req.url).search;
+        return c.redirect(route.to + query, route.status);
+      }
+      const siteName = String(np.config.siteName ?? 'NodePress');
+      // Temporary markup until the theme system lands in Phase 3.
+      const [title, heading, status] =
+        route.kind === 'content'
+          ? [route.content.title, route.content.title, 200 as const]
+          : ['Page not found', 'Page not found', 404 as const];
+      const excerpt = route.kind === 'content' ? (route.content.excerpt ?? '') : '';
+      const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(title)} | ${escapeHtml(siteName)}</title>
+  </head>
+  <body>
+    <h1>${escapeHtml(heading)}</h1>
+    ${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}
+  </body>
+</html>`;
+      return c.html(await np.hooks.applyFilters('render:html', html, { path }), status);
+    });
+  }
 
   return app;
 }

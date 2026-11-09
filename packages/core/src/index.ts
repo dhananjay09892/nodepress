@@ -44,6 +44,19 @@ export {
   type SetOptionOptions,
 } from './options.js';
 export {
+  PermalinkService,
+  PermalinkPatternError,
+  createPermalinkService,
+  parsePattern,
+  buildPath,
+  PERMALINK_OPTION,
+  DEFAULT_POST_PATTERN,
+  type ParsedPattern,
+  type ResolvedRoute,
+  type SlugRedirectStore,
+  type PermalinkServiceOptions,
+} from './permalinks.js';
+export {
   Capabilities,
   createCapabilities,
   isRole,

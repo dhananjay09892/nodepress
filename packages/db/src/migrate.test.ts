@@ -26,6 +26,7 @@ const EXPECTED_TABLES = [
   'plugins',
   'revisions',
   'sessions',
+  'slug_redirects',
   'term_relations',
   'terms',
   'users',
