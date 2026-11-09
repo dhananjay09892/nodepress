@@ -56,7 +56,13 @@ export interface NewContentRecord extends Omit<ContentFields, 'status'> {
 export type ContentPatchRecord = Partial<Omit<NewContentRecord, 'type'>>;
 
 /** Columns a list can be sorted by. */
-export const CONTENT_SORT_FIELDS = ['id', 'title', 'createdAt', 'updatedAt', 'publishedAt'] as const;
+export const CONTENT_SORT_FIELDS = [
+  'id',
+  'title',
+  'createdAt',
+  'updatedAt',
+  'publishedAt',
+] as const;
 export type ContentSortField = (typeof CONTENT_SORT_FIELDS)[number];
 
 export interface ContentRecordQuery {

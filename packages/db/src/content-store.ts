@@ -180,14 +180,16 @@ function build(
     async list(query) {
       const direction = query.direction === 'asc' ? asc : desc;
       const column = content[query.orderBy ?? 'id'];
-      return db
-        .select()
-        .from(content)
-        .where(where(query))
-        // The id breaks ties so paging is stable when many rows share a value.
-        .orderBy(direction(column), direction(content.id))
-        .limit(query.limit)
-        .offset(query.offset);
+      return (
+        db
+          .select()
+          .from(content)
+          .where(where(query))
+          // The id breaks ties so paging is stable when many rows share a value.
+          .orderBy(direction(column), direction(content.id))
+          .limit(query.limit)
+          .offset(query.offset)
+      );
     },
     async count(filter) {
       const [row] = await db.select({ value: count() }).from(content).where(where(filter));

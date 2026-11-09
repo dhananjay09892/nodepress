@@ -107,7 +107,10 @@ async function call(
 }
 
 async function make(who: string, body: Json = {}, type = 'post'): Promise<Json> {
-  const { status, json } = await call('POST', `/content/${type}`, who, { title: 'Untitled', ...body });
+  const { status, json } = await call('POST', `/content/${type}`, who, {
+    title: 'Untitled',
+    ...body,
+  });
   expect(status).toBe(201);
   return json!.item as Json;
 }
@@ -124,7 +127,9 @@ describe('authentication', () => {
     ] as const) {
       expect((await call(method, path, null, method === 'GET' ? undefined : {})).status).toBe(401);
     }
-    const bad = await call('GET', '/content/post', null, undefined, { authorization: 'Bearer nope' });
+    const bad = await call('GET', '/content/post', null, undefined, {
+      authorization: 'Bearer nope',
+    });
     expect(bad.status).toBe(401);
   });
 
@@ -139,7 +144,9 @@ describe('authentication', () => {
     const write = (headers: Record<string, string>) =>
       call('POST', '/content/post', null, { title: 'x' }, { cookie, ...headers });
     expect((await write({})).status).toBe(403);
-    expect((await write({ 'x-csrf-token': csrfToken, origin: 'https://evil.example' })).status).toBe(403);
+    expect(
+      (await write({ 'x-csrf-token': csrfToken, origin: 'https://evil.example' })).status,
+    ).toBe(403);
     expect((await write({ 'x-csrf-token': csrfToken })).status).toBe(201);
     expect((await call('GET', '/content/post', null, undefined, { cookie })).status).toBe(200);
   });
@@ -179,14 +186,20 @@ describe('create, read, update, delete', () => {
       excerpt: null,
     });
     expect(patched.status).toBe(200);
-    expect(patched.json!.item).toMatchObject({ title: 'Renamed', slug: 'hello-world', excerpt: null });
+    expect(patched.json!.item).toMatchObject({
+      title: 'Renamed',
+      slug: 'hello-world',
+      excerpt: null,
+    });
 
     const trashed = await call('DELETE', `/content/post/${created.id}`, 'author');
     expect(trashed.status).toBe(200);
     expect(trashed.json!.item.status).toBe('trash');
     expect((await call('GET', `/content/post/${created.id}`, 'author')).status).toBe(200);
 
-    const restored = await call('PATCH', `/content/post/${created.id}`, 'author', { status: 'draft' });
+    const restored = await call('PATCH', `/content/post/${created.id}`, 'author', {
+      status: 'draft',
+    });
     expect(restored.json!.item.status).toBe('draft');
     expect((await call('DELETE', `/content/post/${created.id}`, 'author')).status).toBe(200);
     expect((await call('DELETE', `/content/post/${created.id}`, 'author')).status).toBe(204);
@@ -195,7 +208,9 @@ describe('create, read, update, delete', () => {
 
   it('deletes permanently with force=true', async () => {
     const item = await make('author');
-    expect((await call('DELETE', `/content/post/${item.id}?force=true`, 'author')).status).toBe(204);
+    expect((await call('DELETE', `/content/post/${item.id}?force=true`, 'author')).status).toBe(
+      204,
+    );
     expect((await call('GET', `/content/post/${item.id}`, 'administrator')).status).toBe(404);
   });
 
@@ -224,11 +239,9 @@ describe('create, read, update, delete', () => {
       error: 'unknown_content_type',
     });
     expect((await call('POST', '/content/nope', 'administrator', {})).status).toBe(404);
-    expect((await call('GET', '/content-types', 'author')).json!.types.map((t: Json) => t.name)).toEqual([
-      'post',
-      'page',
-      'product',
-    ]);
+    expect(
+      (await call('GET', '/content-types', 'author')).json!.types.map((t: Json) => t.name),
+    ).toEqual(['post', 'page', 'product']);
   });
 
   it('answers 404 for bad ids', async () => {
@@ -266,11 +279,21 @@ describe('request validation', () => {
   });
 
   it('rejects unknown fields so nothing is set by accident', async () => {
-    const res = await call('POST', '/content/post', 'administrator', { title: 'x', id: 99, type: 'page' });
+    const res = await call('POST', '/content/post', 'administrator', {
+      title: 'x',
+      id: 99,
+      type: 'page',
+    });
     expect(res.status).toBe(400);
     expect(res.json!.message).toContain('id');
     const item = await make('administrator');
-    expect((await call('PATCH', `/content/post/${item.id}`, 'administrator', { createdAt: '2020-01-01' })).status).toBe(400);
+    expect(
+      (
+        await call('PATCH', `/content/post/${item.id}`, 'administrator', {
+          createdAt: '2020-01-01',
+        })
+      ).status,
+    ).toBe(400);
   });
 
   it('sends trashing through DELETE', async () => {
@@ -303,20 +326,33 @@ describe('permissions', () => {
     expect((await call('GET', `/content/post/${published.id}`, 'subscriber')).status).toBe(200);
     expect((await call('GET', '/content/post', 'subscriber')).status).toBe(200);
     expect((await call('POST', '/content/post', 'subscriber', { title: 'x' })).status).toBe(403);
-    expect((await call('PATCH', `/content/post/${published.id}`, 'subscriber', { title: 'x' })).status).toBe(403);
+    expect(
+      (await call('PATCH', `/content/post/${published.id}`, 'subscriber', { title: 'x' })).status,
+    ).toBe(403);
     expect((await call('DELETE', `/content/post/${published.id}`, 'subscriber')).status).toBe(403);
   });
 
   it('lets contributors write drafts only', async () => {
-    expect((await call('POST', '/content/post', 'contributor', { status: 'published' })).status).toBe(403);
-    expect((await call('POST', '/content/post', 'contributor', { status: 'private' })).status).toBe(403);
+    expect(
+      (await call('POST', '/content/post', 'contributor', { status: 'published' })).status,
+    ).toBe(403);
+    expect((await call('POST', '/content/post', 'contributor', { status: 'private' })).status).toBe(
+      403,
+    );
     const draft = await make('contributor', { title: 'Mine' });
-    const edit = await call('PATCH', `/content/post/${draft.id}`, 'contributor', { title: 'Mine 2' });
+    const edit = await call('PATCH', `/content/post/${draft.id}`, 'contributor', {
+      title: 'Mine 2',
+    });
     expect(edit.status).toBe(200);
-    expect((await call('PATCH', `/content/post/${draft.id}`, 'contributor', { status: 'published' })).status).toBe(403);
+    expect(
+      (await call('PATCH', `/content/post/${draft.id}`, 'contributor', { status: 'published' }))
+        .status,
+    ).toBe(403);
     // once an editor publishes it, the contributor cannot touch it any more
     await call('PATCH', `/content/post/${draft.id}`, 'editor', { status: 'published' });
-    expect((await call('PATCH', `/content/post/${draft.id}`, 'contributor', { title: 'again' })).status).toBe(403);
+    expect(
+      (await call('PATCH', `/content/post/${draft.id}`, 'contributor', { title: 'again' })).status,
+    ).toBe(403);
     expect((await call('DELETE', `/content/post/${draft.id}`, 'contributor')).status).toBe(403);
   });
 
@@ -324,20 +360,32 @@ describe('permissions', () => {
     const mine = await make('author', { status: 'published' });
     const theirs = await make('author2', { title: 'Theirs', status: 'published' });
     const theirDraft = await make('author2', { title: 'Their draft' });
-    expect((await call('PATCH', `/content/post/${mine.id}`, 'author', { title: 'ok' })).status).toBe(200);
+    expect(
+      (await call('PATCH', `/content/post/${mine.id}`, 'author', { title: 'ok' })).status,
+    ).toBe(200);
     // visible but not editable: 403. Someone else's draft is invisible: 404.
-    expect((await call('PATCH', `/content/post/${theirs.id}`, 'author', { title: 'no' })).status).toBe(403);
+    expect(
+      (await call('PATCH', `/content/post/${theirs.id}`, 'author', { title: 'no' })).status,
+    ).toBe(403);
     expect((await call('DELETE', `/content/post/${theirs.id}`, 'author')).status).toBe(403);
     expect((await call('GET', `/content/post/${theirDraft.id}`, 'author')).status).toBe(404);
-    expect((await call('PATCH', `/content/post/${theirDraft.id}`, 'author', { title: 'no' })).status).toBe(404);
+    expect(
+      (await call('PATCH', `/content/post/${theirDraft.id}`, 'author', { title: 'no' })).status,
+    ).toBe(404);
     expect((await call('DELETE', `/content/post/${theirDraft.id}`, 'author')).status).toBe(404);
     // and cannot hand items to others or write as someone else
-    expect((await call('POST', '/content/post', 'author', { authorId: ids.author2 })).status).toBe(403);
-    expect((await call('PATCH', `/content/post/${mine.id}`, 'author', { authorId: ids.author2 })).status).toBe(403);
-    expect((await call('POST', '/content/post', 'author', { authorId: ids.author })).status).toBe(201);
+    expect((await call('POST', '/content/post', 'author', { authorId: ids.author2 })).status).toBe(
+      403,
+    );
+    expect(
+      (await call('PATCH', `/content/post/${mine.id}`, 'author', { authorId: ids.author2 })).status,
+    ).toBe(403);
+    expect((await call('POST', '/content/post', 'author', { authorId: ids.author })).status).toBe(
+      201,
+    );
   });
 
-  it('lets editors and administrators manage everyone\'s items', async () => {
+  it("lets editors and administrators manage everyone's items", async () => {
     const draft = await make('author', { title: 'Draft' });
     expect((await call('GET', `/content/post/${draft.id}`, 'editor')).status).toBe(200);
     const edited = await call('PATCH', `/content/post/${draft.id}`, 'editor', {
@@ -352,7 +400,9 @@ describe('permissions', () => {
     expect((await call('POST', '/content/page', 'author', { title: 'x' })).status).toBe(403);
     expect((await call('POST', '/content/page', 'contributor', { title: 'x' })).status).toBe(403);
     const page = await make('editor', { title: 'About', status: 'published' }, 'page');
-    expect((await call('PATCH', `/content/page/${page.id}`, 'author', { title: 'x' })).status).toBe(403);
+    expect((await call('PATCH', `/content/page/${page.id}`, 'author', { title: 'x' })).status).toBe(
+      403,
+    );
     expect((await call('GET', `/content/page/${page.id}`, 'author')).status).toBe(200);
   });
 
@@ -367,8 +417,12 @@ describe('permissions', () => {
     np.hooks.addFilter('user:role-capabilities', (list, { role }) =>
       role === 'subscriber' ? [...list, 'edit_posts'] : list,
     );
-    expect((await call('POST', '/content/post', 'subscriber', { title: 'now allowed' })).status).toBe(201);
-    np.hooks.addFilter('user:can', (value, { capability }) => (capability === 'read' ? false : value));
+    expect(
+      (await call('POST', '/content/post', 'subscriber', { title: 'now allowed' })).status,
+    ).toBe(201);
+    np.hooks.addFilter('user:can', (value, { capability }) =>
+      capability === 'read' ? false : value,
+    );
     expect((await call('GET', '/content/post', 'author')).status).toBe(403);
   });
 });
@@ -396,25 +450,21 @@ describe('listing', () => {
 
   it('sorts, searches and finds by slug', async () => {
     await seed();
-    expect(titles((await call('GET', '/content/post?sort=title&status=published', 'editor')).json)).toEqual([
-      'Apple',
-      'Banana',
-      'Cherry',
-    ]);
-    expect(titles((await call('GET', '/content/post?sort=-title&status=published', 'editor')).json)).toEqual([
-      'Cherry',
-      'Banana',
-      'Apple',
-    ]);
-    expect(titles((await call('GET', '/content/post?sort=id&status=published', 'editor')).json)).toEqual([
-      'Banana',
-      'Apple',
-      'Cherry',
-    ]);
+    expect(
+      titles((await call('GET', '/content/post?sort=title&status=published', 'editor')).json),
+    ).toEqual(['Apple', 'Banana', 'Cherry']);
+    expect(
+      titles((await call('GET', '/content/post?sort=-title&status=published', 'editor')).json),
+    ).toEqual(['Cherry', 'Banana', 'Apple']);
+    expect(
+      titles((await call('GET', '/content/post?sort=id&status=published', 'editor')).json),
+    ).toEqual(['Banana', 'Apple', 'Cherry']);
     const search = await call('GET', '/content/post?q=AN', 'editor');
     expect(titles(search.json)).toEqual(['Banana']);
     expect(search.json!.total).toBe(1);
-    expect(titles((await call('GET', '/content/post?slug=cherry', 'editor')).json)).toEqual(['Cherry']);
+    expect(titles((await call('GET', '/content/post?slug=cherry', 'editor')).json)).toEqual([
+      'Cherry',
+    ]);
     expect((await call('GET', '/content/post?q=%25', 'editor')).json!.total).toBe(0);
   });
 
@@ -438,9 +488,15 @@ describe('listing', () => {
     const all = await call('GET', '/content/post?status=draft,published', 'author');
     expect(all.json!.total).toBe(3); // only their own: two published and one draft
     expect(titles(all.json)).toEqual(['Mine draft', 'Apple', 'Banana']);
-    expect((await call('GET', `/content/post?status=draft&author=${ids.author2}`, 'author')).status).toBe(403);
-    expect((await call('GET', `/content/post?status=draft&author=${ids.author}`, 'author')).status).toBe(200);
-    expect((await call('GET', '/content/post?status=draft&author=me', 'author')).json!.total).toBe(1);
+    expect(
+      (await call('GET', `/content/post?status=draft&author=${ids.author2}`, 'author')).status,
+    ).toBe(403);
+    expect(
+      (await call('GET', `/content/post?status=draft&author=${ids.author}`, 'author')).status,
+    ).toBe(200);
+    expect((await call('GET', '/content/post?status=draft&author=me', 'author')).json!.total).toBe(
+      1,
+    );
     const theirs = await call('GET', `/content/post?author=${ids.author2}`, 'author');
     expect(titles(theirs.json)).toEqual(['Cherry']);
     expect((await call('GET', '/content/post?status=private', 'author')).json!.total).toBe(0);
@@ -451,8 +507,12 @@ describe('listing', () => {
     const item = await make('author', { title: 'Gone' });
     await call('DELETE', `/content/post/${item.id}`, 'author');
     expect((await call('GET', '/content/post', 'editor')).json!.total).toBe(5);
-    expect(titles((await call('GET', '/content/post?status=trash', 'editor')).json)).toEqual(['Gone']);
-    expect(titles((await call('GET', '/content/post?status=trash', 'author')).json)).toEqual(['Gone']);
+    expect(titles((await call('GET', '/content/post?status=trash', 'editor')).json)).toEqual([
+      'Gone',
+    ]);
+    expect(titles((await call('GET', '/content/post?status=trash', 'author')).json)).toEqual([
+      'Gone',
+    ]);
     expect((await call('GET', '/content/post?status=trash', 'author2')).json!.total).toBe(0);
   });
 
@@ -532,7 +592,11 @@ describe('OpenAPI document', () => {
       '/api/v1/content/{type}/{id}',
     ]);
     expect(Object.keys(doc.paths['/api/v1/content/{type}'])).toEqual(['get', 'post']);
-    expect(Object.keys(doc.paths['/api/v1/content/{type}/{id}'])).toEqual(['get', 'patch', 'delete']);
+    expect(Object.keys(doc.paths['/api/v1/content/{type}/{id}'])).toEqual([
+      'get',
+      'patch',
+      'delete',
+    ]);
     expect(doc.paths['/api/v1/content/{type}'].get.parameters[0].schema.enum).toEqual([
       'post',
       'page',
@@ -553,6 +617,16 @@ describe('OpenAPI document', () => {
   it('documents every query parameter the list route reads', () => {
     const doc = createOpenApiDocument(types) as Json;
     const names = doc.paths['/api/v1/content/{type}'].get.parameters.map((p: Json) => p.name);
-    expect(names).toEqual(['type', 'status', 'author', 'slug', 'q', 'sort', 'limit', 'offset', 'fields']);
+    expect(names).toEqual([
+      'type',
+      'status',
+      'author',
+      'slug',
+      'q',
+      'sort',
+      'limit',
+      'offset',
+      'fields',
+    ]);
   });
 });

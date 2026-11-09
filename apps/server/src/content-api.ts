@@ -141,7 +141,12 @@ function parseId(raw: string | undefined): number | null {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
-function parseCount(c: Context, name: string, min: number, max: number): Parsed<number | undefined> {
+function parseCount(
+  c: Context,
+  name: string,
+  min: number,
+  max: number,
+): Parsed<number | undefined> {
   const raw = c.req.query(name);
   if (raw === undefined) return { ok: true, value: undefined };
   const value = /^[0-9]{1,9}$/.test(raw) ? Number(raw) : Number.NaN;
@@ -162,7 +167,10 @@ function parseFields(c: Context): Parsed<string[] | undefined> {
   const names = [...new Set(raw.split(',').map((s) => s.trim()))];
   const unknown = names.filter((name) => !CONTENT_FIELD_NAMES.includes(name));
   if (unknown.length > 0 || names.length === 0) {
-    return badRequest(c, `fields must be a comma-separated list of: ${CONTENT_FIELD_NAMES.join(', ')}`);
+    return badRequest(
+      c,
+      `fields must be a comma-separated list of: ${CONTENT_FIELD_NAMES.join(', ')}`,
+    );
   }
   return { ok: true, value: names };
 }
@@ -195,7 +203,8 @@ function parseWrite(c: Context, body: Record<string, unknown>): Parsed<UpdateCon
   );
   if (unknown.length > 0) return badRequest(c, `unknown field: ${unknown.join(', ')}`);
   const out: UpdateContentInput = {};
-  const isId = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
+  const isId = (v: unknown): v is number =>
+    typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
   if (body.title !== undefined) {
     if (typeof body.title !== 'string') return badRequest(c, 'title must be a string');
     out.title = body.title;
@@ -226,7 +235,8 @@ function parseWrite(c: Context, body: Record<string, unknown>): Parsed<UpdateCon
   for (const key of ['authorId', 'parentId'] as const) {
     const value = body[key];
     if (value === undefined) continue;
-    if (value !== null && !isId(value)) return badRequest(c, `${key} must be a positive integer or null`);
+    if (value !== null && !isId(value))
+      return badRequest(c, `${key} must be a positive integer or null`);
     out[key] = value as number | null;
   }
   if (body.publishedAt !== undefined) {
@@ -234,7 +244,8 @@ function parseWrite(c: Context, body: Record<string, unknown>): Parsed<UpdateCon
     else {
       const date =
         typeof body.publishedAt === 'string' ? new Date(body.publishedAt) : new Date(Number.NaN);
-      if (Number.isNaN(date.getTime())) return badRequest(c, 'publishedAt must be an ISO 8601 date');
+      if (Number.isNaN(date.getTime()))
+        return badRequest(c, 'publishedAt must be an ISO 8601 date');
       out.publishedAt = date;
     }
   }
@@ -348,7 +359,10 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     if (rawStatus !== undefined) {
       statuses = [...new Set(rawStatus.split(',').map((s) => s.trim()))] as ContentStatusName[];
       if (statuses.some((s) => !CONTENT_STATUSES.includes(s))) {
-        return badRequest(c, `status must be a comma-separated list of: ${CONTENT_STATUSES.join(', ')}`).response;
+        return badRequest(
+          c,
+          `status must be a comma-separated list of: ${CONTENT_STATUSES.join(', ')}`,
+        ).response;
       }
     }
 
@@ -376,7 +390,10 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     if (rawSort !== undefined) {
       const name = rawSort.startsWith('-') ? rawSort.slice(1) : rawSort;
       if (!(CONTENT_SORT_FIELDS as readonly string[]).includes(name)) {
-        return badRequest(c, `sort must be one of: ${CONTENT_SORT_FIELDS.join(', ')} (prefix with "-" for descending)`).response;
+        return badRequest(
+          c,
+          `sort must be one of: ${CONTENT_SORT_FIELDS.join(', ')} (prefix with "-" for descending)`,
+        ).response;
       }
       orderBy = name as ContentSortField;
       direction = rawSort.startsWith('-') ? 'desc' : 'asc';
@@ -576,7 +593,7 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
       description:
         'Authenticate with `Authorization: Bearer <api token>`. Browser sessions also work and ' +
         'need an `X-CSRF-Token` header on writes. Non-published items are visible only to their ' +
-        'author and to users who may edit others\' items.',
+        "author and to users who may edit others' items.",
     },
     paths: {
       '/api/v1/content-types': {
@@ -613,7 +630,7 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
               in: 'query',
               description:
                 'Comma-separated statuses. Defaults to every status except trash for users who ' +
-                'may edit others\' items, and to `published` for everyone else.',
+                "may edit others' items, and to `published` for everyone else.",
               schema: { type: 'string', example: 'draft,published' },
             },
             {
@@ -638,7 +655,12 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
             {
               name: 'limit',
               in: 'query',
-              schema: { type: 'integer', minimum: 1, maximum: MAX_LIST_LIMIT, default: DEFAULT_LIST_LIMIT },
+              schema: {
+                type: 'integer',
+                minimum: 1,
+                maximum: MAX_LIST_LIMIT,
+                default: DEFAULT_LIST_LIMIT,
+              },
             },
             { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0, default: 0 } },
             fieldsParam,
@@ -671,7 +693,7 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
           operationId: 'createContent',
           summary: 'Create an item',
           description:
-            'Needs the type\'s edit capability, plus its publish capability for any status other than `draft`.',
+            "Needs the type's edit capability, plus its publish capability for any status other than `draft`.",
           security,
           parameters: [typeParam],
           requestBody: jsonBody('ContentInput'),
@@ -795,7 +817,8 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
             excerpt: { type: ['string', 'null'] },
             authorId: {
               type: ['integer', 'null'],
-              description: 'Defaults to the caller. Assigning someone else needs the edit-others capability.',
+              description:
+                'Defaults to the caller. Assigning someone else needs the edit-others capability.',
             },
             parentId: { type: ['integer', 'null'] },
             publishedAt: { type: ['string', 'null'], format: 'date-time' },

@@ -25,7 +25,9 @@ function memoryStore(): ContentStore & {
       .filter((r) => !q.statuses || q.statuses.includes(r.status))
       .filter((r) => q.authorId === undefined || r.authorId === q.authorId)
       .filter((r) => q.slug === undefined || r.slug === q.slug)
-      .filter((r) => q.search === undefined || r.title.toLowerCase().includes(q.search.toLowerCase()));
+      .filter(
+        (r) => q.search === undefined || r.title.toLowerCase().includes(q.search.toLowerCase()),
+      );
   const store = {
     rows,
     failInsertOnce: false,
