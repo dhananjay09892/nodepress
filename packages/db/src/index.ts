@@ -136,3 +136,5 @@ function createPostgresDatabase(url: string, options: DatabaseOptions): Postgres
     },
   };
 }
+
+export { createOptionsStore, type OptionRecord, type OptionsTableStore } from './options-store.js';
