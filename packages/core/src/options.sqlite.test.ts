@@ -53,6 +53,6 @@ describe('OptionsService on in-memory SQLite', () => {
     expect(events).toEqual(['a=1', 'a=2']);
 
     expect(await options.delete('a')).toBe(true);
-    expect((await open()).has('a')).resolves.toBe(false);
+    expect(await (await open()).has('a')).toBe(false);
   });
 });
