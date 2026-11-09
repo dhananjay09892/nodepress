@@ -229,13 +229,13 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 1: Content core & API (weeks 3–6)
 
-- [ ] Content CRUD service, revisions, drafts, scheduling
+- [x] Content CRUD service, revisions, drafts, scheduling
 - [x] Taxonomies (categories, tags, custom, hierarchical terms)
 - [x] Permalinks, options/settings
 - [x] Users, sessions, roles/capabilities
 - [ ] Media upload + image variants
 - [ ] REST API v1 + API tokens
-- [ ] Job queue + scheduled publishing
+- [x] Job queue + scheduled publishing
 
 **Exit:** create/publish content through the API, with tests >80% on core.
 

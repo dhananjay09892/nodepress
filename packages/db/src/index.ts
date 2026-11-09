@@ -180,3 +180,11 @@ export {
   type TermRowPatch,
   type TaxonomyTableStore,
 } from './taxonomy-store.js';
+export {
+  createJobsStore,
+  type JobRow,
+  type JobRowStatus,
+  type JobRowQuery,
+  type NewJobRow,
+  type JobsTableStore,
+} from './jobs-store.js';
