@@ -93,7 +93,11 @@ function build(
       const { role, ...rest } = patch;
       const [row] = await db
         .update(users)
-        .set({ ...rest, ...(role === undefined ? {} : { role: role as Role }), updatedAt: new Date() })
+        .set({
+          ...rest,
+          ...(role === undefined ? {} : { role: role as Role }),
+          updatedAt: new Date(),
+        })
         .where(eq(users.id, id))
         .returning();
       return row;

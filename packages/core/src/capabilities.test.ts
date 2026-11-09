@@ -17,7 +17,8 @@ describe('role defaults', () => {
   it('makes every role a superset of the one below it', () => {
     for (let i = 0; i < ROLES.length - 1; i++) {
       const higher = new Set(DEFAULT_ROLE_CAPABILITIES[ROLES[i]!]);
-      for (const cap of DEFAULT_ROLE_CAPABILITIES[ROLES[i + 1]!]) expect(higher.has(cap)).toBe(true);
+      for (const cap of DEFAULT_ROLE_CAPABILITIES[ROLES[i + 1]!])
+        expect(higher.has(cap)).toBe(true);
     }
   });
 

@@ -80,7 +80,11 @@ describe('UsersService.create', () => {
   it('stores a hash, normalises the email and never returns the hash', async () => {
     const { users, store } = setup();
     const user = await users.create({ email: '  Ann@Example.COM ', password: 'secret-pass' });
-    expect(user).toMatchObject({ email: 'ann@example.com', role: 'subscriber', displayName: 'ann' });
+    expect(user).toMatchObject({
+      email: 'ann@example.com',
+      role: 'subscriber',
+      displayName: 'ann',
+    });
     expect('passwordHash' in user).toBe(false);
     expect(store.rows.get(user.id)?.passwordHash).not.toContain('secret-pass');
   });
@@ -88,9 +92,9 @@ describe('UsersService.create', () => {
   it('rejects duplicate emails in any case', async () => {
     const { users } = setup();
     await users.create({ email: 'a@example.com', password: 'pw-123456' });
-    await expect(users.create({ email: 'A@EXAMPLE.com', password: 'pw-123456' })).rejects.toBeInstanceOf(
-      DuplicateEmailError,
-    );
+    await expect(
+      users.create({ email: 'A@EXAMPLE.com', password: 'pw-123456' }),
+    ).rejects.toBeInstanceOf(DuplicateEmailError);
   });
 
   it('reports a duplicate when the unique index wins a race', async () => {
@@ -100,14 +104,16 @@ describe('UsersService.create', () => {
     store.findByEmail = async (email) => (calls++ === 0 ? undefined : findByEmail(email));
     await users.create({ email: 'a@example.com', password: 'pw-123456' });
     calls = 0;
-    await expect(users.create({ email: 'a@example.com', password: 'pw-123456' })).rejects.toBeInstanceOf(
-      DuplicateEmailError,
-    );
+    await expect(
+      users.create({ email: 'a@example.com', password: 'pw-123456' }),
+    ).rejects.toBeInstanceOf(DuplicateEmailError);
   });
 
   it('validates email, role, password and display name', async () => {
     const { users } = setup();
-    await expect(users.create({ email: 'nope', password: 'pw' })).rejects.toBeInstanceOf(UserValidationError);
+    await expect(users.create({ email: 'nope', password: 'pw' })).rejects.toBeInstanceOf(
+      UserValidationError,
+    );
     await expect(
       users.create({ email: 'a@example.com', password: 'pw', role: 'root' as never }),
     ).rejects.toBeInstanceOf(UserValidationError);
@@ -171,11 +177,21 @@ describe('UsersService.update', () => {
 
   it('protects the last administrator from demotion and deletion', async () => {
     const { users } = setup();
-    const admin = await users.create({ email: 'a@example.com', password: 'pw-123456', role: 'administrator' });
-    await expect(users.update(admin.id, { role: 'editor' })).rejects.toBeInstanceOf(UserValidationError);
+    const admin = await users.create({
+      email: 'a@example.com',
+      password: 'pw-123456',
+      role: 'administrator',
+    });
+    await expect(users.update(admin.id, { role: 'editor' })).rejects.toBeInstanceOf(
+      UserValidationError,
+    );
     await expect(users.delete(admin.id)).rejects.toBeInstanceOf(UserValidationError);
 
-    const second = await users.create({ email: 'b@example.com', password: 'pw-123456', role: 'administrator' });
+    const second = await users.create({
+      email: 'b@example.com',
+      password: 'pw-123456',
+      role: 'administrator',
+    });
     await users.update(admin.id, { role: 'editor' });
     await expect(users.delete(second.id)).rejects.toBeInstanceOf(UserValidationError);
   });

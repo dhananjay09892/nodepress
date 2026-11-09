@@ -24,7 +24,9 @@ describe.skipIf(!argon2Available)('Argon2 hasher', () => {
     const a = await hasher.hash('correct horse');
     const b = await hasher.hash('correct horse');
     expect(a).not.toBe(b);
-    expect(a.startsWith(`$argon2id$v=19$m=${ARGON2_PARAMS.memoryCost},t=${ARGON2_PARAMS.timeCost},p=1$`)).toBe(true);
+    expect(
+      a.startsWith(`$argon2id$v=19$m=${ARGON2_PARAMS.memoryCost},t=${ARGON2_PARAMS.timeCost},p=1$`),
+    ).toBe(true);
     expect(a).not.toContain('correct horse');
     expect(hasher.needsRehash?.(a)).toBe(false);
   });
