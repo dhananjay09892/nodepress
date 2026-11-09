@@ -69,10 +69,9 @@ async function readLimited(request: Request, limit: number): Promise<Buffer | nu
     const { done, value } = await reader.read();
     if (done) break;
     total += value.byteLength;
-    if (total > limit) {
-      await reader.cancel().catch(() => undefined);
-      return null;
-    }
+    // Stop reading and drop what we have. The stream is deliberately not cancelled: cancelling
+    // a body that undici is still feeding raises ERR_INVALID_STATE on Node 24.
+    if (total > limit) return null;
     chunks.push(value);
   }
   return Buffer.concat(chunks);
