@@ -188,3 +188,10 @@ export {
   type NewJobRow,
   type JobsTableStore,
 } from './jobs-store.js';
+export {
+  createMediaStore,
+  type MediaRow,
+  type NewMediaRow,
+  type MediaRowQuery,
+  type MediaTableStore,
+} from './media-store.js';
