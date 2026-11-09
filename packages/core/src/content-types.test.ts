@@ -60,15 +60,33 @@ describe('registration', () => {
 
   it.each([
     ['bad name', { name: 'Not Valid' }],
-    ['duplicate field', { name: 'x', fields: [{ name: 'a', type: 'boolean' }, { name: 'a', type: 'boolean' }] }],
+    [
+      'duplicate field',
+      {
+        name: 'x',
+        fields: [
+          { name: 'a', type: 'boolean' },
+          { name: 'a', type: 'boolean' },
+        ],
+      },
+    ],
     ['bad field name', { name: 'x', fields: [{ name: 'Bad-Name', type: 'boolean' }] }],
     ['unknown field type', { name: 'x', fields: [{ name: 'a', type: 'blob' }] }],
     ['select without options', { name: 'x', fields: [{ name: 'a', type: 'select', options: [] }] }],
-    ['duplicate options', { name: 'x', fields: [{ name: 'a', type: 'select', options: ['a', 'a'] }] }],
+    [
+      'duplicate options',
+      { name: 'x', fields: [{ name: 'a', type: 'select', options: ['a', 'a'] }] },
+    ],
     ['min > max', { name: 'x', fields: [{ name: 'a', type: 'number', min: 5, max: 1 }] }],
     ['bad pattern', { name: 'x', fields: [{ name: 'a', type: 'text', pattern: '(' }] }],
-    ['default outside options', { name: 'x', fields: [{ name: 'a', type: 'select', options: ['a'], default: 'z' }] }],
-    ['default breaks max', { name: 'x', fields: [{ name: 'a', type: 'number', max: 1, default: 5 }] }],
+    [
+      'default outside options',
+      { name: 'x', fields: [{ name: 'a', type: 'select', options: ['a'], default: 'z' }] },
+    ],
+    [
+      'default breaks max',
+      { name: 'x', fields: [{ name: 'a', type: 'number', max: 1, default: 5 }] },
+    ],
     ['unknown key', { name: 'x', fields: [{ name: 'a', type: 'boolean', bogus: 1 }] }],
   ])('rejects %s', (_label, def) => {
     const registry = createContentTypeRegistry();

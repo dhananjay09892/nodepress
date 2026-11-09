@@ -108,8 +108,7 @@ export interface FieldIssue {
 }
 
 export type ValidationResult =
-  | { ok: true; value: Record<string, unknown> }
-  | { ok: false; issues: FieldIssue[] };
+  { ok: true; value: Record<string, unknown> } | { ok: false; issues: FieldIssue[] };
 
 export class ContentTypeError extends Error {
   constructor(message: string) {
@@ -171,9 +170,7 @@ const fieldDefinitionSchema = z.discriminatedUnion('type', [
       default: z.number().finite().optional(),
     })
     .strict(),
-  z
-    .object({ ...fieldBase, type: z.literal('boolean'), default: z.boolean().optional() })
-    .strict(),
+  z.object({ ...fieldBase, type: z.literal('boolean'), default: z.boolean().optional() }).strict(),
   z.object({ ...fieldBase, type: z.literal('date') }).strict(),
   z
     .object({
@@ -215,7 +212,11 @@ function formatIssues(error: z.ZodError): string {
 function checkField(field: FieldDefinition): string | undefined {
   switch (field.type) {
     case 'text':
-      if (field.minLength !== undefined && field.maxLength !== undefined && field.minLength > field.maxLength) {
+      if (
+        field.minLength !== undefined &&
+        field.maxLength !== undefined &&
+        field.minLength > field.maxLength
+      ) {
         return 'minLength is greater than maxLength';
       }
       if (field.pattern !== undefined) {
@@ -257,7 +258,12 @@ function checkDefault(field: FieldDefinition): string | undefined {
 
 // ── Value validation ───────────────────────────────────────────────────
 
-type BlockInput = { type: string; attrs?: Record<string, unknown>; children?: BlockInput[]; text?: string };
+type BlockInput = {
+  type: string;
+  attrs?: Record<string, unknown>;
+  children?: BlockInput[];
+  text?: string;
+};
 const MAX_BLOCK_DEPTH = 20;
 
 function blockSchema(depth: number): z.ZodType<BlockInput> {
@@ -266,27 +272,28 @@ function blockSchema(depth: number): z.ZodType<BlockInput> {
       .object({
         type: z.string().min(1).max(100),
         attrs: z.record(z.unknown()).optional(),
-        children: depth < MAX_BLOCK_DEPTH ? z.array(blockSchema(depth + 1)).optional() : z.never().optional(),
+        children:
+          depth < MAX_BLOCK_DEPTH
+            ? z.array(blockSchema(depth + 1)).optional()
+            : z.never().optional(),
         text: z.string().max(MAX_TEXT_LENGTH).optional(),
       })
       .strict(),
   ) as z.ZodType<BlockInput>;
 }
 
-const dateValue = z
-  .union([z.string().max(64), z.date()])
-  .transform((v, ctx) => {
-    const date = typeof v === 'string' ? new Date(v) : v;
-    if (typeof v === 'string' && !/^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/.test(v)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Expected an ISO 8601 date' });
-      return z.NEVER;
-    }
-    if (Number.isNaN(date.getTime())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Expected a valid date' });
-      return z.NEVER;
-    }
-    return date.toISOString();
-  });
+const dateValue = z.union([z.string().max(64), z.date()]).transform((v, ctx) => {
+  const date = typeof v === 'string' ? new Date(v) : v;
+  if (typeof v === 'string' && !/^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/.test(v)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Expected an ISO 8601 date' });
+    return z.NEVER;
+  }
+  if (Number.isNaN(date.getTime())) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Expected a valid date' });
+    return z.NEVER;
+  }
+  return date.toISOString();
+});
 
 const positiveId = z.number().int().positive();
 
@@ -376,7 +383,9 @@ function normalize(def: ContentTypeDefinition, builtin: boolean): RegisteredCont
     label,
     labelPlural: def.labelPlural ?? `${label}s`,
     hierarchical: def.hierarchical ?? false,
-    fields: Object.freeze((def.fields ?? []).map((f) => Object.freeze({ ...f }) as FieldDefinition)),
+    fields: Object.freeze(
+      (def.fields ?? []).map((f) => Object.freeze({ ...f }) as FieldDefinition),
+    ),
     builtin,
   };
 }
@@ -384,17 +393,22 @@ function normalize(def: ContentTypeDefinition, builtin: boolean): RegisteredCont
 /** Parse and cross-check a definition; throws ContentTypeError describing the first problem. */
 export function parseContentTypeDefinition(input: unknown): ContentTypeDefinition {
   const parsed = definitionSchema.safeParse(input);
-  if (!parsed.success) throw new ContentTypeError(`Invalid content type: ${formatIssues(parsed.error)}`);
+  if (!parsed.success)
+    throw new ContentTypeError(`Invalid content type: ${formatIssues(parsed.error)}`);
   const def = parsed.data as ContentTypeDefinition;
   const seen = new Set<string>();
   for (const field of def.fields ?? []) {
     if (seen.has(field.name)) {
-      throw new ContentTypeError(`Invalid content type "${def.name}": duplicate field "${field.name}"`);
+      throw new ContentTypeError(
+        `Invalid content type "${def.name}": duplicate field "${field.name}"`,
+      );
     }
     seen.add(field.name);
     const problem = checkField(field);
     if (problem) {
-      throw new ContentTypeError(`Invalid content type "${def.name}": field "${field.name}": ${problem}`);
+      throw new ContentTypeError(
+        `Invalid content type "${def.name}": field "${field.name}": ${problem}`,
+      );
     }
   }
   return def;
@@ -507,13 +521,15 @@ export class ContentTypeRegistry {
       ok: false,
       issues: result.error.issues.map((i) => ({
         path: i.path.join('.'),
-        message:
-          i.code === 'unrecognized_keys' ? `Unknown field: ${i.keys.join(', ')}` : i.message,
+        message: i.code === 'unrecognized_keys' ? `Unknown field: ${i.keys.join(', ')}` : i.message,
       })),
     };
   }
 
-  #add(definition: unknown, direct: Map<string, RegisteredContentType> | undefined): RegisteredContentType {
+  #add(
+    definition: unknown,
+    direct: Map<string, RegisteredContentType> | undefined,
+  ): RegisteredContentType {
     const def = parseContentTypeDefinition(definition);
     const existing = this.#types.get(def.name);
     if (existing) {

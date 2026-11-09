@@ -58,6 +58,9 @@ importers:
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.2.2
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@nodepress/db':
         specifier: workspace:*
@@ -2884,6 +2887,12 @@ packages:
       }
     engines: { node: '>=10' }
 
+  zod@3.25.76:
+    resolution:
+      {
+        integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==,
+      }
+
 snapshots:
   '@drizzle-team/brocli@0.10.2': {}
 
@@ -4297,3 +4306,5 @@ snapshots:
   ws@8.22.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@3.25.76: {}
