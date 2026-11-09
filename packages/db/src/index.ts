@@ -157,3 +157,13 @@ export {
   type NewApiTokenRow,
   type ApiTokensTableStore,
 } from './api-tokens-store.js';
+export {
+  createContentStore,
+  type ContentRow,
+  type NewContentRow,
+  type ContentRowPatch,
+  type ContentRowQuery,
+  type ContentBlockRow,
+  type RevisionRow,
+  type ContentTableStore,
+} from './content-store.js';
