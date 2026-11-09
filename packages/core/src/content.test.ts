@@ -11,7 +11,10 @@ import {
 } from './content.js';
 import { HookRegistry } from './hooks.js';
 
-function memoryStore(): ContentStore & { rows: Map<number, ContentRecord>; failInsertOnce: boolean } {
+function memoryStore(): ContentStore & {
+  rows: Map<number, ContentRecord>;
+  failInsertOnce: boolean;
+} {
   const rows = new Map<number, ContentRecord>();
   const revisions: RevisionRecord[] = [];
   let nextId = 1;
@@ -32,7 +35,12 @@ function memoryStore(): ContentStore & { rows: Map<number, ContentRecord>; failI
         rows.set(other.id, other);
         throw new Error('UNIQUE constraint failed');
       }
-      const rec: ContentRecord = { ...row, id: nextId++, createdAt: new Date(), updatedAt: new Date() };
+      const rec: ContentRecord = {
+        ...row,
+        id: nextId++,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
       rows.set(rec.id, rec);
       return rec;
     },
@@ -241,9 +249,9 @@ describe('statuses', () => {
 
   it('rejects unknown statuses', async () => {
     const { content } = setup();
-    await expect(
-      content.create({ type: 'post', status: 'archived' as never }),
-    ).rejects.toThrow(/status must be one of/);
+    await expect(content.create({ type: 'post', status: 'archived' as never })).rejects.toThrow(
+      /status must be one of/,
+    );
   });
 
   it('trashes and restores as a draft', async () => {
@@ -269,7 +277,9 @@ describe('statuses', () => {
     await content.trash(a.id);
     expect((await content.list()).map((p) => p.title)).toEqual(['c', 'b']);
     expect((await content.list({ status: 'trash' })).map((p) => p.id)).toEqual([a.id]);
-    expect((await content.list({ type: 'post', status: ['draft', 'published'] })).map((p) => p.id)).toEqual([b.id]);
+    expect(
+      (await content.list({ type: 'post', status: ['draft', 'published'] })).map((p) => p.id),
+    ).toEqual([b.id]);
     expect((await content.list({ authorId: 2 })).map((p) => p.id)).toEqual([b.id]);
     expect(await content.list({ limit: 1, offset: 1 })).toHaveLength(1);
   });
@@ -305,9 +315,9 @@ describe('validation', () => {
       content.create({ type: 'post', body: [{ text: 'no type' } as never] }),
     ).rejects.toThrow(/body/);
     await expect(content.create({ type: 'post', authorId: -1 })).rejects.toThrow(/authorId/);
-    await expect(
-      content.create({ type: 'post', publishedAt: new Date('nope') }),
-    ).rejects.toThrow(/publishedAt/);
+    await expect(content.create({ type: 'post', publishedAt: new Date('nope') })).rejects.toThrow(
+      /publishedAt/,
+    );
   });
 
   it('stores nested blocks and trims the title', async () => {
@@ -422,7 +432,11 @@ describe('delete', () => {
 describe('hooks', () => {
   it('lets post:saving change fields, with context for creates and updates', async () => {
     const { content, hooks } = setup();
-    const seen: Array<{ isNew: boolean; id?: number | undefined; previousTitle?: string | undefined }> = [];
+    const seen: Array<{
+      isNew: boolean;
+      id?: number | undefined;
+      previousTitle?: string | undefined;
+    }> = [];
     hooks.addFilter('post:saving', (fields, ctx) => {
       seen.push({ isNew: ctx.isNew, id: ctx.id, previousTitle: ctx.previous?.title });
       return { ...fields, title: fields.title.toUpperCase() };

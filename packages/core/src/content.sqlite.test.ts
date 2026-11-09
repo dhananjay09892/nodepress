@@ -42,7 +42,11 @@ describe('ContentService on in-memory SQLite', () => {
     const second = await content.create({ type: 'post', title: 'Hello World' }, { userId });
     expect(second.slug).toBe('hello-world-2');
 
-    const edited = await content.update(post.id, { title: 'Hello again', excerpt: 'x' }, { userId });
+    const edited = await content.update(
+      post.id,
+      { title: 'Hello again', excerpt: 'x' },
+      { userId },
+    );
     expect(edited).toMatchObject({ title: 'Hello again', slug: 'hello-world', excerpt: 'x' });
     expect(edited.body).toEqual(body);
 

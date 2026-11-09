@@ -467,7 +467,10 @@ export class ContentService {
     if (!Array.isArray(f.body) || !f.body.every((b) => isBlock(b))) {
       throw new ContentValidationError('body must be an array of blocks ({ type, ... })');
     }
-    if (f.excerpt !== null && (typeof f.excerpt !== 'string' || f.excerpt.length > MAX_EXCERPT_LENGTH)) {
+    if (
+      f.excerpt !== null &&
+      (typeof f.excerpt !== 'string' || f.excerpt.length > MAX_EXCERPT_LENGTH)
+    ) {
       throw new ContentValidationError(
         `excerpt must be null or a string of at most ${MAX_EXCERPT_LENGTH}`,
       );

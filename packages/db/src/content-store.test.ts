@@ -1,6 +1,11 @@
 import { sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createContentStore, createDatabase, createUsersStore, type DatabaseHandle } from './index.js';
+import {
+  createContentStore,
+  createDatabase,
+  createUsersStore,
+  type DatabaseHandle,
+} from './index.js';
 
 const POSTGRES_URL = process.env.TEST_POSTGRES_URL;
 
@@ -80,9 +85,9 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   expect(
     (await store.list({ statuses: ['published', 'draft'], limit: 10, offset: 0 })).map((r) => r.id),
   ).toEqual([page.id, a.id]);
-  expect((await store.list({ authorId: author.id, limit: 10, offset: 0 })).map((r) => r.id)).toEqual([
-    a.id,
-  ]);
+  expect(
+    (await store.list({ authorId: author.id, limit: 10, offset: 0 })).map((r) => r.id),
+  ).toEqual([a.id]);
   expect((await store.list({ limit: 1, offset: 1 })).map((r) => r.id)).toEqual([page.id]);
 
   // Revisions.
@@ -92,7 +97,11 @@ async function exercise(h: DatabaseHandle): Promise<void> {
     snapshot: { title: 'Hello', publishedAt: published.toISOString(), body },
     authorId: author.id,
   });
-  const r2 = await store.insertRevision({ contentId: a.id, snapshot: { title: 'v2' }, authorId: null });
+  const r2 = await store.insertRevision({
+    contentId: a.id,
+    snapshot: { title: 'v2' },
+    authorId: null,
+  });
   expect(r1.snapshot).toEqual({ title: 'Hello', publishedAt: published.toISOString(), body });
   expect((await store.listRevisions(a.id)).map((r) => r.id)).toEqual([r2.id, r1.id]);
   expect(await store.findRevision(r1.id)).toMatchObject({ contentId: a.id, authorId: author.id });
