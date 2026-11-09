@@ -124,8 +124,8 @@ export function createAuth(options: AuthOptions): Auth {
 
   /** The secret from `Authorization: Bearer <token>`, `null` when no Bearer header is present. */
   const bearerToken = (c: Context<AuthEnv>): string | null => {
-    const match = /^Bearer[ \t]+(\S*)[ \t]*$/i.exec(c.req.header('authorization') ?? '');
-    return match ? match[1]! : null;
+    const match = /^Bearer(?:[ \t]+(\S*))?[ \t]*$/i.exec(c.req.header('authorization') ?? '');
+    return match ? (match[1] ?? '') : null;
   };
 
   const authenticate: MiddlewareHandler<AuthEnv> = async (c, next) => {
@@ -294,7 +294,7 @@ export function createAuth(options: AuthOptions): Auth {
       return c.json({ user: publicUser(result.user), tokenId: result.token.id });
     }
     const auth = c.get('auth');
-    if (!auth) return c.json({ error: 'unauthenticated' }, 401);
+    if (!auth) return bearerChallenge(c);
     return c.json({ user: publicUser(auth.user), csrfToken: auth.csrfToken });
   });
 
