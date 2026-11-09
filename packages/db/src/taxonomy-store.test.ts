@@ -80,9 +80,9 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   expect((await store.listTerms('category')).map((t) => t.name)).toEqual(['Local', 'News']);
   expect(await store.listTerms('nothing')).toEqual([]);
 
-  expect(await store.updateTerm(local.id, { name: 'Neighbourhood', description: 'd' })).toMatchObject(
-    { name: 'Neighbourhood', slug: 'local', description: 'd', parentId: news.id },
-  );
+  expect(
+    await store.updateTerm(local.id, { name: 'Neighbourhood', description: 'd' }),
+  ).toMatchObject({ name: 'Neighbourhood', slug: 'local', description: 'd', parentId: news.id });
   expect(await store.updateTerm(local.id, {})).toMatchObject({ name: 'Neighbourhood' });
   expect(await store.updateTerm(9999, { name: 'x' })).toBeUndefined();
   expect(await store.updateTerm(9999, {})).toBeUndefined();

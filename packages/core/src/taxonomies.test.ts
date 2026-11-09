@@ -331,9 +331,9 @@ describe('assigning terms to content', () => {
     const b = await service.createTerm({ taxonomy: 'tag', name: 'B' });
     const c = await service.createTerm({ taxonomy: 'tag', name: 'C' });
 
-    expect((await service.setContentTerms(1, 'tag', [a.id, b.id, a.id])).map((t) => t.name)).toEqual(
-      ['A', 'B'],
-    );
+    expect(
+      (await service.setContentTerms(1, 'tag', [a.id, b.id, a.id])).map((t) => t.name),
+    ).toEqual(['A', 'B']);
     expect((await service.setContentTerms(1, 'tag', [b.id, c.id])).map((t) => t.name)).toEqual([
       'B',
       'C',
@@ -343,8 +343,7 @@ describe('assigning terms to content', () => {
       'B',
       'C',
     ]);
-    expect((await service.removeTerms(1, 'tag', [a.id, c.id])).map((t) => t.name))
-      .toEqual(['B']);
+    expect((await service.removeTerms(1, 'tag', [a.id, c.id])).map((t) => t.name)).toEqual(['B']);
     expect(changes).toEqual([
       { contentId: 1, taxonomy: 'tag', termIds: [a.id, b.id], added: [a.id, b.id], removed: [] },
       { contentId: 1, taxonomy: 'tag', termIds: [b.id, c.id], added: [c.id], removed: [a.id] },
@@ -377,7 +376,9 @@ describe('assigning terms to content', () => {
     const tag = await service.createTerm({ taxonomy: 'tag', name: 'T' });
     const cat = await service.createTerm({ taxonomy: 'category', name: 'C' });
     await expect(service.assignTerms(99, 'tag', [tag.id])).rejects.toThrow(/does not exist/);
-    await expect(service.assignTerms(1, 'tag', [cat.id])).rejects.toThrow(/does not exist in "tag"/);
+    await expect(service.assignTerms(1, 'tag', [cat.id])).rejects.toThrow(
+      /does not exist in "tag"/,
+    );
     await expect(service.assignTerms(1, 'tag', [999])).rejects.toThrow(TermValidationError);
     await expect(service.assignTerms(1, 'tag', [1.5])).rejects.toThrow(TermValidationError);
     await expect(service.assignTerms(1, 'nope', [])).rejects.toThrow(UnknownTaxonomyError);

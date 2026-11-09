@@ -65,9 +65,7 @@ describe('TaxonomyService on in-memory SQLite', () => {
     expect(await taxonomies.getContentTerms(post.id)).toEqual([]);
     // The terms themselves remain.
     expect((await taxonomies.listTerms('tag')).map((t) => t.name)).toEqual(['One', 'two']);
-    expect(await taxonomies.termCounts('tag')).toEqual(
-      new Map(tags.map((t) => [t.id, 0])),
-    );
+    expect(await taxonomies.termCounts('tag')).toEqual(new Map(tags.map((t) => [t.id, 0])));
   });
 
   it('supports custom taxonomies on any content type', async () => {

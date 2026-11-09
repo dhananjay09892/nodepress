@@ -125,10 +125,7 @@ function build(
       return removed.length > 0;
     },
     async reparentChildren(fromParentId, toParentId) {
-      await db
-        .update(terms)
-        .set({ parentId: toParentId })
-        .where(eq(terms.parentId, fromParentId));
+      await db.update(terms).set({ parentId: toParentId }).where(eq(terms.parentId, fromParentId));
     },
     async listTerms(taxonomy) {
       return db

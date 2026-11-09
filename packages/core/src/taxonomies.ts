@@ -121,7 +121,13 @@ declare module './hooks.js' {
     'term:deleted': [term: Term];
     /** The terms of one taxonomy on an item changed. `termIds` is the full set now assigned. */
     'content:terms-changed': [
-      info: { contentId: number; taxonomy: string; termIds: number[]; added: number[]; removed: number[] },
+      info: {
+        contentId: number;
+        taxonomy: string;
+        termIds: number[];
+        added: number[];
+        removed: number[];
+      },
     ];
   }
   interface FilterMap {
