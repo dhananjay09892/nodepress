@@ -109,8 +109,14 @@ function assertRole(role: string): asserts role is RoleName {
 }
 
 function toUser(record: UserRecord): User {
-  const { passwordHash: _omit, ...user } = record;
-  return user;
+  return {
+    id: record.id,
+    email: record.email,
+    displayName: record.displayName,
+    role: record.role,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  };
 }
 
 /**
