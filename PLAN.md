@@ -234,7 +234,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] Permalinks, options/settings
 - [x] Users, sessions, roles/capabilities
 - [x] Media upload + image variants
-- [ ] REST API v1 + API tokens
+- [ ] REST API v1 + API tokens (API tokens and content CRUD done; custom fields, terms and public reads follow in N43)
 - [x] Job queue + scheduled publishing
 
 **Exit:** create/publish content through the API, with tests >80% on core.
