@@ -23,3 +23,15 @@ export {
   type Unsubscribe,
   type Logger,
 } from '@nodepress/core';
+export type {
+  ContentTypeDefinition,
+  FieldDefinition,
+  TextField,
+  RichTextField,
+  NumberField,
+  BooleanField,
+  DateField,
+  SelectField,
+  MediaField,
+  RelationField,
+} from '@nodepress/core';
