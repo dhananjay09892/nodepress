@@ -1,11 +1,17 @@
 import { serve } from '@hono/node-server';
 import {
+  createApiTokensService,
   createArgon2Hasher,
   createNodePress,
   createSessionsService,
   createUsersService,
 } from '@nodepress/core';
-import { createDatabase, createSessionsStore, createUsersStore } from '@nodepress/db';
+import {
+  createApiTokensStore,
+  createDatabase,
+  createSessionsStore,
+  createUsersStore,
+} from '@nodepress/db';
 import helloPlugin from '@nodepress/plugin-hello';
 import { createApp } from './app.js';
 
@@ -41,6 +47,12 @@ const sessions = createSessionsService({
   hooks: np.hooks,
 });
 
+const apiTokens = createApiTokensService({
+  store: createApiTokensStore(database),
+  users,
+  hooks: np.hooks,
+});
+
 // Expired sessions are rejected on use; this just keeps the table small.
 const purgeTimer = setInterval(
   () => void sessions.purgeExpired().catch((error) => np.logger.warn(String(error))),
@@ -52,6 +64,7 @@ const app = createApp(np, database, {
   auth: {
     users,
     sessions,
+    apiTokens,
     // Cookies are Secure by default; set COOKIE_SECURE=false only for plain-HTTP local development.
     secureCookies: process.env.COOKIE_SECURE !== 'false',
     trustProxy: process.env.TRUST_PROXY === 'true',

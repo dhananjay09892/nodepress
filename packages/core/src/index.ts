@@ -91,3 +91,22 @@ export {
   type ActiveSession,
 } from './sessions.js';
 export { RateLimiter, type RateLimiterOptions, type RateLimitStatus } from './rate-limit.js';
+export {
+  ApiTokensService,
+  createApiTokensService,
+  hashApiToken,
+  ApiTokenValidationError,
+  API_TOKEN_PREFIX,
+  DEFAULT_MAX_TOKENS_PER_USER,
+  MAX_TOKEN_NAME_LENGTH,
+  LAST_USED_RESOLUTION_MS,
+  type ApiToken,
+  type ApiTokenRecord,
+  type NewApiTokenRecord,
+  type ApiTokensStore,
+  type ApiTokenUsers,
+  type ApiTokensServiceOptions,
+  type CreateApiTokenInput,
+  type CreatedApiToken,
+  type AuthenticatedApiToken,
+} from './api-tokens.js';

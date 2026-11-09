@@ -1,7 +1,10 @@
 import {
+  ApiTokenValidationError,
   MAX_PASSWORD_LENGTH,
   RateLimiter,
   verifyCsrfToken,
+  type ApiToken,
+  type ApiTokensService,
   type SessionRecord,
   type SessionsService,
   type User,
@@ -19,13 +22,20 @@ export interface AuthContext {
   token: string;
 }
 
+/** Who is making a request, however they proved it. Set by the `authenticate` middleware. */
+export type Principal =
+  | { via: 'session'; user: User }
+  | { via: 'token'; user: User; token: ApiToken };
+
 export interface AuthEnv {
-  Variables: { auth: AuthContext | null };
+  Variables: { auth: AuthContext | null; principal: Principal | null };
 }
 
 export interface AuthOptions {
   users: Pick<UsersService, 'authenticate'>;
   sessions: SessionsService;
+  /** Enables personal API tokens: Bearer authentication and the `/api/v1/tokens` routes. */
+  apiTokens?: ApiTokensService;
   /** Send the cookie with `Secure` and the `__Host-` prefix. Default true; turn off only for plain-HTTP development. */
   secureCookies?: boolean;
   /** Read the client address from the last `X-Forwarded-For` entry. Only enable behind a proxy you control. */
@@ -52,6 +62,15 @@ export interface Auth {
   requireAuth: MiddlewareHandler<AuthEnv>;
   /** Rejects writes whose `Origin` header names another site. */
   originGuard: MiddlewareHandler<AuthEnv>;
+  /**
+   * For API routes that accept either credential. A valid `Authorization: Bearer` token
+   * authenticates without CSRF checks (a browser never attaches it by itself); an invalid
+   * one is a 401 and never falls back to the cookie. Without a Bearer header it behaves like
+   * `loadSession` + `requireAuth`. Sets `c.var.principal`.
+   */
+  authenticate: MiddlewareHandler<AuthEnv>;
+  /** Routes for `/api/v1/tokens` (list, create, revoke). Cookie sessions only, never tokens. */
+  tokenRoutes: Hono<AuthEnv>;
   cookieName: string;
 }
 
@@ -98,6 +117,96 @@ export function createAuth(options: AuthOptions): Auth {
   const clearCookie = (c: Context<AuthEnv>): void => {
     deleteCookie(c, cookieName, { path: '/', secure });
   };
+
+  const bearerChallenge = (c: Context<AuthEnv>, error?: string) => {
+    c.header('WWW-Authenticate', error ? `Bearer error="${error}"` : 'Bearer');
+    return c.json({ error: error ?? 'unauthenticated' }, 401);
+  };
+
+  /** The secret from `Authorization: Bearer <token>`, `null` when no Bearer header is present. */
+  const bearerToken = (c: Context<AuthEnv>): string | null => {
+    const match = /^Bearer[ \t]+(\S*)[ \t]*$/i.exec(c.req.header('authorization') ?? '');
+    return match ? match[1]! : null;
+  };
+
+  const authenticate: MiddlewareHandler<AuthEnv> = async (c, next) => {
+    const bearer = bearerToken(c);
+    if (bearer !== null) {
+      if (!options.apiTokens) return bearerChallenge(c, 'invalid_token');
+      const result = await options.apiTokens.authenticate(bearer);
+      if (!result) return bearerChallenge(c, 'invalid_token');
+      c.set('principal', { via: 'token', user: result.user, token: result.token });
+      return next();
+    }
+    await loadSession(c, async () => {});
+    const auth = c.get('auth');
+    if (!auth) return bearerChallenge(c);
+    if (!csrfOk(c, auth)) return c.json({ error: 'csrf_failed' }, 403);
+    c.set('principal', { via: 'session', user: auth.user });
+    return next();
+  };
+
+  const tokenRoutes = new Hono<AuthEnv>();
+  tokenRoutes.use('*', async (c, next) => {
+    c.header('Cache-Control', 'no-store');
+    await next();
+  });
+  tokenRoutes.use('*', originGuard);
+  tokenRoutes.use('*', loadSession);
+  tokenRoutes.use('*', requireAuth);
+  tokenRoutes.use('*', async (c, next) => {
+    if (!options.apiTokens) return c.json({ error: 'not_found' }, 404);
+    await next();
+  });
+
+  tokenRoutes.get('/', async (c) => {
+    const tokens = await options.apiTokens!.list(c.get('auth')!.user.id);
+    return c.json({ tokens: tokens.map(publicToken) });
+  });
+
+  tokenRoutes.post('/', async (c) => {
+    const type = c.req.header('content-type') ?? '';
+    if (!type.toLowerCase().startsWith('application/json')) {
+      return c.json({ error: 'unsupported_media_type' }, 415);
+    }
+    const raw = await c.req.text();
+    if (raw.length > MAX_BODY_BYTES) return c.json({ error: 'payload_too_large' }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return c.json({ error: 'invalid_json' }, 400);
+    }
+    const { name, expiresAt } = (body ?? {}) as { name?: unknown; expiresAt?: unknown };
+    if (typeof name !== 'string') return c.json({ error: 'invalid_request' }, 400);
+    let expires: Date | null = null;
+    if (expiresAt !== undefined && expiresAt !== null) {
+      expires = typeof expiresAt === 'string' ? new Date(expiresAt) : new Date(Number.NaN);
+      if (Number.isNaN(expires.getTime())) {
+        return c.json({ error: 'invalid_request', message: 'expiresAt must be an ISO date' }, 400);
+      }
+    }
+    try {
+      const created = await options.apiTokens!.create(c.get('auth')!.user.id, {
+        name,
+        expiresAt: expires,
+      });
+      // The secret appears in this response and nowhere else.
+      return c.json({ token: created.token, record: publicToken(created.record) }, 201);
+    } catch (error) {
+      if (error instanceof ApiTokenValidationError) {
+        return c.json({ error: 'invalid_request', message: error.message }, 400);
+      }
+      throw error;
+    }
+  });
+
+  tokenRoutes.delete('/:id', async (c) => {
+    const id = Number(c.req.param('id'));
+    if (!Number.isSafeInteger(id) || id <= 0) return c.json({ error: 'not_found' }, 404);
+    const removed = await options.apiTokens!.revoke(c.get('auth')!.user.id, id);
+    return removed ? c.body(null, 204) : c.json({ error: 'not_found' }, 404);
+  });
 
   const routes = new Hono<AuthEnv>();
   routes.use('*', async (c, next) => {
@@ -178,13 +287,29 @@ export function createAuth(options: AuthOptions): Auth {
     return c.body(null, 204);
   });
 
-  routes.get('/me', (c) => {
+  routes.get('/me', async (c) => {
+    const bearer = bearerToken(c);
+    if (bearer !== null) {
+      const result = options.apiTokens ? await options.apiTokens.authenticate(bearer) : null;
+      if (!result) return bearerChallenge(c, 'invalid_token');
+      return c.json({ user: publicUser(result.user), tokenId: result.token.id });
+    }
     const auth = c.get('auth');
     if (!auth) return c.json({ error: 'unauthenticated' }, 401);
     return c.json({ user: publicUser(auth.user), csrfToken: auth.csrfToken });
   });
 
-  return { routes, loadSession, requireAuth, originGuard, cookieName };
+  return { routes, loadSession, requireAuth, originGuard, authenticate, tokenRoutes, cookieName };
+}
+
+function publicToken(token: ApiToken) {
+  return {
+    id: token.id,
+    name: token.name,
+    createdAt: token.createdAt.toISOString(),
+    lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
+    expiresAt: token.expiresAt?.toISOString() ?? null,
+  };
 }
 
 function publicUser(user: User) {

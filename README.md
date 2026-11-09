@@ -22,6 +22,14 @@ pnpm dev                                  # http://localhost:3000
 - `GET /api/v1/auth/me` — the signed-in user and CSRF token
 - `POST /api/v1/auth/logout` — ends the session (send the CSRF token in `X-CSRF-Token`)
 
+Personal API tokens let scripts and other services call the API without a browser session. Signed-in users manage their own tokens (cookie session and CSRF token required; a token cannot create or list tokens):
+
+- `GET /api/v1/tokens` — list your tokens (name, created, last used, expiry; never the secret)
+- `POST /api/v1/tokens` — JSON `{ name, expiresAt? }`; returns the secret **once** as `token`
+- `DELETE /api/v1/tokens/:id` — revoke a token
+
+Send a token as `Authorization: Bearer npt_…`. Tokens are stored only as SHA-256 hashes, can expire, and stop working when revoked or when their user is deleted. Bearer requests need no CSRF token; an invalid token is a `401` and never falls back to a cookie. Routes that accept either credential use the `authenticate` middleware from `createAuth()`.
+
 Cookie-authenticated writes must send the CSRF token in the `X-CSRF-Token` header. Failed logins are rate limited (5 per email and 20 per address per 15 minutes). Session cookies are `Secure` and `__Host-` prefixed; for plain-HTTP local development set `COOKIE_SECURE=false`. Set `TRUST_PROXY=true` only behind a reverse proxy you control, so the client address is read from `X-Forwarded-For`.
 
 The database is chosen by `DATABASE_URL`: `file:./nodepress.db` (SQLite, the default), `libsql://…` (Turso) or `postgres://user:pass@host:5432/db` (PostgreSQL). Migrations for each dialect ship in `packages/db/drizzle/<dialect>/`; after changing a schema run `pnpm --filter @nodepress/db db:generate`, which regenerates both.
