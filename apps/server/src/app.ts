@@ -12,14 +12,18 @@ declare module '@nodepress/core' {
 
 /** Build the HTTP app. Kept separate from `main.ts` so it can be tested without a port. */
 export interface AppOptions {
-  /** Enables `/api/v1/auth/*` (login, logout, me). */
+  /** Enables `/api/v1/auth/*` (login, logout, me) and, with `apiTokens`, `/api/v1/tokens`. */
   auth?: AuthOptions;
 }
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
   const app = new Hono();
 
-  if (options.auth) app.route('/api/v1/auth', createAuth(options.auth).routes);
+  if (options.auth) {
+    const auth = createAuth(options.auth);
+    app.route('/api/v1/auth', auth.routes);
+    if (options.auth.apiTokens) app.route('/api/v1/tokens', auth.tokenRoutes);
+  }
 
   app.get('/api/health', async (c) => {
     const dbOk = await database.ping();

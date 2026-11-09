@@ -151,3 +151,9 @@ export {
   type NewSessionRow,
   type SessionsTableStore,
 } from './sessions-store.js';
+export {
+  createApiTokensStore,
+  type ApiTokenRow,
+  type NewApiTokenRow,
+  type ApiTokensTableStore,
+} from './api-tokens-store.js';
