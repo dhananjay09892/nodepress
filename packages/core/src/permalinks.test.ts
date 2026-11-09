@@ -294,9 +294,13 @@ describe('resolve', () => {
     expect((await permalinks.resolve('/product/mug')).kind).toBe('not_found');
 
     // An invalid override is ignored.
-    hooks.addFilter('permalink:pattern', (value, { type }) => (type === 'product' ? 'bad' : value), {
-      priority: 20,
-    });
+    hooks.addFilter(
+      'permalink:pattern',
+      (value, { type }) => (type === 'product' ? 'bad' : value),
+      {
+        priority: 20,
+      },
+    );
     expect((await permalinks.resolve('/product/mug')).kind).toBe('content');
   });
 });
@@ -328,7 +332,12 @@ describe('slug-change redirects', () => {
     const { content, permalinks, redirects } = setup();
     const a = await content.create({ type: 'post', title: 'Alpha', status: 'published' });
     await content.update(a.id, { slug: 'beta' });
-    const b = await content.create({ type: 'post', title: 'Alpha', slug: 'alpha', status: 'published' });
+    const b = await content.create({
+      type: 'post',
+      title: 'Alpha',
+      slug: 'alpha',
+      status: 'published',
+    });
     expect(await permalinks.resolve('/blog/alpha')).toMatchObject({
       kind: 'content',
       content: { id: b.id },

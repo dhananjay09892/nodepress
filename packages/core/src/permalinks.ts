@@ -144,16 +144,19 @@ export function buildPath(parsed: ParsedPattern, content: Content): string {
 }
 
 /** Token values captured from a path, or undefined if the path does not fit the pattern. */
-function matchPath(parsed: ParsedPattern, path: string): Partial<Record<Token, string>> | undefined {
+function matchPath(
+  parsed: ParsedPattern,
+  path: string,
+): Partial<Record<Token, string>> | undefined {
   const pieces = path.slice(1).split('/');
   if (pieces.length !== parsed.segments.length) return undefined;
   const captured: Partial<Record<Token, string>> = {};
   for (let i = 0; i < pieces.length; i++) {
-    const source = parsed.segments[i]!
-      .map((p) =>
-        'literal' in p ? p.literal.replace(/[-_]/g, '\\$&') : `(?<${p.token}>${TOKEN_REGEX[p.token]})`,
-      )
-      .join('');
+    const source = parsed.segments[i]!.map((p) =>
+      'literal' in p
+        ? p.literal.replace(/[-_]/g, '\\$&')
+        : `(?<${p.token}>${TOKEN_REGEX[p.token]})`,
+    ).join('');
     const m = new RegExp(`^${source}$`).exec(pieces[i]!);
     if (!m) return undefined;
     Object.assign(captured, m.groups);
