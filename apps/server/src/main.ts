@@ -2,9 +2,12 @@ import { serve } from '@hono/node-server';
 import {
   createApiTokensService,
   createArgon2Hasher,
+  createContentService,
+  createJobQueue,
   createNodePress,
   createOptionsService,
   createPermalinkService,
+  createScheduledPublisher,
   createSessionsService,
   createUsersService,
 } from '@nodepress/core';
@@ -12,6 +15,7 @@ import {
   createApiTokensStore,
   createContentStore,
   createDatabase,
+  createJobsStore,
   createOptionsStore,
   createSessionsStore,
   createSlugRedirectsStore,
@@ -38,6 +42,14 @@ try {
 } catch (error) {
   np.logger.warn(error instanceof Error ? error.message : String(error));
 }
+
+// The job queue must exist before plugins activate so they can register jobs in setup().
+const jobs = createJobQueue({
+  store: createJobsStore(database),
+  hooks: np.hooks,
+  logger: np.logger.child('jobs'),
+});
+np.plugins.useJobs(jobs);
 
 await np.boot();
 
@@ -70,6 +82,28 @@ const permalinks = createPermalinkService({
 // Remembers old slugs whenever content is saved with a new one (the content API arrives in N12).
 permalinks.attach();
 
+// Scheduled posts publish themselves when their time comes (the content API arrives in N12).
+const content = createContentService({
+  store: contentStore,
+  hooks: np.hooks,
+  logger: np.logger.child('content'),
+});
+const scheduledPublisher = createScheduledPublisher({
+  content,
+  jobs,
+  hooks: np.hooks,
+  logger: np.logger.child('scheduled-publishing'),
+});
+scheduledPublisher.attach();
+// Catch scheduled posts that came due while the site was down, then start the runner.
+await scheduledPublisher.sweep().catch((error) => np.logger.warn(String(error)));
+jobs.start();
+const jobPurgeTimer = setInterval(
+  () => void jobs.purgeDone().catch((error) => np.logger.warn(String(error))),
+  60 * 60 * 1000,
+);
+jobPurgeTimer.unref();
+
 // Expired sessions are rejected on use; this just keeps the table small.
 const purgeTimer = setInterval(
   () => void sessions.purgeExpired().catch((error) => np.logger.warn(String(error))),
@@ -96,6 +130,8 @@ const server = serve({ fetch: app.fetch, port }, (info) => {
 async function stop(signal: string) {
   np.logger.info(`Received ${signal}, shutting down…`);
   clearInterval(purgeTimer);
+  clearInterval(jobPurgeTimer);
+  await jobs.stop();
   server.close();
   await np.shutdown();
   await database.close();

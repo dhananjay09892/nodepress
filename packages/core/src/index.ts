@@ -204,3 +204,33 @@ export {
   type UpdateTermInput,
   type ListTermContentOptions,
 } from './taxonomies.js';
+export {
+  JobQueue,
+  createJobQueue,
+  defaultBackoff,
+  JobValidationError,
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_RUN_BATCH,
+  MAX_ERROR_LENGTH,
+  LEASE_GRACE_MS,
+  type Job,
+  type JobRecord,
+  type JobStatus,
+  type NewJobRecord,
+  type JobRecordQuery,
+  type JobStore,
+  type JobContext,
+  type JobDefinition,
+  type JobQueueOptions,
+  type EnqueueOptions,
+  type RunResult,
+  type StartOptions,
+  type ScopedJobs,
+} from './jobs.js';
+export {
+  ScheduledPublisher,
+  createScheduledPublisher,
+  PUBLISH_JOB_TYPE,
+  type ScheduledPublisherOptions,
+} from './scheduled-publishing.js';

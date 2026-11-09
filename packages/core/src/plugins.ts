@@ -1,4 +1,5 @@
 import { scopeHooks, type HookRegistry, type ScopedHooks } from './hooks.js';
+import type { JobQueue, ScopedJobs } from './jobs.js';
 import type { Logger } from './logger.js';
 
 export interface PluginContext {
@@ -8,6 +9,11 @@ export interface PluginContext {
   logger: Logger;
   /** Site configuration (read-only). */
   config: Readonly<Record<string, unknown>>;
+  /**
+   * Background jobs: `jobs.registerJob()` adds a handler (removed on deactivation) and
+   * `jobs.enqueue()` queues work. Only present when the site runs a job queue.
+   */
+  jobs?: ScopedJobs;
 }
 
 export interface PluginDefinition {
@@ -51,11 +57,17 @@ export class PluginManager {
   #hooks: HookRegistry;
   #logger: Logger;
   #config: Readonly<Record<string, unknown>>;
+  #jobs: JobQueue | undefined;
 
   constructor(hooks: HookRegistry, logger: Logger, config: Readonly<Record<string, unknown>>) {
     this.#hooks = hooks;
     this.#logger = logger;
     this.#config = config;
+  }
+
+  /** Give plugins activated from now on a job queue (`context.jobs`). */
+  useJobs(queue: JobQueue): void {
+    this.#jobs = queue;
   }
 
   register(definition: PluginDefinition): void {
@@ -91,12 +103,14 @@ export class PluginManager {
       hooks: scopeHooks(this.#hooks, name),
       logger: this.#logger.child(name),
       config: this.#config,
+      ...(this.#jobs ? { jobs: this.#jobs.scoped(name) } : {}),
     };
 
     try {
       await record.definition.setup(context);
     } catch (error) {
       this.#hooks.removeAllFromSource(name);
+      this.#jobs?.removeAllFromSource(name);
       record.status = 'failed';
       record.error = error instanceof Error ? error.message : String(error);
       record.context = undefined;
@@ -118,6 +132,7 @@ export class PluginManager {
     if (record.status !== 'active' || !record.context) return;
 
     this.#hooks.removeAllFromSource(name);
+    this.#jobs?.removeAllFromSource(name);
     try {
       await record.definition.teardown?.(record.context);
     } catch (error) {
