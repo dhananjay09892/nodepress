@@ -43,3 +43,35 @@ export {
   type OptionsServiceOptions,
   type SetOptionOptions,
 } from './options.js';
+export {
+  Capabilities,
+  createCapabilities,
+  isRole,
+  ROLES,
+  DEFAULT_ROLE_CAPABILITIES,
+  type RoleName,
+  type CapabilityUser,
+} from './capabilities.js';
+export {
+  createArgon2Hasher,
+  assertPassword,
+  ARGON2_PARAMS,
+  MAX_PASSWORD_LENGTH,
+  type PasswordHasher,
+} from './passwords.js';
+export {
+  UsersService,
+  createUsersService,
+  normalizeEmail,
+  DuplicateEmailError,
+  UserNotFoundError,
+  UserValidationError,
+  type User,
+  type UserRecord,
+  type NewUserRecord,
+  type UserPatchRecord,
+  type UsersStore,
+  type CreateUserInput,
+  type UpdateUserInput,
+  type UsersServiceOptions,
+} from './users.js';
