@@ -53,6 +53,9 @@ function contentStore(): ContentStore {
     async list() {
       return [...rows.values()];
     },
+    async count() {
+      return rows.size;
+    },
     async insertRevision(row) {
       const rev: RevisionRecord = { id: revisions.length + 1, ...row, createdAt: NOW };
       revisions.push(rev);
