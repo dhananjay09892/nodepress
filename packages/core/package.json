@@ -21,6 +21,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@node-rs/argon2": "^2.0.2"
+  },
   "devDependencies": {
     "@nodepress/db": "workspace:*"
   }
