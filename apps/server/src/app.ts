@@ -48,7 +48,12 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     app.route('/api/v1/auth', auth.routes);
     if (options.auth.apiTokens) app.route('/api/v1/tokens', auth.tokenRoutes);
     if (options.content) {
-      app.route('/api/v1', createContentRoutes(auth, { ...options.content, hooks: np.hooks }));
+      app.route('/api/v1', createContentRoutes(auth, {
+          content: options.content.service,
+          types: options.content.types,
+          capabilities: options.content.capabilities,
+          hooks: np.hooks,
+        }));
     }
     if (options.media) {
       app.route(
