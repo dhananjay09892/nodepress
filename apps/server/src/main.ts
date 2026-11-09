@@ -1,6 +1,11 @@
 import { serve } from '@hono/node-server';
-import { createNodePress } from '@nodepress/core';
-import { createDatabase } from '@nodepress/db';
+import {
+  createArgon2Hasher,
+  createNodePress,
+  createSessionsService,
+  createUsersService,
+} from '@nodepress/core';
+import { createDatabase, createSessionsStore, createUsersStore } from '@nodepress/db';
 import helloPlugin from '@nodepress/plugin-hello';
 import { createApp } from './app.js';
 
@@ -25,12 +30,41 @@ try {
 
 await np.boot();
 
-const server = serve({ fetch: createApp(np, database).fetch, port }, (info) => {
+const users = createUsersService({
+  store: createUsersStore(database),
+  hooks: np.hooks,
+  hasher: createArgon2Hasher(),
+});
+const sessions = createSessionsService({
+  store: createSessionsStore(database),
+  users,
+  hooks: np.hooks,
+});
+
+// Expired sessions are rejected on use; this just keeps the table small.
+const purgeTimer = setInterval(
+  () => void sessions.purgeExpired().catch((error) => np.logger.warn(String(error))),
+  60 * 60 * 1000,
+);
+purgeTimer.unref();
+
+const app = createApp(np, database, {
+  auth: {
+    users,
+    sessions,
+    // Cookies are Secure by default; set COOKIE_SECURE=false only for plain-HTTP local development.
+    secureCookies: process.env.COOKIE_SECURE !== 'false',
+    trustProxy: process.env.TRUST_PROXY === 'true',
+  },
+});
+
+const server = serve({ fetch: app.fetch, port }, (info) => {
   np.logger.info(`Listening on http://localhost:${info.port}`);
 });
 
 async function stop(signal: string) {
   np.logger.info(`Received ${signal}, shutting down…`);
+  clearInterval(purgeTimer);
   server.close();
   await np.shutdown();
   await database.close();

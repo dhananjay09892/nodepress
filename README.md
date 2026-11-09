@@ -18,6 +18,11 @@ pnpm dev                                  # http://localhost:3000
 
 - `GET /` — temporary front page (shows plugin filters in action)
 - `GET /api/health` — kernel, database and plugin status
+- `POST /api/v1/auth/login` — JSON `{ email, password }`; sets an HttpOnly session cookie and returns the user and a CSRF token
+- `GET /api/v1/auth/me` — the signed-in user and CSRF token
+- `POST /api/v1/auth/logout` — ends the session (send the CSRF token in `X-CSRF-Token`)
+
+Cookie-authenticated writes must send the CSRF token in the `X-CSRF-Token` header. Failed logins are rate limited (5 per email and 20 per address per 15 minutes). Session cookies are `Secure` and `__Host-` prefixed; for plain-HTTP local development set `COOKIE_SECURE=false`. Set `TRUST_PROXY=true` only behind a reverse proxy you control, so the client address is read from `X-Forwarded-For`.
 
 The database is chosen by `DATABASE_URL`: `file:./nodepress.db` (SQLite, the default), `libsql://…` (Turso) or `postgres://user:pass@host:5432/db` (PostgreSQL). Migrations for each dialect ship in `packages/db/drizzle/<dialect>/`; after changing a schema run `pnpm --filter @nodepress/db db:generate`, which regenerates both.
 
