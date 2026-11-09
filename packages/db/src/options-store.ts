@@ -65,11 +65,7 @@ function sqliteStore(db: Extract<DatabaseHandle, { dialect: 'sqlite' }>['db']): 
 function postgresStore(
   db: Extract<DatabaseHandle, { dialect: 'postgres' }>['db'],
 ): OptionsTableStore {
-  interface PgRow {
-    key: string;
-    value: string | null;
-    autoload: boolean;
-  }
+  type PgRow = { key: string; value: string | null; autoload: boolean };
   const toPgRecord = (row: PgRow): OptionRecord => ({
     key: row.key,
     value: row.value === null ? null : (JSON.parse(row.value) as unknown),
