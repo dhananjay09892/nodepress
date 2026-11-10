@@ -183,11 +183,18 @@ describe('/api/v1/webhooks', () => {
   it('requires authentication, CSRF and manage_options', async () => {
     expect((await call('GET', '', {})).status).toBe(401);
     const admin = await signIn('admin@example.com');
-    expect((await call('POST', '', { cookie: admin.cookie }, { url: 'https://a.example.com' })).status).toBe(403);
+    expect(
+      (await call('POST', '', { cookie: admin.cookie }, { url: 'https://a.example.com' })).status,
+    ).toBe(403);
     const editor = await signIn('editor@example.com');
     expect((await call('GET', '', editor)).status).toBe(403);
     expect((await call('POST', '', editor, { url: 'https://a.example.com' })).status).toBe(403);
-    const cross = await call('POST', '', { ...admin, origin: 'https://evil.example' }, { url: 'https://a.example.com' });
+    const cross = await call(
+      'POST',
+      '',
+      { ...admin, origin: 'https://evil.example' },
+      { url: 'https://a.example.com' },
+    );
     expect(cross.status).toBe(403);
     expect(await (await call('GET', '', admin)).json()).toEqual({ webhooks: [] });
   });
@@ -198,7 +205,12 @@ describe('/api/v1/webhooks', () => {
       user: { id: number };
     };
     const { token } = await apiTokens.create(me.user.id, { name: 'ci' });
-    const res = await call('POST', '', { authorization: `Bearer ${token}` }, { url: 'https://a.example.com/in' });
+    const res = await call(
+      'POST',
+      '',
+      { authorization: `Bearer ${token}` },
+      { url: 'https://a.example.com/in' },
+    );
     expect(res.status).toBe(201);
   });
 });

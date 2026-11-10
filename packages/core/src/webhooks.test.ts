@@ -60,7 +60,8 @@ function setup(options: { statuses?: number[]; allowPrivateNetworks?: boolean } 
     hooks,
     signingKey: KEY,
     fetch,
-    resolveHost: async (host) => (host === 'internal.example.com' ? ['10.0.0.5'] : ['93.184.216.34']),
+    resolveHost: async (host) =>
+      host === 'internal.example.com' ? ['10.0.0.5'] : ['93.184.216.34'],
     backoff: (attempt) => attempt * 1000,
     now: () => new Date(now),
     ...(options.allowPrivateNetworks ? { allowPrivateNetworks: true } : {}),
@@ -107,7 +108,9 @@ describe('webhook configuration', () => {
     expect(created).toMatchObject({ description: 'Deploy', active: true });
     expect(created.secret).toMatch(/^whsec_/);
     expect(await webhooks.list()).toHaveLength(1);
-    expect(await webhooks.list()).not.toContainEqual(expect.objectContaining({ secret: expect.anything() }));
+    expect(await webhooks.list()).not.toContainEqual(
+      expect.objectContaining({ secret: expect.anything() }),
+    );
 
     const updated = await webhooks.update(created.id, { active: false, events: ['*'] });
     expect(updated).toMatchObject({ active: false, events: ['*'] });
@@ -170,7 +173,19 @@ describe('webhook configuration', () => {
 
 describe('isPrivateAddress', () => {
   it('flags internal addresses and passes public ones', () => {
-    for (const a of ['127.0.0.1', '10.0.0.1', '172.16.5.5', '192.168.1.1', '169.254.1.1', '100.64.0.1', '0.0.0.0', '::1', 'fd00::1', 'fe80::1', '::ffff:10.0.0.1']) {
+    for (const a of [
+      '127.0.0.1',
+      '10.0.0.1',
+      '172.16.5.5',
+      '192.168.1.1',
+      '169.254.1.1',
+      '100.64.0.1',
+      '0.0.0.0',
+      '::1',
+      'fd00::1',
+      'fe80::1',
+      '::ffff:10.0.0.1',
+    ]) {
       expect(isPrivateAddress(a), a).toBe(true);
     }
     for (const a of ['93.184.216.34', '8.8.8.8', '172.32.0.1', '2606:4700::1111']) {
@@ -341,7 +356,11 @@ describe('verifyWebhookSignature', () => {
     expect(verifyWebhookSignature({ ...base, secret: 'other' })).toBe(false);
     expect(verifyWebhookSignature({ ...base, signature: 'v1=00' })).toBe(false);
     expect(verifyWebhookSignature({ ...base, timestamp: 'abc' })).toBe(false);
-    expect(verifyWebhookSignature({ ...base, now: () => new Date(T0.getTime() + 6 * 60_000) })).toBe(false);
-    expect(verifyWebhookSignature({ ...base, now: () => new Date(T0.getTime() + 60_000) })).toBe(true);
+    expect(
+      verifyWebhookSignature({ ...base, now: () => new Date(T0.getTime() + 6 * 60_000) }),
+    ).toBe(false);
+    expect(verifyWebhookSignature({ ...base, now: () => new Date(T0.getTime() + 60_000) })).toBe(
+      true,
+    );
   });
 });

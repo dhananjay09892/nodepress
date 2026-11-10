@@ -180,7 +180,9 @@ export function isPrivateAddress(address: string): boolean {
 
 function hostLooksInternal(host: string): boolean {
   const h = host.toLowerCase().replace(/\.$/, '');
-  return h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal');
+  return (
+    h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')
+  );
 }
 
 /** The value of the `X-NodePress-Signature` header for a request. */
@@ -453,11 +455,7 @@ export class WebhookService {
         'x-nodepress-event': payload.event,
         'x-nodepress-delivery': payload.deliveryId,
         'x-nodepress-timestamp': String(payload.timestamp),
-        'x-nodepress-signature': signWebhook(
-          this.#secretFor(row),
-          payload.timestamp,
-          payload.body,
-        ),
+        'x-nodepress-signature': signWebhook(this.#secretFor(row), payload.timestamp, payload.body),
       },
       body: payload.body,
       redirect: 'manual', // a redirect could point somewhere private
