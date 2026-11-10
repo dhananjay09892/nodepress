@@ -702,14 +702,18 @@ describe('custom fields, terms and public reads', () => {
         'author',
         product({ meta: { price: 3, color: 'red' } }),
       );
-      const plain = await call('GET', '/content/product', 'author');
+      const plain = await call('GET', '/content/product?status=draft', 'author');
       expect(plain.json!.items[0]).not.toHaveProperty('meta');
       expect(plain.json!.items[0]).not.toHaveProperty('terms');
-      const asked = await call('GET', '/content/product?fields=title,meta,terms', 'author');
+      const asked = await call(
+        'GET',
+        '/content/product?status=draft&fields=title,meta,terms',
+        'author',
+      );
       expect(Object.keys(asked.json!.items[0]).sort()).toEqual(['meta', 'terms', 'title']);
       expect(asked.json!.items[0].meta).toEqual({ price: 3, color: 'red', stock: 0 });
       expect(asked.json!.items[0].terms).toEqual({ genre: [] });
-      const only = await call('GET', '/content/product?fields=meta', 'author');
+      const only = await call('GET', '/content/product?status=draft&fields=meta', 'author');
       expect(Object.keys(only.json!.items[0])).toEqual(['meta']);
     });
 
