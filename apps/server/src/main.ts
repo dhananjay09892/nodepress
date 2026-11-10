@@ -16,6 +16,7 @@ import {
   createSessionsService,
   createTaxonomyService,
   createUsersService,
+  createWebhookService,
 } from '@nodepress/core';
 import {
   createApiTokensStore,
@@ -117,6 +118,23 @@ const scheduledPublisher = createScheduledPublisher({
   logger: np.logger.child('scheduled-publishing'),
 });
 scheduledPublisher.attach();
+// Webhooks sign each call with a secret derived from WEBHOOK_SIGNING_KEY (32+ characters, kept
+// out of the database). Without it the feature stays off rather than storing secrets.
+let webhooks: ReturnType<typeof createWebhookService> | undefined;
+if (process.env.WEBHOOK_SIGNING_KEY) {
+  webhooks = createWebhookService({
+    options,
+    jobs,
+    hooks: np.hooks,
+    signingKey: process.env.WEBHOOK_SIGNING_KEY,
+    logger: np.logger.child('webhooks'),
+    // Only for local development against a receiver on this machine or LAN.
+    allowPrivateNetworks: process.env.WEBHOOK_ALLOW_PRIVATE === 'true',
+  });
+  webhooks.attach();
+} else {
+  np.logger.info('Webhooks are off: set WEBHOOK_SIGNING_KEY (32+ characters) to enable them.');
+}
 // Catch scheduled posts that came due while the site was down, then start the runner.
 await scheduledPublisher.sweep().catch((error) => np.logger.warn(String(error)));
 jobs.start();
@@ -156,6 +174,7 @@ const app = createApp(np, database, {
     options,
   },
   media: { service: media, storage: mediaStorage, capabilities },
+  ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
   auth: {
     users,
     sessions,

@@ -8,12 +8,14 @@ import type {
   PermalinkService,
   StorageAdapter,
   TaxonomyService,
+  WebhookService,
 } from '@nodepress/core';
 import type { ContentMetaTableStore, DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
 import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
+import { createWebhookRoutes } from './webhooks.js';
 
 declare module '@nodepress/core' {
   interface FilterMap {
@@ -51,6 +53,8 @@ export interface AppOptions {
     taxonomies?: TaxonomyService;
     options?: OptionsService;
   };
+  /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
+  webhooks?: { service: WebhookService; capabilities: Capabilities };
 }
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
@@ -71,6 +75,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           ...(options.content.meta ? { meta: options.content.meta } : {}),
           ...(options.content.taxonomies ? { taxonomies: options.content.taxonomies } : {}),
           ...(options.content.options ? { options: options.content.options } : {}),
+        }),
+      );
+    }
+    if (options.webhooks) {
+      app.route(
+        '/api/v1/webhooks',
+        createWebhookRoutes(auth, {
+          webhooks: options.webhooks.service,
+          capabilities: options.webhooks.capabilities,
         }),
       );
     }
