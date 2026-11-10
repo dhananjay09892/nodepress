@@ -14,10 +14,12 @@ import {
   createScheduledPublisher,
   createSharpProcessor,
   createSessionsService,
+  createTaxonomyService,
   createUsersService,
 } from '@nodepress/core';
 import {
   createApiTokensStore,
+  createContentMetaStore,
   createContentStore,
   createDatabase,
   createJobsStore,
@@ -25,6 +27,7 @@ import {
   createOptionsStore,
   createSessionsStore,
   createSlugRedirectsStore,
+  createTaxonomyStore,
   createUsersStore,
 } from '@nodepress/db';
 import helloPlugin from '@nodepress/plugin-hello';
@@ -100,6 +103,13 @@ const contentTypes = createContentTypeRegistry({
   logger: np.logger.child('content-types'),
 });
 await contentTypes.refresh();
+// Taxonomies work the same way: built-in `category` and `tag`, plus whatever plugins add.
+const taxonomies = createTaxonomyService({
+  store: createTaxonomyStore(database),
+  hooks: np.hooks,
+  logger: np.logger.child('taxonomies'),
+});
+await taxonomies.refresh();
 const scheduledPublisher = createScheduledPublisher({
   content,
   jobs,
@@ -137,7 +147,14 @@ const media = createMediaService({
 const capabilities = createCapabilities(np.hooks);
 const app = createApp(np, database, {
   permalinks,
-  content: { service: content, types: contentTypes, capabilities },
+  content: {
+    service: content,
+    types: contentTypes,
+    capabilities,
+    meta: createContentMetaStore(database),
+    taxonomies,
+    options,
+  },
   media: { service: media, storage: mediaStorage, capabilities },
   auth: {
     users,

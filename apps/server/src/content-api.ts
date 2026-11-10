@@ -5,6 +5,8 @@ import {
   ContentValidationError,
   DEFAULT_LIST_LIMIT,
   MAX_LIST_LIMIT,
+  MAX_TERMS_PER_ASSIGNMENT,
+  TermValidationError,
   type Capabilities,
   type Content,
   type ContentService,
@@ -12,11 +14,18 @@ import {
   type ContentStatusName,
   type ContentTypeRegistry,
   type CreateContentInput,
+  type FieldDefinition,
+  type FieldIssue,
   type HookRegistry,
+  type OptionsService,
+  type TaxonomyService,
+  type Term,
   type UpdateContentInput,
   type User,
 } from '@nodepress/core';
+import type { ContentMetaTableStore } from '@nodepress/db';
 import { Hono, type Context } from 'hono';
+import { getCookie } from 'hono/cookie';
 import type { Auth, AuthEnv } from './auth.js';
 import { readLimited } from './media.js';
 
@@ -29,8 +38,17 @@ declare module '@nodepress/core' {
      */
     'api:response': {
       value: unknown;
-      context: { route: string; method: string; status: number; user: User };
+      /** `user` is `null` for an anonymous read of published content (see `api_public_read`). */
+      context: { route: string; method: string; status: number; user: User | null };
     };
+  }
+  interface OptionMap {
+    /**
+     * When `true`, anyone may `GET` published items from `/api/v1/content/:type[/:id]` without
+     * credentials, for headless sites. Off by default. Requests that do send credentials are
+     * still authenticated, and everything else on the API still needs them.
+     */
+    api_public_read: boolean;
   }
 }
 
@@ -39,6 +57,12 @@ export interface ContentApiOptions {
   types: ContentTypeRegistry;
   capabilities: Capabilities;
   hooks: HookRegistry;
+  /** Stores custom field values. Without it the routes neither accept nor return `meta`. */
+  meta?: ContentMetaTableStore;
+  /** Assigns terms. Without it the routes neither accept nor return `terms`. */
+  taxonomies?: TaxonomyService;
+  /** Where the `api_public_read` setting lives. Without it anonymous reads are always off. */
+  options?: OptionsService;
 }
 
 const MAX_JSON_BYTES = 1024 * 1024;
@@ -161,18 +185,79 @@ function pick(item: Record<string, unknown>, fields: string[] | undefined) {
   return Object.fromEntries(fields.map((name) => [name, item[name]]));
 }
 
-function parseFields(c: Context): Parsed<string[] | undefined> {
+function parseFields(c: Context, allowed: readonly string[]): Parsed<string[] | undefined> {
   const raw = c.req.query('fields');
   if (raw === undefined) return { ok: true, value: undefined };
   const names = [...new Set(raw.split(',').map((s) => s.trim()))];
-  const unknown = names.filter((name) => !CONTENT_FIELD_NAMES.includes(name));
+  const unknown = names.filter((name) => !allowed.includes(name));
   if (unknown.length > 0 || names.length === 0) {
-    return badRequest(
-      c,
-      `fields must be a comma-separated list of: ${CONTENT_FIELD_NAMES.join(', ')}`,
-    );
+    return badRequest(c, `fields must be a comma-separated list of: ${allowed.join(', ')}`);
   }
   return { ok: true, value: names };
+}
+
+/** A 400 that lists every invalid custom field value, not just the first. */
+function invalidValues(c: Context, issues: FieldIssue[]): Failure {
+  const message = issues
+    .map((issue) => (issue.path ? `${issue.path}: ${issue.message}` : issue.message))
+    .join('; ');
+  return {
+    ok: false,
+    response: c.json({ error: 'invalid_request', message: `meta: ${message}`, issues }, 400),
+  };
+}
+
+/** Custom field values and term assignments sent along with the core fields of a write. */
+interface ExtraWrite {
+  meta?: Record<string, unknown>;
+  /** Taxonomy name to the ids of the terms the item should have in it. */
+  terms?: Record<string, number[]>;
+}
+
+/**
+ * Take `meta` and `terms` out of a write body when those features are enabled, checking only
+ * their shape. What is left goes through `parseWrite`, which rejects anything it does not know.
+ */
+function splitWrite(
+  c: Context,
+  body: Record<string, unknown>,
+  enabled: { meta: boolean; terms: boolean },
+): Parsed<{ core: Record<string, unknown>; extra: ExtraWrite }> {
+  const { meta, terms, ...core } = body;
+  const extra: ExtraWrite = {};
+  if (!enabled.meta) Object.assign(core, meta === undefined ? {} : { meta });
+  else if (meta !== undefined) {
+    if (typeof meta !== 'object' || meta === null || Array.isArray(meta)) {
+      return badRequest(c, 'meta must be an object of custom field values');
+    }
+    extra.meta = meta as Record<string, unknown>;
+  }
+  if (!enabled.terms) Object.assign(core, terms === undefined ? {} : { terms });
+  else if (terms !== undefined) {
+    if (typeof terms !== 'object' || terms === null || Array.isArray(terms)) {
+      return badRequest(c, 'terms must be an object of taxonomy name to a list of term ids');
+    }
+    const checked: Record<string, number[]> = {};
+    for (const [taxonomy, ids] of Object.entries(terms)) {
+      if (
+        !Array.isArray(ids) ||
+        ids.length > MAX_TERMS_PER_ASSIGNMENT ||
+        !ids.every((id) => typeof id === 'number' && Number.isSafeInteger(id) && id > 0)
+      ) {
+        return badRequest(
+          c,
+          `terms.${taxonomy} must be a list of at most ${MAX_TERMS_PER_ASSIGNMENT} term ids`,
+        );
+      }
+      checked[taxonomy] = [...new Set(ids as number[])];
+    }
+    extra.terms = checked;
+  }
+  return { ok: true, value: { core, extra } };
+}
+
+function publicTerm(term: Term) {
+  return { id: term.id, name: term.name, slug: term.slug, parentId: term.parentId };
 }
 
 async function readJsonObject(c: Context): Promise<Parsed<Record<string, unknown>>> {
@@ -254,8 +339,11 @@ function parseWrite(c: Context, body: Record<string, unknown>): Parsed<UpdateCon
 
 /** Routes under `/api/v1`: `/content-types`, `/content/:type[/:id]` and the public `/openapi.json`. */
 export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hono<AuthEnv> {
-  const { content, types, capabilities, hooks } = options;
+  const { content, types, capabilities, hooks, meta, taxonomies } = options;
   const routes = new Hono<AuthEnv>();
+
+  const publicReadsEnabled = async () =>
+    options.options !== undefined && (await options.options.get('api_public_read', false)) === true;
 
   for (const path of ['/content', '/content/*', '/content-types']) {
     routes.use(path, async (c, next) => {
@@ -263,11 +351,127 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
       await next();
     });
     routes.use(path, auth.originGuard);
-    routes.use(path, auth.authenticate);
   }
+  routes.use('/content-types', auth.authenticate);
+  routes.use('/content', auth.authenticate);
+  routes.use('/content/*', async (c, next) => {
+    // Only a plain GET with no credentials at all can be anonymous: anything that presents a
+    // token or a session cookie is checked, and a bad one is rejected, never downgraded.
+    const anonymous =
+      c.req.method === 'GET' &&
+      c.req.header('authorization') === undefined &&
+      getCookie(c, auth.cookieName) === undefined &&
+      (await publicReadsEnabled());
+    if (anonymous) {
+      c.set('principal', null);
+      await next();
+      return;
+    }
+    return auth.authenticate(c, next);
+  });
 
+  /** The signed-in user; only for routes that are never anonymous. */
   const userOf = (c: Context<AuthEnv>): User => c.get('principal')!.user;
+  /** The signed-in user, or `null` for an anonymous read. */
+  const viewerOf = (c: Context<AuthEnv>): User | null => c.get('principal')?.user ?? null;
   const can = (user: User, capability: string) => capabilities.can(user, capability);
+
+  const selectableFields = [
+    ...CONTENT_FIELD_NAMES,
+    ...(meta ? ['meta'] : []),
+    ...(taxonomies ? ['terms'] : []),
+  ];
+
+  /**
+   * The JSON of items, with their custom fields (`meta`) and terms when wanted. Only values of
+   * fields the content type defines are returned, so keys other code keeps in `content_meta`
+   * never leak through the API.
+   */
+  const present = async (
+    items: Content[],
+    want: { meta: boolean; terms: boolean },
+  ): Promise<Record<string, unknown>[]> => {
+    const out = items.map((item) => publicContent(item));
+    if (want.meta && meta) {
+      const stored = await meta.getMetaMany(items.map((item) => item.id));
+      items.forEach((item, i) => {
+        const defined = new Set((types.get(item.type)?.fields ?? []).map((f) => f.name));
+        const values = stored.get(item.id) ?? {};
+        out[i]!.meta = Object.fromEntries(Object.entries(values).filter(([k]) => defined.has(k)));
+      });
+    }
+    if (want.terms && taxonomies) {
+      await Promise.all(
+        items.map(async (item, i) => {
+          const assigned = await taxonomies.getContentTerms(item.id);
+          const grouped: Record<string, ReturnType<typeof publicTerm>[]> = {};
+          for (const taxonomy of taxonomies.listTaxonomies()) {
+            if (!taxonomy.contentTypes || taxonomy.contentTypes.includes(item.type)) {
+              grouped[taxonomy.name] = [];
+            }
+          }
+          for (const term of assigned) (grouped[term.taxonomy] ??= []).push(publicTerm(term));
+          out[i]!.terms = grouped;
+        }),
+      );
+    }
+    return out;
+  };
+
+  /**
+   * Check the `meta` and `terms` of a write against the content type registry and taxonomies,
+   * before anything is saved. Updates only validate the fields that are present, and `null`
+   * clears a field that is not required.
+   */
+  const checkExtra = async (
+    c: Context<AuthEnv>,
+    type: string,
+    extra: ExtraWrite,
+    isNew: boolean,
+  ): Promise<Parsed<{ set: Record<string, unknown>; clear: string[] }>> => {
+    const set: Record<string, unknown> = {};
+    const clear: string[] = [];
+    if (meta && (extra.meta !== undefined || isNew)) {
+      const result = types.validate(type, extra.meta ?? {}, { partial: !isNew });
+      if (!result.ok) return invalidValues(c, result.issues);
+      for (const [key, value] of Object.entries(result.value)) {
+        if (value === null || value === undefined) clear.push(key);
+        else set[key] = value;
+      }
+    }
+    if (taxonomies && extra.terms !== undefined) {
+      for (const [name, ids] of Object.entries(extra.terms)) {
+        const taxonomy = taxonomies.getTaxonomy(name);
+        if (!taxonomy) return badRequest(c, `terms: unknown taxonomy "${name}"`);
+        if (taxonomy.contentTypes && !taxonomy.contentTypes.includes(type)) {
+          return badRequest(c, `terms: taxonomy "${name}" cannot be used with "${type}"`);
+        }
+        for (const id of ids) {
+          const term = await taxonomies.getTerm(id);
+          if (!term || term.taxonomy !== name) {
+            return badRequest(c, `terms.${name}: term ${id} does not exist`);
+          }
+        }
+      }
+    }
+    return { ok: true, value: { set, clear } };
+  };
+
+  const applyExtra = async (
+    id: number,
+    extra: ExtraWrite,
+    checked: { set: Record<string, unknown>; clear: string[] },
+  ) => {
+    if (meta) {
+      await meta.setMeta(id, checked.set);
+      await meta.deleteMeta(id, checked.clear);
+    }
+    if (taxonomies && extra.terms) {
+      for (const [name, ids] of Object.entries(extra.terms)) {
+        await taxonomies.setContentTerms(id, name, ids);
+      }
+    }
+  };
 
   const respond = async (
     c: Context<AuthEnv>,
@@ -279,14 +483,16 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
       route,
       method: c.req.method,
       status,
-      user: userOf(c),
+      user: viewerOf(c),
     });
     const isObject = typeof filtered === 'object' && filtered !== null && !Array.isArray(filtered);
     return c.json((isObject ? filtered : body) as Record<string, unknown>, status);
   };
 
   /** Can this user see the item at all? Items they may not see are reported as missing. */
-  const canView = async (user: User, item: Content, caps: TypeCapabilities) => {
+  const canView = async (user: User | null, item: Content, caps: TypeCapabilities) => {
+    // Anonymous visitors (when public reads are on) see published items and nothing else.
+    if (!user) return item.status === 'published';
     if (!(await can(user, 'read'))) return false;
     if (item.status === 'published' || item.authorId === user.id) return true;
     return can(user, item.status === 'private' ? caps.readPrivate : caps.editOthers);
@@ -311,12 +517,12 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     if (!types.has(type) || id === null) return null;
     const item = await content.get(id);
     const caps = capabilitiesFor(type);
-    if (!item || item.type !== type || !(await canView(userOf(c), item, caps))) return null;
+    if (!item || item.type !== type || !(await canView(viewerOf(c), item, caps))) return null;
     return { type, item, caps };
   };
 
   const failure = (c: Context<AuthEnv>, error: unknown) => {
-    if (error instanceof ContentValidationError) {
+    if (error instanceof ContentValidationError || error instanceof TermValidationError) {
       return c.json({ error: 'invalid_request', message: error.message }, 400);
     }
     if (error instanceof ContentNotFoundError) return c.json({ error: 'not_found' }, 404);
@@ -339,19 +545,19 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
   routes.get('/content/:type', async (c) => {
     const type = c.req.param('type');
     if (!types.has(type)) return c.json({ error: 'unknown_content_type' }, 404);
-    const user = userOf(c);
+    const user = viewerOf(c);
     const caps = capabilitiesFor(type);
-    if (!(await can(user, 'read'))) return c.json({ error: 'forbidden' }, 403);
+    if (user && !(await can(user, 'read'))) return c.json({ error: 'forbidden' }, 403);
 
     const limit = parseCount(c, 'limit', 1, MAX_LIST_LIMIT);
     if (!limit.ok) return limit.response;
     const offset = parseCount(c, 'offset', 0, 1_000_000_000);
     if (!offset.ok) return offset.response;
-    const fields = parseFields(c);
+    const fields = parseFields(c, selectableFields);
     if (!fields.ok) return fields.response;
 
-    const allItems = await can(user, caps.editOthers);
-    const allPrivate = await can(user, caps.readPrivate);
+    const allItems = user ? await can(user, caps.editOthers) : false;
+    const allPrivate = user ? await can(user, caps.readPrivate) : false;
     let statuses: ContentStatusName[] = allItems
       ? ['draft', 'scheduled', 'published', 'private']
       : ['published'];
@@ -369,7 +575,7 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     const rawAuthor = c.req.query('author');
     let authorId: number | undefined;
     if (rawAuthor !== undefined) {
-      authorId = rawAuthor === 'me' ? user.id : (parseId(rawAuthor) ?? undefined);
+      authorId = rawAuthor === 'me' ? user?.id : (parseId(rawAuthor) ?? undefined);
       if (authorId === undefined) return badRequest(c, 'author must be a user id or "me"').response;
     }
     // Other people's drafts and private items are not visible: asking for any status beyond
@@ -378,6 +584,7 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
       (s) => s !== 'published' && !(s === 'private' ? allPrivate && allItems : allItems),
     );
     if (needsOwn) {
+      if (!user) return c.json({ error: 'forbidden' }, 403);
       if (authorId !== undefined && authorId !== user.id) {
         return c.json({ error: 'forbidden' }, 403);
       }
@@ -423,8 +630,13 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
         }),
         content.count(filter),
       ]);
+      // Custom fields and terms cost extra queries, so a list returns them only when asked for.
+      const shown = await present(items, {
+        meta: fields.value?.includes('meta') ?? false,
+        terms: fields.value?.includes('terms') ?? false,
+      });
       return respond(c, 'content:list', 200, {
-        items: items.map((item) => pick(publicContent(item), fields.value)),
+        items: shown.map((item) => pick(item, fields.value)),
         total,
         limit: limit.value ?? DEFAULT_LIST_LIMIT,
         offset: offset.value ?? 0,
@@ -435,11 +647,12 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
   });
 
   routes.get('/content/:type/:id', async (c) => {
-    const fields = parseFields(c);
+    const fields = parseFields(c, selectableFields);
     if (!fields.ok) return fields.response;
     const found = await find(c);
     if (!found) return notFound(c);
-    return respond(c, 'content:get', 200, { item: pick(publicContent(found.item), fields.value) });
+    const [shown] = await present([found.item], { meta: true, terms: true });
+    return respond(c, 'content:get', 200, { item: pick(shown!, fields.value) });
   });
 
   routes.post('/content/:type', async (c) => {
@@ -451,8 +664,14 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
 
     const raw = await readJsonObject(c);
     if (!raw.ok) return raw.response;
-    const input = parseWrite(c, raw.value);
+    const split = splitWrite(c, raw.value, { meta: !!meta, terms: !!taxonomies });
+    if (!split.ok) return split.response;
+    const input = parseWrite(c, split.value.core);
     if (!input.ok) return input.response;
+    const { extra } = split.value;
+    if (extra.terms !== undefined && !(await can(user, 'manage_categories'))) {
+      return c.json({ error: 'forbidden' }, 403);
+    }
 
     if (input.value.status !== undefined && input.value.status !== 'draft') {
       if (!(await can(user, caps.publish))) return c.json({ error: 'forbidden' }, 403);
@@ -464,10 +683,20 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     ) {
       return c.json({ error: 'forbidden' }, 403);
     }
+    const checked = await checkExtra(c, type, extra, true);
+    if (!checked.ok) return checked.response;
     try {
       const create: CreateContentInput = { ...input.value, type };
       const item = await content.create(create, { userId: user.id });
-      return respond(c, 'content:create', 201, { item: publicContent(item) });
+      try {
+        await applyExtra(item.id, extra, checked.value);
+      } catch (error) {
+        // Do not leave an item behind that is missing the fields or terms it was created with.
+        await content.delete(item.id).catch(() => undefined);
+        throw error;
+      }
+      const [shown] = await present([item], { meta: true, terms: true });
+      return respond(c, 'content:create', 201, { item: shown! });
     } catch (error) {
       return failure(c, error);
     }
@@ -484,8 +713,14 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
 
     const raw = await readJsonObject(c);
     if (!raw.ok) return raw.response;
-    const input = parseWrite(c, raw.value);
+    const split = splitWrite(c, raw.value, { meta: !!meta, terms: !!taxonomies });
+    if (!split.ok) return split.response;
+    const input = parseWrite(c, split.value.core);
     if (!input.ok) return input.response;
+    const { extra } = split.value;
+    if (extra.terms !== undefined && !(await can(user, 'manage_categories'))) {
+      return c.json({ error: 'forbidden' }, 403);
+    }
 
     const status = input.value.status;
     if (
@@ -504,9 +739,13 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     ) {
       return c.json({ error: 'forbidden' }, 403);
     }
+    const checked = await checkExtra(c, item.type, extra, false);
+    if (!checked.ok) return checked.response;
     try {
       const updated = await content.update(item.id, input.value, { userId: user.id });
-      return respond(c, 'content:update', 200, { item: publicContent(updated) });
+      await applyExtra(updated.id, extra, checked.value);
+      const [shown] = await present([updated], { meta: true, terms: true });
+      return respond(c, 'content:update', 200, { item: shown! });
     } catch (error) {
       return failure(c, error);
     }
@@ -527,22 +766,107 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     }
     try {
       const trashed = await content.trash(item.id, { userId: user.id });
-      return respond(c, 'content:trash', 200, { item: publicContent(trashed) });
+      const [shown] = await present([trashed], { meta: true, terms: true });
+      return respond(c, 'content:trash', 200, { item: shown! });
     } catch (error) {
       return failure(c, error);
     }
   });
 
-  routes.get('/openapi.json', (c) => {
+  routes.get('/openapi.json', async (c) => {
     c.header('Cache-Control', 'no-cache');
-    return c.json(createOpenApiDocument(types));
+    return c.json(
+      createOpenApiDocument(types, {
+        meta: !!meta,
+        taxonomies: taxonomies?.listTaxonomies().map((t) => ({
+          name: t.name,
+          contentTypes: t.contentTypes,
+        })),
+        publicReads: await publicReadsEnabled(),
+      }),
+    );
   });
 
   return routes;
 }
 
+/** The JSON Schema of one custom field's value, as the content type registry validates it. */
+function fieldJsonSchema(field: FieldDefinition): Record<string, unknown> {
+  const one = (): Record<string, unknown> => {
+    switch (field.type) {
+      case 'text':
+        return {
+          type: 'string',
+          ...(field.minLength !== undefined ? { minLength: field.minLength } : {}),
+          ...(field.maxLength !== undefined ? { maxLength: field.maxLength } : {}),
+          ...(field.pattern !== undefined ? { pattern: field.pattern } : {}),
+        };
+      case 'richtext':
+        return { type: 'array', items: { $ref: '#/components/schemas/Block' } };
+      case 'number':
+        return {
+          type: field.integer ? 'integer' : 'number',
+          ...(field.min !== undefined ? { minimum: field.min } : {}),
+          ...(field.max !== undefined ? { maximum: field.max } : {}),
+        };
+      case 'boolean':
+        return { type: 'boolean' };
+      case 'date':
+        return { type: 'string', format: 'date-time' };
+      case 'select':
+        return { type: 'string', enum: [...field.options] };
+      case 'media':
+      case 'relation':
+        return { type: 'integer', minimum: 1 };
+    }
+  };
+  const multiple = 'multiple' in field && field.multiple === true;
+  const schema = multiple ? { type: 'array', items: one() } : one();
+  return {
+    ...schema,
+    ...(field.description ? { description: field.description } : {}),
+    ...('default' in field && field.default !== undefined ? { default: field.default } : {}),
+  };
+}
+
+export interface OpenApiFeatures {
+  /** Custom fields are enabled: describe `meta` for every content type. */
+  meta?: boolean;
+  /** Taxonomies that can be assigned; leave out when terms are not enabled. */
+  taxonomies?: { name: string; contentTypes: string[] | null }[] | undefined;
+  /** Anonymous reads of published items are switched on right now. */
+  publicReads?: boolean;
+}
+
 /** OpenAPI 3.1 description of the content API, listing the content types registered right now. */
-export function createOpenApiDocument(types: ContentTypeRegistry): Record<string, unknown> {
+export function createOpenApiDocument(
+  types: ContentTypeRegistry,
+  features: OpenApiFeatures = {},
+): Record<string, unknown> {
+  const withMeta = features.meta === true;
+  const withTerms = features.taxonomies !== undefined;
+  const metaSchemas: Record<string, unknown> = {};
+  const metaSchemaOf = (name: string) => `ContentMeta_${name.replace(/[^A-Za-z0-9_]/g, '_')}`;
+  if (withMeta) {
+    for (const type of types.list()) {
+      const required = type.fields.filter((f) => f.required === true).map((f) => f.name);
+      metaSchemas[metaSchemaOf(type.name)] = {
+        type: 'object',
+        additionalProperties: false,
+        description:
+          `Custom fields of \`${type.name}\`. On create, required fields must be sent ` +
+          '(fields with a default are filled in); on update, send only the fields to change, ' +
+          'and `null` clears a field that is not required.',
+        ...(required.length > 0 ? { required } : {}),
+        properties: Object.fromEntries(
+          type.fields.map((f) => {
+            const schema = fieldJsonSchema(f);
+            return [f.name, f.required ? schema : { anyOf: [schema, { type: 'null' }] }];
+          }),
+        ),
+      };
+    }
+  }
   const typeParam = {
     name: 'type',
     in: 'path',
@@ -559,8 +883,17 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
   const fieldsParam = {
     name: 'fields',
     in: 'query',
-    description: 'Comma-separated list of fields to return.',
-    schema: { type: 'string', example: 'id,title,slug' },
+    description:
+      'Comma-separated list of fields to return.' +
+      (withMeta || withTerms
+        ? ' A single item always includes ' +
+          [withMeta ? '`meta`' : '', withTerms ? '`terms`' : ''].filter(Boolean).join(' and ') +
+          '; a list includes them only when named here.'
+        : ''),
+    schema: {
+      type: 'string',
+      example: ['id', 'title', 'slug', ...(withMeta ? ['meta'] : [])].join(','),
+    },
   };
   const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
   const error = (description: string) => ({
@@ -584,6 +917,28 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
   const missing = error('No such content type or item, or the item is not visible to the user.');
   const invalid = error('The request is invalid.');
   const security = [{ bearerAuth: [] }];
+  // With public reads on, the two read routes also work with no credentials (`{}`).
+  const readSecurity = features.publicReads === true ? [{ bearerAuth: [] }, {}] : security;
+  const termIds = withTerms
+    ? {
+        type: 'object',
+        additionalProperties: false,
+        description:
+          'Taxonomy name to the ids of the terms the item should have in it; each list replaces ' +
+          'the item\'s terms in that taxonomy. Needs the `manage_categories` capability.',
+        properties: Object.fromEntries(
+          (features.taxonomies ?? []).map((t) => [
+            t.name,
+            {
+              type: 'array',
+              items: { type: 'integer', minimum: 1 },
+              maxItems: MAX_TERMS_PER_ASSIGNMENT,
+              ...(t.contentTypes ? { description: `Only for: ${t.contentTypes.join(', ')}.` } : {}),
+            },
+          ]),
+        ),
+      }
+    : undefined;
 
   return {
     openapi: '3.1.0',
@@ -593,7 +948,10 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
       description:
         'Authenticate with `Authorization: Bearer <api token>`. Browser sessions also work and ' +
         'need an `X-CSRF-Token` header on writes. Non-published items are visible only to their ' +
-        "author and to users who may edit others' items.",
+        "author and to users who may edit others' items." +
+        (features.publicReads === true
+          ? ' Anonymous requests may read published items (the `api_public_read` setting is on).'
+          : ' Anonymous reads of published items can be switched on with the `api_public_read` setting.'),
     },
     paths: {
       '/api/v1/content-types': {
@@ -622,7 +980,7 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
         get: {
           operationId: 'listContent',
           summary: 'List content of a type',
-          security,
+          security: readSecurity,
           parameters: [
             typeParam,
             {
@@ -712,7 +1070,7 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
         get: {
           operationId: 'getContent',
           summary: 'Get an item',
-          security,
+          security: readSecurity,
           parameters: [typeParam, idParam, fieldsParam],
           responses: {
             '200': item('The item.'),
@@ -804,8 +1162,45 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
             publishedAt: { type: ['string', 'null'], format: 'date-time' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
+            ...(withMeta
+              ? {
+                  meta: {
+                    type: 'object',
+                    additionalProperties: true,
+                    description:
+                      'Values of the custom fields the content type defines (see ' +
+                      '`ContentMeta_<type>`). Fields without a value are absent.',
+                  },
+                }
+              : {}),
+            ...(withTerms
+              ? {
+                  terms: {
+                    type: 'object',
+                    description:
+                      'Taxonomy name to the terms the item has in it. Every taxonomy that ' +
+                      'applies to the content type is listed, with an empty list when unused.',
+                    additionalProperties: { type: 'array', items: ref('Term') },
+                  },
+                }
+              : {}),
           },
         },
+        ...(withTerms
+          ? {
+              Term: {
+                type: 'object',
+                required: ['id', 'name', 'slug', 'parentId'],
+                properties: {
+                  id: { type: 'integer' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' },
+                  parentId: { type: ['integer', 'null'] },
+                },
+              },
+            }
+          : {}),
+        ...metaSchemas,
         ContentInput: {
           type: 'object',
           additionalProperties: false,
@@ -822,6 +1217,16 @@ export function createOpenApiDocument(types: ContentTypeRegistry): Record<string
             },
             parentId: { type: ['integer', 'null'] },
             publishedAt: { type: ['string', 'null'], format: 'date-time' },
+            ...(withMeta
+              ? {
+                  meta: {
+                    description:
+                      "Custom field values; the schema that applies is the item's content type's.",
+                    anyOf: types.list().map((t) => ref(metaSchemaOf(t.name))),
+                  },
+                }
+              : {}),
+            ...(termIds ? { terms: termIds } : {}),
           },
         },
       },

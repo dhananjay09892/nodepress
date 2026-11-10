@@ -4,7 +4,9 @@ import {
   createContentService,
   createContentTypeRegistry,
   createNodePress,
+  createOptionsService,
   createSessionsService,
+  createTaxonomyService,
   createUsersService,
   silentLogger,
   type NodePress,
@@ -12,9 +14,12 @@ import {
 } from '@nodepress/core';
 import {
   createApiTokensStore,
+  createContentMetaStore,
   createContentStore,
   createDatabase,
+  createOptionsStore,
   createSessionsStore,
+  createTaxonomyStore,
   createUsersStore,
   type DatabaseHandle,
 } from '@nodepress/db';
@@ -36,6 +41,11 @@ let database: DatabaseHandle;
 let np: NodePress;
 let app: ReturnType<typeof createApp>;
 let types: ReturnType<typeof createContentTypeRegistry>;
+type Extras = Pick<
+  NonNullable<NonNullable<Parameters<typeof createApp>[2]>['content']>,
+  'meta' | 'taxonomies' | 'options'
+>;
+let mount: (extra?: Extras) => void;
 const tokens: Record<string, string> = {};
 const ids: Record<string, number> = {};
 
@@ -76,10 +86,19 @@ beforeEach(async () => {
     store: createContentStore(database),
     hooks: np.hooks,
   });
-  app = createApp(np, database, {
-    auth: { users, sessions, apiTokens },
-    content: { service: content, types, capabilities: createCapabilities(np.hooks) },
-  });
+  // `mount` rebuilds the app, so a test can turn on custom fields, terms or public reads.
+  mount = (extra) => {
+    app = createApp(np, database, {
+      auth: { users, sessions, apiTokens },
+      content: {
+        service: content,
+        types,
+        capabilities: createCapabilities(np.hooks),
+        ...extra,
+      },
+    });
+  };
+  mount();
 });
 
 afterEach(async () => {
@@ -628,5 +647,445 @@ describe('OpenAPI document', () => {
       'offset',
       'fields',
     ]);
+  });
+});
+
+describe('custom fields, terms and public reads', () => {
+  let taxonomies: ReturnType<typeof createTaxonomyService>;
+  let options: ReturnType<typeof createOptionsService>;
+  let meta: ReturnType<typeof createContentMetaStore>;
+  const termIds: Record<string, number> = {};
+
+  beforeEach(async () => {
+    types.register({
+      name: 'product',
+      fields: [
+        { name: 'price', type: 'number', required: true, min: 0 },
+        { name: 'color', type: 'select', options: ['red', 'blue'] },
+        { name: 'stock', type: 'number', integer: true, default: 0 },
+        { name: 'notes', type: 'text', maxLength: 20 },
+      ],
+    });
+    taxonomies = createTaxonomyService({ store: createTaxonomyStore(database), hooks: np.hooks });
+    taxonomies.register({ name: 'genre', contentTypes: ['product'] });
+    options = createOptionsService({ store: createOptionsStore(database), hooks: np.hooks });
+    meta = createContentMetaStore(database);
+    for (const [key, taxonomy, name] of [
+      ['news', 'category', 'News'],
+      ['travel', 'category', 'Travel'],
+      ['fun', 'tag', 'Fun'],
+      ['gadget', 'genre', 'Gadget'],
+    ] as const) {
+      termIds[key] = (await taxonomies.createTerm({ taxonomy, name })).id;
+    }
+    mount({ meta, taxonomies, options });
+  });
+
+  const product = (extra: Json = {}) => ({ title: 'Lamp', meta: { price: 10 }, ...extra });
+
+  describe('custom fields', () => {
+    it('stores them on create and returns them, with defaults filled in', async () => {
+      const created = await call('POST', '/content/product', 'author', product());
+      expect(created.status).toBe(201);
+      expect(created.json!.item.meta).toEqual({ price: 10, stock: 0 });
+      const id = created.json!.item.id;
+      const got = await call('GET', `/content/product/${id}`, 'author');
+      expect(got.json!.item.meta).toEqual({ price: 10, stock: 0 });
+      expect(got.json!.item.terms).toEqual({ genre: [] });
+      expect((await call('GET', `/content/post/${id}`, 'author')).status).toBe(404);
+    });
+
+    it('returns them in a list only when asked for', async () => {
+      await call('POST', '/content/product', 'author', product({ meta: { price: 3, color: 'red' } }));
+      const plain = await call('GET', '/content/product', 'author');
+      expect(plain.json!.items[0]).not.toHaveProperty('meta');
+      expect(plain.json!.items[0]).not.toHaveProperty('terms');
+      const asked = await call('GET', '/content/product?fields=title,meta,terms', 'author');
+      expect(Object.keys(asked.json!.items[0]).sort()).toEqual(['meta', 'terms', 'title']);
+      expect(asked.json!.items[0].meta).toEqual({ price: 3, color: 'red', stock: 0 });
+      expect(asked.json!.items[0].terms).toEqual({ genre: [] });
+      const only = await call('GET', '/content/product?fields=meta', 'author');
+      expect(Object.keys(only.json!.items[0])).toEqual(['meta']);
+    });
+
+    it('rejects missing required fields, bad values and unknown fields, saving nothing', async () => {
+      const missing = await call('POST', '/content/product', 'author', { title: 'No price' });
+      expect(missing.status).toBe(400);
+      expect(missing.json!.error).toBe('invalid_request');
+      expect(missing.json!.issues.map((i: Json) => i.path)).toEqual(['price']);
+
+      const bad = await call(
+        'POST',
+        '/content/product',
+        'author',
+        product({ meta: { price: -1, color: 'green', notes: 'x'.repeat(21), nope: 1 } }),
+      );
+      expect(bad.status).toBe(400);
+      const paths = bad.json!.issues.map((i: Json) => i.path.length > 0 ? i.path : i.message);
+      expect(paths).toEqual(expect.arrayContaining(['price', 'color', 'notes']));
+      expect(bad.json!.message).toMatch(/Unknown field: nope/);
+
+      for (const value of [[], "x", null, 5]) {
+        const res = await call('POST', '/content/product', 'author', { title: "T", meta: value });
+        expect([value, res.status]).toEqual([value, 400]);
+      }
+      const posts = await call('GET', '/content/product?status=draft,published', 'editor');
+      expect(posts.json!.total).toBe(0);
+    });
+
+    it('does not accept meta for a type with no fields beyond what it declares', async () => {
+      const ok = await call('POST', '/content/post', 'author', { title: 'P', meta: {} });
+      expect(ok.status).toBe(201);
+      expect(ok.json!.item.meta).toEqual({});
+      const res = await call('POST', '/content/post', 'author', { title: 'P', meta: { a: 1 } });
+      expect(res.status).toBe(400);
+    });
+
+    it('updates only the fields that are sent and clears a field with null', async () => {
+      const created = await call('POST', '/content/product', 'author', product({ meta: { price: 5, color: 'red' } }));
+      const id = created.json!.item.id;
+      const patch = await call('PATCH', `/content/product/${id}`, 'author', { meta: { color: 'blue' } });
+      expect(patch.status).toBe(200);
+      expect(patch.json!.item.meta).toEqual({ price: 5, color: 'blue', stock: 0 });
+      expect(patch.json!.item.title).toBe('Lamp');
+
+      const cleared = await call('PATCH', `/content/product/${id}`, 'author', { meta: { color: null } });
+      expect(cleared.json!.item.meta).toEqual({ price: 5, stock: 0 });
+
+      const required = await call('PATCH', `/content/product/${id}`, 'author', { meta: { price: null } });
+      expect(required.status).toBe(400);
+      const invalid = await call('PATCH', `/content/product/${id}`, 'author', { meta: { price: 'free' } });
+      expect(invalid.status).toBe(400);
+      const unchanged = await call('GET', `/content/product/${id}`, 'author');
+      expect(unchanged.json!.item.meta).toEqual({ price: 5, stock: 0 });
+
+      // A bad meta rejects the whole write, including the core fields sent with it.
+      const both = await call('PATCH', `/content/product/${id}`, 'author', {
+        title: 'Changed',
+        meta: { price: -3 },
+      });
+      expect(both.status).toBe(400);
+      expect((await call('GET', `/content/product/${id}`, 'author')).json!.item.title).toBe('Lamp');
+    });
+
+    it('never returns values stored under keys the type does not define', async () => {
+      const created = await call('POST', '/content/product', 'author', product());
+      await meta.setMeta(created.json!.item.id, { internal_secret: 'hidden' });
+      const got = await call('GET', `/content/product/${created.json!.item.id}`, 'author');
+      expect(got.json!.item.meta).toEqual({ price: 10, stock: 0 });
+      expect(JSON.stringify(got.json)).not.toContain('hidden');
+    });
+
+    it('follows the same permissions as the item itself', async () => {
+      const created = await call('POST', '/content/product', 'author', product());
+      const id = created.json!.item.id;
+      const other = await call('PATCH', `/content/product/${id}`, 'author2', { meta: { price: 1 } });
+      expect(other.status).toBe(404); // another author's draft is not even visible
+      const published = await call('PATCH', `/content/product/${id}`, 'editor', { status: 'published' });
+      expect(published.status).toBe(200);
+      const denied = await call('PATCH', `/content/product/${id}`, 'author2', { meta: { price: 1 } });
+      expect(denied.status).toBe(403);
+      expect((await call('GET', `/content/product/${id}`, 'editor')).json!.item.meta.price).toBe(10);
+      const allowed = await call('PATCH', `/content/product/${id}`, 'editor', { meta: { price: 12 } });
+      expect(allowed.json!.item.meta.price).toBe(12);
+    });
+
+    it('is removed with the item', async () => {
+      const created = await call('POST', '/content/product', 'author', product());
+      const id = created.json!.item.id;
+      expect((await call('DELETE', `/content/product/${id}?force=true`, 'author')).status).toBe(204);
+      expect(await meta.getMeta(id)).toEqual({});
+    });
+
+    it('is not accepted when the feature is not wired in', async () => {
+      mount();
+      const res = await call('POST', '/content/product', 'author', product());
+      expect(res.status).toBe(400);
+      expect(res.json!.message).toMatch(/unknown field: meta/);
+      const list = await call('GET', '/content/post?fields=meta', 'author');
+      expect(list.status).toBe(400);
+    });
+  });
+
+  describe('terms', () => {
+    it('assigns terms on create and returns them grouped by taxonomy', async () => {
+      const created = await call('POST', '/content/post', 'editor', {
+        title: 'Hello',
+        terms: { category: [termIds.news, termIds.travel, termIds.news], tag: [termIds.fun] },
+      });
+      expect(created.status).toBe(201);
+      expect(created.json!.item.terms).toEqual({
+        category: [
+          { id: termIds.news, name: 'News', slug: 'news', parentId: null },
+          { id: termIds.travel, name: 'Travel', slug: 'travel', parentId: null },
+        ],
+        tag: [{ id: termIds.fun, name: 'Fun', slug: 'fun', parentId: null }],
+      });
+      const id = created.json!.item.id;
+      const got = await call('GET', `/content/post/${id}`, 'editor');
+      expect(got.json!.item.terms.category.map((t: Json) => t.name)).toEqual(['News', 'Travel']);
+      const list = await call('GET', '/content/post?fields=id,terms', 'editor');
+      expect(list.json!.items[0].terms.tag).toHaveLength(1);
+    });
+
+    it('replaces the terms of the taxonomies sent and leaves the others alone', async () => {
+      const created = await call('POST', '/content/post', 'editor', {
+        title: 'Hello',
+        terms: { category: [termIds.news], tag: [termIds.fun] },
+      });
+      const id = created.json!.item.id;
+      const patched = await call('PATCH', `/content/post/${id}`, 'editor', {
+        terms: { category: [termIds.travel] },
+      });
+      expect(patched.status).toBe(200);
+      expect(patched.json!.item.terms.category.map((t: Json) => t.name)).toEqual(['Travel']);
+      expect(patched.json!.item.terms.tag).toHaveLength(1);
+      expect(patched.json!.item.title).toBe('Hello');
+
+      const cleared = await call('PATCH', `/content/post/${id}`, 'editor', { terms: { tag: [] } });
+      expect(cleared.json!.item.terms.tag).toEqual([]);
+      expect(cleared.json!.item.terms.category).toHaveLength(1);
+    });
+
+    it('supports custom taxonomies on the types they allow', async () => {
+      const ok = await call(
+        'POST',
+        '/content/product',
+        'editor',
+        product({ terms: { genre: [termIds.gadget] } }),
+      );
+      expect(ok.status).toBe(201);
+      expect(ok.json!.item.terms.genre[0].name).toBe('Gadget');
+      const wrongType = await call('POST', '/content/post', 'editor', {
+        title: 'P',
+        terms: { genre: [termIds.gadget] },
+      });
+      expect(wrongType.status).toBe(400);
+      expect(wrongType.json!.message).toMatch(/cannot be used/);
+    });
+
+    it('rejects unknown taxonomies, foreign or missing terms and bad shapes, saving nothing', async () => {
+      const bodies: Json[] = [
+        { terms: { nope: [1] } },
+        { terms: { category: [termIds.fun] } },
+        { terms: { category: [9999] } },
+        { terms: { category: 'news' } },
+        { terms: { category: [0] } },
+        { terms: { category: [1.5] } },
+        { terms: { category: ['1'] } },
+        { terms: { category: Array.from({ length: 201 }, (_, i) => i + 1) } },
+        { terms: [] },
+        { terms: null },
+      ];
+      for (const body of bodies) {
+        const res = await call('POST', '/content/post', 'editor', { title: 'T', ...body });
+        expect([body, res.status]).toEqual([body, 400]);
+      }
+      expect((await call('GET', '/content/post?status=draft', 'editor')).json!.total).toBe(0);
+    });
+
+    it('needs the manage_categories capability', async () => {
+      const own = await call('POST', '/content/post', 'author', { title: 'Mine' });
+      const id = own.json!.item.id;
+      const create = await call('POST', '/content/post', 'author', {
+        title: 'T',
+        terms: { category: [termIds.news] },
+      });
+      expect(create.status).toBe(403);
+      const update = await call('PATCH', `/content/post/${id}`, 'author', {
+        terms: { category: [termIds.news] },
+      });
+      expect(update.status).toBe(403);
+      const empty = await call('PATCH', `/content/post/${id}`, 'author', { terms: {} });
+      expect(empty.status).toBe(403);
+      const item = await call('GET', `/content/post/${id}`, 'author');
+      expect(item.json!.item.terms.category).toEqual([]);
+      expect((await call('GET', '/content/post?status=draft', 'author')).json!.total).toBe(1);
+
+      const editorOk = await call('PATCH', `/content/post/${id}`, 'editor', {
+        terms: { category: [termIds.news] },
+      });
+      expect(editorOk.status).toBe(200);
+      // Plugins can grant the capability.
+      np.hooks.addFilter('user:role-capabilities', (caps, { role }) =>
+        role === 'author' ? [...caps, 'manage_categories'] : caps,
+      );
+      const granted = await call('PATCH', `/content/post/${id}`, 'author', {
+        terms: { category: [termIds.travel] },
+      });
+      expect(granted.status).toBe(200);
+    });
+
+    it('is not accepted when the feature is not wired in', async () => {
+      mount({ meta });
+      const res = await call('POST', '/content/post', 'editor', {
+        title: 'T',
+        terms: { category: [termIds.news] },
+      });
+      expect(res.status).toBe(400);
+      expect(res.json!.message).toMatch(/unknown field: terms/);
+    });
+  });
+
+  describe('public reads', () => {
+    let published: Json;
+    let draft: Json;
+
+    beforeEach(async () => {
+      published = await make('editor', {
+        title: 'Live',
+        status: 'published',
+        terms: { category: [termIds.news] },
+      });
+      draft = await make('editor', { title: 'Secret draft' });
+      await make('editor', { title: 'Private one', status: 'private' });
+      await call('POST', '/content/product', 'editor', product({ status: 'published' }));
+    });
+
+    const anon = (path: string, headers: Record<string, string> = {}) =>
+      call('GET', path, null, undefined, headers);
+
+    it('are off by default', async () => {
+      expect((await anon('/content/post')).status).toBe(401);
+      expect((await anon(`/content/post/${published.id}`)).status).toBe(401);
+      mount({ meta, taxonomies });
+      await options.set('api_public_read', true);
+      expect((await anon('/content/post')).status).toBe(401);
+    });
+
+    it('stay off when the setting is false or not a boolean', async () => {
+      await options.set('api_public_read', false);
+      expect((await anon('/content/post')).status).toBe(401);
+      await options.set('api_public_read', 'yes' as unknown as boolean);
+      expect((await anon('/content/post')).status).toBe(401);
+    });
+
+    it('show anonymous visitors published items only, once the setting is on', async () => {
+      await options.set('api_public_read', true);
+      const list = await anon('/content/post');
+      expect(list.status).toBe(200);
+      expect(list.res.headers.get('cache-control')).toBe('no-store');
+      expect(list.json!.items.map((i: Json) => i.title)).toEqual(['Live']);
+      expect(list.json!.total).toBe(1);
+
+      const item = await anon(`/content/post/${published.id}`);
+      expect(item.status).toBe(200);
+      expect(item.json!.item.terms.category[0].name).toBe('News');
+      expect((await anon(`/content/post/${draft.id}`)).status).toBe(404);
+      expect((await anon('/content/post/99999')).status).toBe(404);
+      expect((await anon('/content/nope')).status).toBe(404);
+
+      const products = await anon('/content/product?fields=title,meta');
+      expect(products.json!.items).toEqual([{ title: 'Lamp', meta: { price: 10, stock: 0 } }]);
+    });
+
+    it('refuse anonymous requests for other statuses or "me"', async () => {
+      await options.set('api_public_read', true);
+      expect((await anon('/content/post?status=draft')).status).toBe(403);
+      expect((await anon('/content/post?status=published,private')).status).toBe(403);
+      expect((await anon('/content/post?status=trash')).status).toBe(403);
+      expect((await anon('/content/post?status=published')).status).toBe(200);
+      expect((await anon('/content/post?author=me')).status).toBe(400);
+      expect((await anon('/content/post?author=abc')).status).toBe(400);
+      expect((await anon(`/content/post?author=${ids.editor}`)).json!.total).toBe(1);
+    });
+
+    it('never open anything but reading content', async () => {
+      await options.set('api_public_read', true);
+      const body = { title: 'Nope' };
+      expect((await call('POST', '/content/post', null, body)).status).toBe(401);
+      expect((await call('PATCH', `/content/post/${published.id}`, null, body)).status).toBe(401);
+      expect((await call('DELETE', `/content/post/${published.id}`, null)).status).toBe(401);
+      expect((await anon('/content-types')).status).toBe(401);
+      const stillThere = await call('GET', `/content/post/${published.id}`, 'editor');
+      expect(stillThere.json!.item.status).toBe('published');
+    });
+
+    it('still check any credentials that are sent', async () => {
+      await options.set('api_public_read', true);
+      expect((await anon('/content/post', { authorization: 'Bearer nope' })).status).toBe(401);
+      expect((await anon('/content/post', { cookie: '__Host-np_session=nope' })).status).toBe(401);
+      // A signed-in user keeps their own view.
+      const own = await call('GET', '/content/post?status=draft', 'editor');
+      expect(own.json!.items.map((i: Json) => i.title)).toContain('Secret draft');
+    });
+
+    it('follow the setting as it changes', async () => {
+      await options.set('api_public_read', true);
+      expect((await anon('/content/post')).status).toBe(200);
+      await options.set('api_public_read', false);
+      expect((await anon('/content/post')).status).toBe(401);
+    });
+
+    it('run the api:response filter with no user', async () => {
+      await options.set('api_public_read', true);
+      const seen: unknown[] = [];
+      np.hooks.addFilter('api:response', (body, context) => {
+        seen.push(context.user);
+        return body;
+      });
+      await anon('/content/post');
+      await call('GET', '/content/post', 'editor');
+      expect(seen[0]).toBeNull();
+      expect(seen[1]).toMatchObject({ id: ids.editor });
+    });
+  });
+
+  describe('OpenAPI document', () => {
+    it('describes custom fields, terms and the public read setting', async () => {
+      await options.set('api_public_read', true);
+      const res = await call('GET', '/openapi.json', null);
+      const doc = res.json!;
+      const schemas = doc.components.schemas;
+      expect(schemas.ContentMeta_product.required).toEqual(['price']);
+      expect(schemas.ContentMeta_product.properties.price).toEqual({
+        type: 'number',
+        minimum: 0,
+      });
+      expect(schemas.ContentMeta_product.properties.color).toEqual({
+        anyOf: [{ type: 'string', enum: ['red', 'blue'] }, { type: 'null' }],
+      });
+      expect(schemas.ContentMeta_product.properties.stock.anyOf[0].default).toBe(0);
+      expect(schemas.ContentInput.properties.meta.anyOf).toContainEqual({
+        $ref: '#/components/schemas/ContentMeta_product',
+      });
+      expect(Object.keys(schemas.ContentInput.properties.terms.properties).sort()).toEqual([
+        'category',
+        'genre',
+        'tag',
+      ]);
+      expect(schemas.ContentInput.properties.terms.properties.genre.description).toMatch(/product/);
+      expect(schemas.Content.properties.meta).toBeDefined();
+      expect(schemas.Content.properties.terms).toBeDefined();
+      expect(schemas.Term.required).toContain('slug');
+      expect(doc.paths['/api/v1/content/{type}'].get.security).toEqual([{ bearerAuth: [] }, {}]);
+      expect(doc.paths['/api/v1/content/{type}/{id}'].get.security).toEqual([
+        { bearerAuth: [] },
+        {},
+      ]);
+      expect(doc.paths['/api/v1/content/{type}'].post.security).toEqual([{ bearerAuth: [] }]);
+      expect(doc.info.description).toMatch(/setting is on/);
+
+      await options.set('api_public_read', false);
+      const off = (await call('GET', '/openapi.json', null)).json!;
+      expect(off.paths['/api/v1/content/{type}'].get.security).toEqual([{ bearerAuth: [] }]);
+    });
+
+    it('only references schemas that exist', async () => {
+      const doc = (await call('GET', '/openapi.json', null)).json!;
+      const names = new Set(Object.keys(doc.components.schemas));
+      const refs = [...JSON.stringify(doc).matchAll(/#\/components\/schemas\/(\w+)/g)];
+      expect(refs.length).toBeGreaterThan(10);
+      for (const [, name] of refs) expect(names.has(name!)).toBe(true);
+    });
+
+    it('leaves meta and terms out when they are not enabled', () => {
+      const doc = createOpenApiDocument(types) as Json;
+      expect(doc.components.schemas.Content.properties).not.toHaveProperty('meta');
+      expect(doc.components.schemas.Content.properties).not.toHaveProperty('terms');
+      expect(doc.components.schemas.ContentInput.properties).not.toHaveProperty('meta');
+      expect(doc.components.schemas.ContentInput.properties).not.toHaveProperty('terms');
+      expect(doc.components.schemas).not.toHaveProperty('Term');
+    });
   });
 });

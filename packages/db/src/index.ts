@@ -168,6 +168,7 @@ export {
   type RevisionRow,
   type ContentTableStore,
 } from './content-store.js';
+export { createContentMetaStore, type ContentMetaTableStore } from './content-meta-store.js';
 export {
   createSlugRedirectsStore,
   type SlugRedirectRow,

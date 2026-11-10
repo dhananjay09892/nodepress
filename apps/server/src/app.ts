@@ -4,10 +4,12 @@ import type {
   ContentTypeRegistry,
   MediaService,
   NodePress,
+  OptionsService,
   PermalinkService,
   StorageAdapter,
+  TaxonomyService,
 } from '@nodepress/core';
-import type { DatabaseHandle } from '@nodepress/db';
+import type { ContentMetaTableStore, DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
 import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
@@ -36,8 +38,19 @@ export interface AppOptions {
   /**
    * Enables the content REST API (needs `auth`): `/api/v1/content/:type`,
    * `/api/v1/content-types` and the OpenAPI document at `/api/v1/openapi.json`.
+   *
+   * Optional parts: `meta` stores and returns custom field values, `taxonomies` assigns and
+   * returns terms, and `options` lets the `api_public_read` setting open published reads to
+   * anonymous visitors.
    */
-  content?: { service: ContentService; types: ContentTypeRegistry; capabilities: Capabilities };
+  content?: {
+    service: ContentService;
+    types: ContentTypeRegistry;
+    capabilities: Capabilities;
+    meta?: ContentMetaTableStore;
+    taxonomies?: TaxonomyService;
+    options?: OptionsService;
+  };
 }
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
@@ -55,6 +68,9 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           types: options.content.types,
           capabilities: options.content.capabilities,
           hooks: np.hooks,
+          ...(options.content.meta ? { meta: options.content.meta } : {}),
+          ...(options.content.taxonomies ? { taxonomies: options.content.taxonomies } : {}),
+          ...(options.content.options ? { options: options.content.options } : {}),
         }),
       );
     }
