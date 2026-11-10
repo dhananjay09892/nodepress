@@ -696,7 +696,12 @@ describe('custom fields, terms and public reads', () => {
     });
 
     it('returns them in a list only when asked for', async () => {
-      await call('POST', '/content/product', 'author', product({ meta: { price: 3, color: 'red' } }));
+      await call(
+        'POST',
+        '/content/product',
+        'author',
+        product({ meta: { price: 3, color: 'red' } }),
+      );
       const plain = await call('GET', '/content/product', 'author');
       expect(plain.json!.items[0]).not.toHaveProperty('meta');
       expect(plain.json!.items[0]).not.toHaveProperty('terms');
@@ -721,12 +726,12 @@ describe('custom fields, terms and public reads', () => {
         product({ meta: { price: -1, color: 'green', notes: 'x'.repeat(21), nope: 1 } }),
       );
       expect(bad.status).toBe(400);
-      const paths = bad.json!.issues.map((i: Json) => i.path.length > 0 ? i.path : i.message);
+      const paths = bad.json!.issues.map((i: Json) => (i.path.length > 0 ? i.path : i.message));
       expect(paths).toEqual(expect.arrayContaining(['price', 'color', 'notes']));
       expect(bad.json!.message).toMatch(/Unknown field: nope/);
 
-      for (const value of [[], "x", null, 5]) {
-        const res = await call('POST', '/content/product', 'author', { title: "T", meta: value });
+      for (const value of [[], 'x', null, 5]) {
+        const res = await call('POST', '/content/product', 'author', { title: 'T', meta: value });
         expect([value, res.status]).toEqual([value, 400]);
       }
       const posts = await call('GET', '/content/product?status=draft,published', 'editor');
@@ -742,19 +747,32 @@ describe('custom fields, terms and public reads', () => {
     });
 
     it('updates only the fields that are sent and clears a field with null', async () => {
-      const created = await call('POST', '/content/product', 'author', product({ meta: { price: 5, color: 'red' } }));
+      const created = await call(
+        'POST',
+        '/content/product',
+        'author',
+        product({ meta: { price: 5, color: 'red' } }),
+      );
       const id = created.json!.item.id;
-      const patch = await call('PATCH', `/content/product/${id}`, 'author', { meta: { color: 'blue' } });
+      const patch = await call('PATCH', `/content/product/${id}`, 'author', {
+        meta: { color: 'blue' },
+      });
       expect(patch.status).toBe(200);
       expect(patch.json!.item.meta).toEqual({ price: 5, color: 'blue', stock: 0 });
       expect(patch.json!.item.title).toBe('Lamp');
 
-      const cleared = await call('PATCH', `/content/product/${id}`, 'author', { meta: { color: null } });
+      const cleared = await call('PATCH', `/content/product/${id}`, 'author', {
+        meta: { color: null },
+      });
       expect(cleared.json!.item.meta).toEqual({ price: 5, stock: 0 });
 
-      const required = await call('PATCH', `/content/product/${id}`, 'author', { meta: { price: null } });
+      const required = await call('PATCH', `/content/product/${id}`, 'author', {
+        meta: { price: null },
+      });
       expect(required.status).toBe(400);
-      const invalid = await call('PATCH', `/content/product/${id}`, 'author', { meta: { price: 'free' } });
+      const invalid = await call('PATCH', `/content/product/${id}`, 'author', {
+        meta: { price: 'free' },
+      });
       expect(invalid.status).toBe(400);
       const unchanged = await call('GET', `/content/product/${id}`, 'author');
       expect(unchanged.json!.item.meta).toEqual({ price: 5, stock: 0 });
@@ -779,21 +797,33 @@ describe('custom fields, terms and public reads', () => {
     it('follows the same permissions as the item itself', async () => {
       const created = await call('POST', '/content/product', 'author', product());
       const id = created.json!.item.id;
-      const other = await call('PATCH', `/content/product/${id}`, 'author2', { meta: { price: 1 } });
+      const other = await call('PATCH', `/content/product/${id}`, 'author2', {
+        meta: { price: 1 },
+      });
       expect(other.status).toBe(404); // another author's draft is not even visible
-      const published = await call('PATCH', `/content/product/${id}`, 'editor', { status: 'published' });
+      const published = await call('PATCH', `/content/product/${id}`, 'editor', {
+        status: 'published',
+      });
       expect(published.status).toBe(200);
-      const denied = await call('PATCH', `/content/product/${id}`, 'author2', { meta: { price: 1 } });
+      const denied = await call('PATCH', `/content/product/${id}`, 'author2', {
+        meta: { price: 1 },
+      });
       expect(denied.status).toBe(403);
-      expect((await call('GET', `/content/product/${id}`, 'editor')).json!.item.meta.price).toBe(10);
-      const allowed = await call('PATCH', `/content/product/${id}`, 'editor', { meta: { price: 12 } });
+      expect((await call('GET', `/content/product/${id}`, 'editor')).json!.item.meta.price).toBe(
+        10,
+      );
+      const allowed = await call('PATCH', `/content/product/${id}`, 'editor', {
+        meta: { price: 12 },
+      });
       expect(allowed.json!.item.meta.price).toBe(12);
     });
 
     it('is removed with the item', async () => {
       const created = await call('POST', '/content/product', 'author', product());
       const id = created.json!.item.id;
-      expect((await call('DELETE', `/content/product/${id}?force=true`, 'author')).status).toBe(204);
+      expect((await call('DELETE', `/content/product/${id}?force=true`, 'author')).status).toBe(
+        204,
+      );
       expect(await meta.getMeta(id)).toEqual({});
     });
 

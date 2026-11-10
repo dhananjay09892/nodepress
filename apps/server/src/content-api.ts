@@ -925,7 +925,7 @@ export function createOpenApiDocument(
         additionalProperties: false,
         description:
           'Taxonomy name to the ids of the terms the item should have in it; each list replaces ' +
-          'the item\'s terms in that taxonomy. Needs the `manage_categories` capability.',
+          "the item's terms in that taxonomy. Needs the `manage_categories` capability.",
         properties: Object.fromEntries(
           (features.taxonomies ?? []).map((t) => [
             t.name,
