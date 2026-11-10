@@ -563,7 +563,7 @@ describe('api:response filter', () => {
   it('lets plugins change successful responses', async () => {
     const seen: string[] = [];
     np.hooks.addFilter('api:response', (body, { route, method, status, user }) => {
-      seen.push(`${method} ${route} ${status} ${user.role}`);
+      seen.push(`${method} ${route} ${status} ${user?.role}`);
       return { ...(body as object), meta: { route } };
     });
     const created = await call('POST', '/content/post', 'author', { title: 'x' });
