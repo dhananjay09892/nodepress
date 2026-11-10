@@ -236,6 +236,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] Media upload + image variants
 - [x] REST API v1 + API tokens (content CRUD, custom fields, terms, optional public reads, OpenAPI)
 - [x] Job queue + scheduled publishing
+- [x] Webhooks on content events (HMAC-signed, delivered through the job queue with retries)
 
 **Exit:** create/publish content through the API, with tests >80% on core.
 

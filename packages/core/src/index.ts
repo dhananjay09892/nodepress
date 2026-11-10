@@ -269,3 +269,30 @@ export {
 } from './media.js';
 export { createLocalStorage, assertStorageKey } from './media-storage.js';
 export { createSharpProcessor } from './sharp-processor.js';
+export {
+  WebhookService,
+  createWebhookService,
+  signWebhook,
+  verifyWebhookSignature,
+  isPrivateAddress,
+  WebhookValidationError,
+  WebhookNotFoundError,
+  WEBHOOK_JOB_TYPE,
+  WEBHOOKS_OPTION,
+  WEBHOOK_EVENTS,
+  MAX_WEBHOOKS,
+  MAX_WEBHOOK_URL_LENGTH,
+  MAX_WEBHOOK_DESCRIPTION_LENGTH,
+  DEFAULT_DELIVERY_TIMEOUT_MS,
+  DEFAULT_DELIVERY_ATTEMPTS,
+  DEFAULT_SIGNATURE_TOLERANCE_MS,
+  type Webhook,
+  type WebhookEvent,
+  type WebhookPayload,
+  type CreateWebhookInput,
+  type UpdateWebhookInput,
+  type VerifyWebhookInput,
+  type FetchLike,
+  type HostResolver,
+  type WebhookServiceOptions,
+} from './webhooks.js';

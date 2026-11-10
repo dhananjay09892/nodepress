@@ -52,6 +52,8 @@ Plugins can reshape every successful response with the `api:response` filter (it
 
 Uploads are stored on local disk in `MEDIA_DIR` (default `./media`) and served from `/uploads/…`; `MAX_UPLOAD_BYTES` caps the file size (default 10 MiB). Allowed types: JPEG, PNG, GIF, WebP and PDF; SVG is blocked. The API is `POST /api/v1/media` (multipart `file` field, optional `alt`) plus list/get/patch/delete under the same path.
 
+Webhooks are off until `WEBHOOK_SIGNING_KEY` (32+ characters, kept out of the database) is set. Administrators (`manage_options`) manage them under `/api/v1/webhooks` (list, create, patch, delete, `POST /:id/rotate-secret`, `POST /:id/test`). Events: `content.created`, `content.updated`, `content.published`, `content.trashed`, `content.deleted` (or `*`). Each delivery is a JSON `POST` with `X-NodePress-Event`, `X-NodePress-Delivery`, `X-NodePress-Timestamp` and `X-NodePress-Signature: v1=<HMAC-SHA256 hex of "<timestamp>.<body>">`, retried with backoff (6 tries) until the endpoint answers 2xx. The secret is shown once, when the webhook is created or rotated; `verifyWebhookSignature()` from `@nodepress/core` checks a request. URLs that point at loopback or private networks are refused (set `WEBHOOK_ALLOW_PRIVATE=true` for local development).
+
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 
 ## Repository layout
