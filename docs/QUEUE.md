@@ -129,11 +129,17 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 
 - Depends on: N16
 - Scope: `packages/editor` with block registry and core blocks (paragraph, heading, image, list, quote, code, embed, columns, button); stores JSON blocks; server-side renderer to HTML.
-- Done when: unit tests for rendering; editor works in the admin.
+- Done when: unit tests for rendering pass. (The admin editor UI moved to N44.)
+
+### N44 · Admin block editor UI (Tiptap)
+
+- Depends on: N17
+- Scope: follow-up to N17, which delivered the editor-independent block model, registry, core blocks, validation and server-side renderer in `packages/editor`. Add the Tiptap (MIT packages only) integration in `packages/editor` (the only package that imports Tiptap): one extension per core block, conversion between Tiptap JSON and the NodePress block envelope, a React `BlockEditor` component, and use it in the admin on a temporary route. Record the real bundle size and the server-render round-trip in `docs/adr/0001-editor.md` and replace its **(verify)** markers. Needs npm access to install `@tiptap/*`.
+- Done when: round-trip tests (envelope to Tiptap to envelope) pass for every core block, and the editor works in the admin.
 
 ### N18 · Post edit screen
 
-- Depends on: N17, N15
+- Depends on: N44, N15
 - Scope: editor plus sidebar (status, publish date, slug, excerpt, categories, tags, featured image), autosave, revision history view.
 - Done when: Playwright test writes and publishes a post.
 
