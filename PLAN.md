@@ -49,7 +49,7 @@ NodePress is an open-source, self-hostable CMS written in TypeScript. A non-deve
 | Database    | Drizzle ORM: SQLite (default), PostgreSQL, MySQL                            | SQLite = zero-config installs; Postgres/MySQL for scale |
 | Validation  | Zod                                                                         | Shared schemas for API, admin forms, and plugins        |
 | Admin UI    | React + Vite + TanStack Router/Query + Tailwind                             | Large hiring/contributor pool                           |
-| Editor      | Block editor on Lexical (or Tiptap; decide in Phase 2 spike)                | Gutenberg-style blocks, JSON storage                    |
+| Editor      | Block editor on Tiptap (decided 2026-11-11, ADR 0001)                       | Gutenberg-style blocks, JSON storage                    |
 | Themes      | TSX components rendered on the server; optional "islands" for interactivity | Simple HTML output, familiar to JS devs                 |
 | Auth        | Session cookies (+ API tokens), Argon2 password hashing                     | Proven, simple                                          |
 | Media       | `sharp` for resizing; local disk or S3-compatible storage                   | Standard and fast                                       |
@@ -243,7 +243,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 ### Phase 2: Admin dashboard (weeks 7–11)
 
 - [x] Admin shell: login, navigation, dashboard
-- [ ] Editor spike: Lexical vs Tiptap → pick one
+- [x] Editor spike: Lexical vs Tiptap → pick one (Tiptap, ADR 0001)
 - [ ] Block editor with core blocks (paragraph, heading, image, list, quote, code, embed, columns, button)
 - [x] Posts/pages lists, filters, bulk actions
 - [ ] Media library, users, settings screens
@@ -324,7 +324,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 | #   | Decision            | Options                                         | Notes                                             |
 | --- | ------------------- | ----------------------------------------------- | ------------------------------------------------- |
 | 1   | License             | ✅ **MIT** (decided 2026-11-08)                 | Maximum adoption for plugins, themes and agencies |
-| 2   | Editor engine       | Lexical · Tiptap                                | Decide after Phase 2 spike                        |
+| 2   | Editor engine       | ✅ **Tiptap** (decided 2026-11-11)              | See docs/adr/0001-editor.md                       |
 | 3   | Theme rendering     | Server React (TSX) · Hono JSX · template engine | Proposal: server TSX for familiarity              |
 | 4   | Name/trademark      | NodePress                                       | Check npm, domains, GitHub org, trademark         |
 | 5   | Primary v1 audience | Bloggers/SMBs (proposed) · agencies             | Shapes default theme & first plugins              |

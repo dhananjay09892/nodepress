@@ -128,7 +128,6 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 ### N17 · Block editor with core blocks
 
 - Depends on: N16
-- Needs you: fill in the `Decision:` line in docs/adr/0001-editor.md, then delete this line.
 - Scope: `packages/editor` with block registry and core blocks (paragraph, heading, image, list, quote, code, embed, columns, button); stores JSON blocks; server-side renderer to HTML.
 - Done when: unit tests for rendering; editor works in the admin.
 
