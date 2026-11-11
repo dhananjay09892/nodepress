@@ -28,7 +28,12 @@ export function Shell() {
       <aside className="flex w-60 shrink-0 flex-col bg-slate-900 p-4">
         <p className="mb-6 px-3 text-lg font-semibold text-white">NodePress</p>
         <nav aria-label="Main" className="flex-1 space-y-1">
-          <Link to="/" activeOptions={{ exact: true }} className={linkClass} activeProps={activeClass}>
+          <Link
+            to="/"
+            activeOptions={{ exact: true }}
+            className={linkClass}
+            activeProps={activeClass}
+          >
             Dashboard
           </Link>
           {NAV_ITEMS.map((item) => (

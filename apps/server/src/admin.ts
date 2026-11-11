@@ -71,7 +71,8 @@ export function createAdminHandler(options: AdminHandlerOptions): Handler {
     } catch {
       return c.json({ error: 'not_found' }, 404);
     }
-    if (relative.includes('\0') || relative.includes('\\')) return c.json({ error: 'not_found' }, 404);
+    if (relative.includes('\0') || relative.includes('\\'))
+      return c.json({ error: 'not_found' }, 404);
 
     if (relative !== '' && relative !== 'index.html') {
       const file = await readFileIn(relative);

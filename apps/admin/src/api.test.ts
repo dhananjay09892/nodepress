@@ -64,7 +64,9 @@ describe('admin API client', () => {
   });
 
   it('describes errors for people', () => {
-    expect(describeError(new ApiError(401, 'invalid_credentials'))).toBe('Wrong email or password.');
+    expect(describeError(new ApiError(401, 'invalid_credentials'))).toBe(
+      'Wrong email or password.',
+    );
     expect(describeError(new ApiError(429, 'rate_limited'))).toMatch(/Too many/);
     expect(describeError(new ApiError(500, 'x'))).toMatch(/Something went wrong/);
     expect(describeError(new TypeError('Failed to fetch'))).toMatch(/Could not reach/);
