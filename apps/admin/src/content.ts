@@ -62,7 +62,9 @@ export function pageCount(total: number): number {
 }
 
 export async function fetchContentList(type: string, params: ListParams): Promise<ContentPage> {
-  const res = await request(`/api/v1/content/${encodeURIComponent(type)}?${buildListQuery(params)}`);
+  const res = await request(
+    `/api/v1/content/${encodeURIComponent(type)}?${buildListQuery(params)}`,
+  );
   if (!res.ok) throw await toError(res);
   return (await res.json()) as ContentPage;
 }
@@ -101,9 +103,7 @@ export async function applyBulk(
   action: BulkAction,
   csrfToken: string,
 ): Promise<BulkResult> {
-  const settled = await Promise.allSettled(
-    ids.map((id) => applyOne(type, id, action, csrfToken)),
-  );
+  const settled = await Promise.allSettled(ids.map((id) => applyOne(type, id, action, csrfToken)));
   const result: BulkResult = { succeeded: [], failed: [] };
   settled.forEach((outcome, index) => {
     const id = ids[index]!;
