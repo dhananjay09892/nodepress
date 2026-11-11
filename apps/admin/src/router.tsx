@@ -11,6 +11,7 @@ import { Dashboard } from './screens/Dashboard.js';
 import { LoginScreen } from './screens/Login.js';
 import { ComingSoon } from './screens/ComingSoon.js';
 import { ContentList } from './screens/ContentList.js';
+import { MediaLibrary } from './screens/MediaLibrary.js';
 import { NAV_ITEMS } from './nav.js';
 import { sessionQuery } from './session.js';
 
@@ -60,7 +61,9 @@ const sectionRoutes = NAV_ITEMS.map((item) => {
     path: item.to,
     component: screen
       ? () => <ContentList type={screen.type} title={screen.title} />
-      : () => <ComingSoon title={item.label} />,
+      : item.to === '/media'
+        ? MediaLibrary
+        : () => <ComingSoon title={item.label} />,
   });
 });
 

@@ -246,7 +246,8 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] Editor spike: Lexical vs Tiptap → pick one
 - [ ] Block editor with core blocks (paragraph, heading, image, list, quote, code, embed, columns, button)
 - [x] Posts/pages lists, filters, bulk actions
-- [ ] Media library, users, settings screens
+- [x] Media library screen
+- [ ] Users and settings screens
 - [ ] Admin extension points (plugins add menus, pages, fields)
 
 **Exit:** a non-developer can write and publish a post entirely in the admin.
