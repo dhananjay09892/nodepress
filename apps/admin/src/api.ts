@@ -21,13 +21,13 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path: string, init: RequestInit = {}): Promise<Response> {
+export async function request(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   if (init.body !== undefined) headers.set('content-type', 'application/json');
   return fetch(path, { ...init, headers, credentials: 'same-origin' });
 }
 
-async function toError(res: Response): Promise<ApiError> {
+export async function toError(res: Response): Promise<ApiError> {
   let code = 'request_failed';
   try {
     const body = (await res.json()) as { error?: unknown };
@@ -75,6 +75,8 @@ export function describeError(error: unknown): string {
         return 'Too many sign-in attempts. Wait a few minutes and try again.';
       case 'invalid_request':
         return 'Enter your email and password.';
+      case 'forbidden':
+        return 'You do not have permission to do that.';
       default:
         return 'Something went wrong. Please try again.';
     }
