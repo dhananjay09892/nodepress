@@ -94,6 +94,6 @@ Either way, N17 should store our own block envelope and keep `packages/editor` a
 
 ## Consequences
 
-- `PLAN.md` open decision 2 stays open until the `Decision:` line above is filled in.
-- N17 stays blocked by its `Needs you:` line until then.
-- After the decision, update PLAN.md section 2 (Editor row) and section 8, and tick the spike box in Phase 2.
+- PLAN.md section 2, section 8 and the Phase 2 spike checkbox are updated to reflect Tiptap.
+- N17 is unblocked: `packages/editor` is the only package that imports Tiptap, and it stores NodePress's own block envelope rather than raw ProseMirror JSON.
+- The **(verify)** items above are still unmeasured. N17 should record real bundle size and server-render results here once it has them.
