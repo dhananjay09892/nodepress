@@ -77,7 +77,11 @@ function inlineToTiptap(content: readonly TextNode[] | undefined): TiptapNode[] 
         ? { type: 'link', attrs: { href: mark.href ?? '' } }
         : { type: MARK_TO_TIPTAP[mark.type] },
     );
-    out.push(marks.length > 0 ? { type: 'text', text: node.text, marks } : { type: 'text', text: node.text });
+    out.push(
+      marks.length > 0
+        ? { type: 'text', text: node.text, marks }
+        : { type: 'text', text: node.text },
+    );
   }
   return out;
 }
@@ -109,7 +113,9 @@ export function blockToTiptap(block: Block): TiptapNode {
       const text = (block.content ?? []).map((node) => node.text).join('');
       const language = attrs?.['language'];
       return withAttrs(
-        text !== '' ? { type: 'codeBlock', content: [{ type: 'text', text }] } : { type: 'codeBlock' },
+        text !== ''
+          ? { type: 'codeBlock', content: [{ type: 'text', text }] }
+          : { type: 'codeBlock' },
         typeof language === 'string' ? { language } : {},
       );
     }
@@ -129,12 +135,10 @@ export function blockToTiptap(block: Block): TiptapNode {
     case 'core/columns':
       return {
         type: 'npColumns',
-        content: (block.children ?? []).map(
-          (column): TiptapNode => ({
-            type: 'npColumn',
-            content: atLeastOneBlock(blocksToTiptap(column.children)),
-          }),
-        ),
+        content: (block.children ?? []).map((column): TiptapNode => ({
+          type: 'npColumn',
+          content: atLeastOneBlock(blocksToTiptap(column.children)),
+        })),
       };
     default:
       return { type: 'npUnknown', attrs: { block } };
@@ -225,7 +229,10 @@ export function blockFromTiptap(node: TiptapNode): Block {
     case 'npEmbed':
       return withBlockAttrs({ type: 'core/embed' }, cleanAttrs(pick(attrs, ['url'])));
     case 'npButton':
-      return withBlockAttrs({ type: 'core/button' }, cleanAttrs(pick(attrs, ['text', 'href', 'style'])));
+      return withBlockAttrs(
+        { type: 'core/button' },
+        cleanAttrs(pick(attrs, ['text', 'href', 'style'])),
+      );
     case 'npColumns':
       return {
         type: 'core/columns',

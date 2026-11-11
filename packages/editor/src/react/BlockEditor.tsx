@@ -43,19 +43,39 @@ function Toolbar({ editor }: { editor: Editor }) {
   const run = () => editor.chain().focus();
   return (
     <div role="toolbar" aria-label="Formatting" className="mb-2 flex flex-wrap gap-1">
-      <ToolbarButton label="Bold" active={editor.isActive('bold')} onClick={() => run().toggleBold().run()}>
+      <ToolbarButton
+        label="Bold"
+        active={editor.isActive('bold')}
+        onClick={() => run().toggleBold().run()}
+      >
         B
       </ToolbarButton>
-      <ToolbarButton label="Italic" active={editor.isActive('italic')} onClick={() => run().toggleItalic().run()}>
+      <ToolbarButton
+        label="Italic"
+        active={editor.isActive('italic')}
+        onClick={() => run().toggleItalic().run()}
+      >
         I
       </ToolbarButton>
-      <ToolbarButton label="Underline" active={editor.isActive('underline')} onClick={() => run().toggleUnderline().run()}>
+      <ToolbarButton
+        label="Underline"
+        active={editor.isActive('underline')}
+        onClick={() => run().toggleUnderline().run()}
+      >
         U
       </ToolbarButton>
-      <ToolbarButton label="Strikethrough" active={editor.isActive('strike')} onClick={() => run().toggleStrike().run()}>
+      <ToolbarButton
+        label="Strikethrough"
+        active={editor.isActive('strike')}
+        onClick={() => run().toggleStrike().run()}
+      >
         S
       </ToolbarButton>
-      <ToolbarButton label="Inline code" active={editor.isActive('code')} onClick={() => run().toggleCode().run()}>
+      <ToolbarButton
+        label="Inline code"
+        active={editor.isActive('code')}
+        onClick={() => run().toggleCode().run()}
+      >
         {'</>'}
       </ToolbarButton>
       <ToolbarButton
@@ -68,7 +88,11 @@ function Toolbar({ editor }: { editor: Editor }) {
           else run().setLink({ href }).run();
         }}
       />
-      <ToolbarButton label="Paragraph" active={editor.isActive('paragraph')} onClick={() => run().setParagraph().run()} />
+      <ToolbarButton
+        label="Paragraph"
+        active={editor.isActive('paragraph')}
+        onClick={() => run().setParagraph().run()}
+      />
       {([1, 2, 3, 4] as const).map((level) => (
         <ToolbarButton
           key={level}
@@ -79,8 +103,16 @@ function Toolbar({ editor }: { editor: Editor }) {
           {`H${level}`}
         </ToolbarButton>
       ))}
-      <ToolbarButton label="Bulleted list" active={editor.isActive('bulletList')} onClick={() => run().toggleBulletList().run()} />
-      <ToolbarButton label="Numbered list" active={editor.isActive('orderedList')} onClick={() => run().toggleOrderedList().run()} />
+      <ToolbarButton
+        label="Bulleted list"
+        active={editor.isActive('bulletList')}
+        onClick={() => run().toggleBulletList().run()}
+      />
+      <ToolbarButton
+        label="Numbered list"
+        active={editor.isActive('orderedList')}
+        onClick={() => run().toggleOrderedList().run()}
+      />
       <ToolbarButton
         label="Quote"
         active={editor.isActive('npQuote')}
@@ -89,7 +121,11 @@ function Toolbar({ editor }: { editor: Editor }) {
           else run().setNode('npQuote').run();
         }}
       />
-      <ToolbarButton label="Code block" active={editor.isActive('codeBlock')} onClick={() => run().toggleCodeBlock().run()} />
+      <ToolbarButton
+        label="Code block"
+        active={editor.isActive('codeBlock')}
+        onClick={() => run().toggleCodeBlock().run()}
+      />
       <ToolbarButton
         label="Image"
         onClick={() => {
@@ -118,7 +154,9 @@ function Toolbar({ editor }: { editor: Editor }) {
         label="Columns"
         onClick={() => {
           const column = { type: 'npColumn', content: [{ type: 'paragraph' }] };
-          run().insertContent({ type: 'npColumns', content: [column, column] }).run();
+          run()
+            .insertContent({ type: 'npColumns', content: [column, column] })
+            .run();
         }}
       />
       <ToolbarButton label="Undo" onClick={() => run().undo().run()} />
@@ -142,7 +180,8 @@ export function BlockEditor({ value, onChange, label = 'Content' }: BlockEditorP
         role: 'textbox',
         'aria-multiline': 'true',
         'aria-label': label,
-        class: 'np-editor-content min-h-48 rounded border border-slate-400 bg-white p-3 focus:outline-2',
+        class:
+          'np-editor-content min-h-48 rounded border border-slate-400 bg-white p-3 focus:outline-2',
       },
     },
     onUpdate: ({ editor: current }) => {
