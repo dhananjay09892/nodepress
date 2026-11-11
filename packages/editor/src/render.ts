@@ -52,8 +52,15 @@ function renderList(
 export function validateDocument(input: unknown, registry: BlockRegistry): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const doc = input as Partial<BlockDocument> | null;
-  if (!doc || typeof doc !== 'object' || doc.version !== BLOCK_DOCUMENT_VERSION || !Array.isArray(doc.blocks)) {
-    return [{ path: '', message: `expected { version: ${BLOCK_DOCUMENT_VERSION}, blocks: [...] }` }];
+  if (
+    !doc ||
+    typeof doc !== 'object' ||
+    doc.version !== BLOCK_DOCUMENT_VERSION ||
+    !Array.isArray(doc.blocks)
+  ) {
+    return [
+      { path: '', message: `expected { version: ${BLOCK_DOCUMENT_VERSION}, blocks: [...] }` },
+    ];
   }
   doc.blocks.forEach((block, i) => validateBlock(block, `blocks[${i}]`, registry, issues, 0));
   return issues;
@@ -80,7 +87,10 @@ function validateBlock(
     issues.push({ path, message: `unknown block type "${b.type}"` });
     return;
   }
-  if (b.content !== undefined && !(Array.isArray(b.content) && b.content.every((n) => typeof n?.text === 'string'))) {
+  if (
+    b.content !== undefined &&
+    !(Array.isArray(b.content) && b.content.every((n) => typeof n?.text === 'string'))
+  ) {
     issues.push({ path, message: 'content must be an array of { text } nodes' });
   }
   if (b.children !== undefined && !Array.isArray(b.children)) {
@@ -92,5 +102,7 @@ function validateBlock(
   } catch (error) {
     issues.push({ path, message: error instanceof Error ? error.message : String(error) });
   }
-  b.children?.forEach((child, i) => validateBlock(child, `${path}.children[${i}]`, registry, issues, depth + 1));
+  b.children?.forEach((child, i) =>
+    validateBlock(child, `${path}.children[${i}]`, registry, issues, depth + 1),
+  );
 }

@@ -59,7 +59,9 @@ const image: BlockDefinition = {
   },
   render(block, ctx) {
     const mediaId = attr(block, 'mediaId', isString);
-    const src = safeUrl((mediaId && ctx.resolveMediaUrl?.(mediaId)) || attr(block, 'src', isString));
+    const src = safeUrl(
+      (mediaId && ctx.resolveMediaUrl?.(mediaId)) || attr(block, 'src', isString),
+    );
     if (!src) return '';
     const alt = attr(block, 'alt', isString) ?? '';
     const width = attr(block, 'width', isPositiveInt);
@@ -76,7 +78,8 @@ const image: BlockDefinition = {
 const listItem: BlockDefinition = {
   name: 'core/list-item',
   title: 'List item',
-  render: (block, ctx) => `<li>${renderInline(block.content)}${ctx.renderChildren(block.children)}</li>`,
+  render: (block, ctx) =>
+    `<li>${renderInline(block.content)}${ctx.renderChildren(block.children)}</li>`,
 };
 
 const list: BlockDefinition = {
@@ -108,7 +111,10 @@ const code: BlockDefinition = {
   render(block) {
     const language = attr(block, 'language', isString);
     // Only a conservative token is allowed in the class name.
-    const cls = language && /^[a-z0-9+#-]{1,32}$/i.test(language) ? ` class="language-${language.toLowerCase()}"` : '';
+    const cls =
+      language && /^[a-z0-9+#-]{1,32}$/i.test(language)
+        ? ` class="language-${language.toLowerCase()}"`
+        : '';
     return `<pre><code${cls}>${escapeHtml(plainText(block.content))}</code></pre>`;
   },
 };
@@ -118,7 +124,9 @@ const EMBED_PROVIDERS: { host: RegExp; embed(url: URL): string | undefined }[] =
     host: /^(www\.)?youtube\.com$/,
     embed: (url) => {
       const id = url.pathname === '/watch' ? url.searchParams.get('v') : null;
-      return id && /^[\w-]{6,20}$/.test(id) ? `https://www.youtube-nocookie.com/embed/${id}` : undefined;
+      return id && /^[\w-]{6,20}$/.test(id)
+        ? `https://www.youtube-nocookie.com/embed/${id}`
+        : undefined;
     },
   },
   {
@@ -147,7 +155,8 @@ const embed: BlockDefinition = {
     } catch {
       throw new Error('embed needs a valid url');
     }
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('embed url must be http(s)');
+    if (url.protocol !== 'https:' && url.protocol !== 'http:')
+      throw new Error('embed url must be http(s)');
     return block;
   },
   render(block) {

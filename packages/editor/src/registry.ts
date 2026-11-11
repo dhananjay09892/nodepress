@@ -7,7 +7,9 @@ export class BlockRegistry {
 
   register(definition: BlockDefinition): this {
     if (!NAME_PATTERN.test(definition.name)) {
-      throw new Error(`Invalid block name "${definition.name}": use "namespace/name" in lower case`);
+      throw new Error(
+        `Invalid block name "${definition.name}": use "namespace/name" in lower case`,
+      );
     }
     if (this.#blocks.has(definition.name)) {
       throw new Error(`Block "${definition.name}" is already registered`);

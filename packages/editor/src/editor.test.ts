@@ -17,15 +17,37 @@ const render = (...blocks: Block[]) => renderBlocks(doc(...blocks), createBlockR
 
 describe('safeUrl and escapeHtml', () => {
   it('escapes HTML special characters', () => {
-    expect(escapeHtml(`<a href="x">&'</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;');
+    expect(escapeHtml(`<a href="x">&'</a>`)).toBe(
+      '&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;',
+    );
   });
   it('allows http(s), mailto, tel and relative URLs', () => {
-    for (const u of ['https://a.test/x?y=1', 'http://a.test', 'mailto:a@b.test', 'tel:+123', '/about', '#top', 'a/b', './c']) {
+    for (const u of [
+      'https://a.test/x?y=1',
+      'http://a.test',
+      'mailto:a@b.test',
+      'tel:+123',
+      '/about',
+      '#top',
+      'a/b',
+      './c',
+    ]) {
       expect(safeUrl(u)).toBe(u);
     }
   });
   it('blocks script-capable and malformed URLs', () => {
-    for (const u of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'java\tscript:alert(1)', 'data:text/html,x', 'vbscript:x', '//evil.test', '', '  ', 42, undefined]) {
+    for (const u of [
+      'javascript:alert(1)',
+      'JaVaScRiPt:alert(1)',
+      'java\tscript:alert(1)',
+      'data:text/html,x',
+      'vbscript:x',
+      '//evil.test',
+      '',
+      '  ',
+      42,
+      undefined,
+    ]) {
       expect(safeUrl(u)).toBeUndefined();
     }
   });
@@ -36,19 +58,35 @@ describe('core blocks render', () => {
     expect(
       render({
         type: 'core/paragraph',
-        content: [t('a <b> '), t('bold', [{ type: 'bold' }]), t(' link', [{ type: 'link', href: 'https://x.test' }])],
+        content: [
+          t('a <b> '),
+          t('bold', [{ type: 'bold' }]),
+          t(' link', [{ type: 'link', href: 'https://x.test' }]),
+        ],
       }),
-    ).toBe('<p>a &lt;b&gt; <strong>bold</strong><a href="https://x.test" rel="noopener noreferrer"> link</a></p>');
+    ).toBe(
+      '<p>a &lt;b&gt; <strong>bold</strong><a href="https://x.test" rel="noopener noreferrer"> link</a></p>',
+    );
   });
   it('unsafe links degrade to plain text', () => {
-    expect(render({ type: 'core/paragraph', content: [t('x', [{ type: 'link', href: 'javascript:alert(1)' }])] })).toBe('<p>x</p>');
+    expect(
+      render({
+        type: 'core/paragraph',
+        content: [t('x', [{ type: 'link', href: 'javascript:alert(1)' }])],
+      }),
+    ).toBe('<p>x</p>');
   });
   it('heading levels', () => {
-    expect(render({ type: 'core/heading', attrs: { level: 3 }, content: [t('Hi')] })).toBe('<h3>Hi</h3>');
+    expect(render({ type: 'core/heading', attrs: { level: 3 }, content: [t('Hi')] })).toBe(
+      '<h3>Hi</h3>',
+    );
   });
   it('image with caption, media resolution and escaping', () => {
     const html = renderBlocks(
-      doc({ type: 'core/image', attrs: { mediaId: 'm1', alt: 'a "b"', caption: '<c>', width: 10, height: 5 } }),
+      doc({
+        type: 'core/image',
+        attrs: { mediaId: 'm1', alt: 'a "b"', caption: '<c>', width: 10, height: 5 },
+      }),
       createBlockRegistry(),
       { resolveMediaUrl: (id) => (id === 'm1' ? '/uploads/m1.webp' : undefined) },
     );
@@ -67,7 +105,9 @@ describe('core blocks render', () => {
         {
           type: 'core/list-item',
           content: [t('one')],
-          children: [{ type: 'core/list', children: [{ type: 'core/list-item', content: [t('inner')] }] }],
+          children: [
+            { type: 'core/list', children: [{ type: 'core/list-item', content: [t('inner')] }] },
+          ],
         },
       ],
     });
@@ -82,12 +122,14 @@ describe('core blocks render', () => {
     expect(render({ type: 'core/code', attrs: { language: 'TS' }, content: [t('a<b')] })).toBe(
       '<pre><code class="language-ts">a&lt;b</code></pre>',
     );
-    expect(render({ type: 'core/code', attrs: { language: '"><script>' }, content: [t('x')] })).toBe('<pre><code>x</code></pre>');
+    expect(
+      render({ type: 'core/code', attrs: { language: '"><script>' }, content: [t('x')] }),
+    ).toBe('<pre><code>x</code></pre>');
   });
   it('embed: allowlisted providers become iframes, others links', () => {
-    expect(render({ type: 'core/embed', attrs: { url: 'https://www.youtube.com/watch?v=abcdefghijk' } })).toContain(
-      'src="https://www.youtube-nocookie.com/embed/abcdefghijk"',
-    );
+    expect(
+      render({ type: 'core/embed', attrs: { url: 'https://www.youtube.com/watch?v=abcdefghijk' } }),
+    ).toContain('src="https://www.youtube-nocookie.com/embed/abcdefghijk"');
     expect(render({ type: 'core/embed', attrs: { url: 'https://vimeo.com/123456' } })).toContain(
       'src="https://player.vimeo.com/video/123456"',
     );
@@ -109,9 +151,9 @@ describe('core blocks render', () => {
     );
   });
   it('button', () => {
-    expect(render({ type: 'core/button', attrs: { text: 'Go', href: '/x', style: 'outline' } })).toBe(
-      '<p class="np-button-wrap"><a class="np-button np-button-outline" href="/x">Go</a></p>',
-    );
+    expect(
+      render({ type: 'core/button', attrs: { text: 'Go', href: '/x', style: 'outline' } }),
+    ).toBe('<p class="np-button-wrap"><a class="np-button np-button-outline" href="/x">Go</a></p>');
     expect(render({ type: 'core/button', attrs: { text: 'Go', href: 'javascript:x' } })).toBe('');
   });
 });
@@ -119,12 +161,20 @@ describe('core blocks render', () => {
 describe('registry and error isolation', () => {
   it('rejects bad and duplicate names', () => {
     const r = new BlockRegistry();
-    expect(() => r.register({ name: 'Bad', title: 'x', render: () => '' })).toThrow(/Invalid block name/);
+    expect(() => r.register({ name: 'Bad', title: 'x', render: () => '' })).toThrow(
+      /Invalid block name/,
+    );
     r.register({ name: 'acme/hero', title: 'Hero', render: () => '<hr>' });
-    expect(() => r.register({ name: 'acme/hero', title: 'Hero', render: () => '' })).toThrow(/already registered/);
+    expect(() => r.register({ name: 'acme/hero', title: 'Hero', render: () => '' })).toThrow(
+      /already registered/,
+    );
   });
   it('plugins can add blocks', () => {
-    const r = createBlockRegistry().register({ name: 'acme/hero', title: 'Hero', render: () => '<hr>' });
+    const r = createBlockRegistry().register({
+      name: 'acme/hero',
+      title: 'Hero',
+      render: () => '<hr>',
+    });
     expect(renderBlocks(doc({ type: 'acme/hero' }), r)).toBe('<hr>');
   });
   it('a throwing or unknown block is skipped and reported, others still render', () => {
@@ -186,12 +236,23 @@ describe('validateDocument', () => {
       ),
       r,
     );
-    expect(issues.map((i) => i.path)).toEqual(['blocks[1]', 'blocks[2]', 'blocks[3]', 'blocks[4]', 'blocks[5]', 'blocks[6]']);
+    expect(issues.map((i) => i.path)).toEqual([
+      'blocks[1]',
+      'blocks[2]',
+      'blocks[3]',
+      'blocks[4]',
+      'blocks[5]',
+      'blocks[6]',
+    ]);
   });
   it('rejects malformed content and deep nesting', () => {
-    expect(validateDocument(doc({ type: 'core/paragraph', content: [{ text: 1 } as never] }), r)).toHaveLength(1);
+    expect(
+      validateDocument(doc({ type: 'core/paragraph', content: [{ text: 1 } as never] }), r),
+    ).toHaveLength(1);
     let block: Block = { type: 'core/paragraph' };
     for (let i = 0; i < 12; i++) block = { type: 'core/column', children: [block] };
-    expect(validateDocument(doc(block), r).some((i) => i.message.includes('nested deeper'))).toBe(true);
+    expect(validateDocument(doc(block), r).some((i) => i.message.includes('nested deeper'))).toBe(
+      true,
+    );
   });
 });
