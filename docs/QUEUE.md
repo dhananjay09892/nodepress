@@ -137,6 +137,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: follow-up to N17, which delivered the editor-independent block model, registry, core blocks, validation and server-side renderer in `packages/editor`. Add the Tiptap (MIT packages only) integration in `packages/editor` (the only package that imports Tiptap): one extension per core block, conversion between Tiptap JSON and the NodePress block envelope, a React `BlockEditor` component, and use it in the admin on a temporary route. Record the real bundle size and the server-render round-trip in `docs/adr/0001-editor.md` and replace its **(verify)** markers. Needs npm access to install `@tiptap/*`.
 - Done when: round-trip tests (envelope to Tiptap to envelope) pass for every core block, and the editor works in the admin.
 
+### N45 · Editor measurements and ADR verification
+
+- Depends on: N44
+- Scope: follow-up to N44, whose environment could not build or run the editor. Build the admin, record the real gzip size of the editor chunk, run the server-render round-trip, check keyboard-only use of the toolbar, and replace every **(verify)** marker in `docs/adr/0001-editor.md` with the measured result. Fix anything the first real build or Playwright run of N44 turns up.
+- Done when: no **(verify)** markers remain in the ADR and the editor Playwright test is green in CI.
+
 ### N18 · Post edit screen
 
 - Depends on: N44, N15
