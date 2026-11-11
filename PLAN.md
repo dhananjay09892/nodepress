@@ -49,7 +49,7 @@ NodePress is an open-source, self-hostable CMS written in TypeScript. A non-deve
 | Database    | Drizzle ORM: SQLite (default), PostgreSQL, MySQL                            | SQLite = zero-config installs; Postgres/MySQL for scale |
 | Validation  | Zod                                                                         | Shared schemas for API, admin forms, and plugins        |
 | Admin UI    | React + Vite + TanStack Router/Query + Tailwind                             | Large hiring/contributor pool                           |
-| Editor      | Block editor on Tiptap (decided 2026-11-11, ADR 0001)                | Gutenberg-style blocks, JSON storage                    |
+| Editor      | Block editor on Tiptap (decided 2026-11-11, ADR 0001)                       | Gutenberg-style blocks, JSON storage                    |
 | Themes      | TSX components rendered on the server; optional "islands" for interactivity | Simple HTML output, familiar to JS devs                 |
 | Auth        | Session cookies (+ API tokens), Argon2 password hashing                     | Proven, simple                                          |
 | Media       | `sharp` for resizing; local disk or S3-compatible storage                   | Standard and fast                                       |
