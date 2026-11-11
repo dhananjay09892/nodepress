@@ -66,6 +66,7 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 | `packages/core`           | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
 | `packages/sdk`            | Public API for plugin and theme authors (`definePlugin`, types)          |
 | `packages/db`             | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
+| `packages/editor`         | Block model, block registry, core blocks and server-side HTML renderer   |
 | `apps/server`             | Hono HTTP server that boots a NodePress site                             |
 | `apps/admin`              | React admin dashboard, served by the server at `/admin`                  |
 | `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
