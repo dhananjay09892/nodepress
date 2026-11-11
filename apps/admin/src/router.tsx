@@ -12,6 +12,7 @@ import { LoginScreen } from './screens/Login.js';
 import { ComingSoon } from './screens/ComingSoon.js';
 import { ContentList } from './screens/ContentList.js';
 import { MediaLibrary } from './screens/MediaLibrary.js';
+import { EditorPreview } from './screens/EditorPreview.js';
 import { NAV_ITEMS } from './nav.js';
 import { sessionQuery } from './session.js';
 
@@ -67,9 +68,16 @@ const sectionRoutes = NAV_ITEMS.map((item) => {
   });
 });
 
+// Temporary, unlinked route for trying the block editor until the post edit screen (N18).
+const editorPreviewRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/editor-preview',
+  component: EditorPreview,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  shellRoute.addChildren([dashboardRoute, ...sectionRoutes]),
+  shellRoute.addChildren([dashboardRoute, ...sectionRoutes, editorPreviewRoute]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {
