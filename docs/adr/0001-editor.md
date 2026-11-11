@@ -1,10 +1,10 @@
 # ADR 0001: Block editor engine
 
-- Status: Proposed (waiting for the owner)
+- Status: Accepted (2026-11-11)
 - Date: 2026-11-11
 - Related: PLAN.md section 2 (stack) and section 8, open decision 2; queue tasks N16, N17, N18
 
-Decision:
+Decision: Tiptap (MIT packages only), behind NodePress's own block envelope. Chosen by the owner on 2026-11-11.
 
 <!-- Owner: write "Lexical" or "Tiptap" (or another choice) on the line above, then remove the "Needs you" line from N17 in docs/QUEUE.md. -->
 
