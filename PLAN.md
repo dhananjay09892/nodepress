@@ -242,7 +242,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 2: Admin dashboard (weeks 7–11)
 
-- [ ] Admin shell: login, navigation, dashboard
+- [x] Admin shell: login, navigation, dashboard
 - [ ] Editor spike: Lexical vs Tiptap → pick one
 - [ ] Block editor with core blocks (paragraph, heading, image, list, quote, code, embed, columns, button)
 - [ ] Posts/pages lists, filters, bulk actions

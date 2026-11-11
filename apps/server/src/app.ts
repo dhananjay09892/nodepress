@@ -12,6 +12,7 @@ import type {
 } from '@nodepress/core';
 import type { ContentMetaTableStore, DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
+import { createAdminHandler } from './admin.js';
 import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
@@ -55,6 +56,8 @@ export interface AppOptions {
   };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
+  /** Serves the built admin app (`dir` = its `dist` folder) at `/admin`. */
+  admin?: { dir: string };
 }
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
@@ -99,6 +102,11 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     }
   }
   if (options.media) app.get('/uploads/*', createUploadsHandler(options.media.storage));
+  if (options.admin) {
+    const admin = createAdminHandler(options.admin);
+    app.get('/admin', admin);
+    app.get('/admin/*', admin);
+  }
 
   app.get('/api/health', async (c) => {
     const dbOk = await database.ping();
