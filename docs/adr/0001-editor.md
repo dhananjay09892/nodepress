@@ -53,18 +53,18 @@ A headless editor framework built on ProseMirror, with React bindings (`@tiptap/
 
 ## Comparison
 
-| Criterion                      | Lexical                                      | Tiptap                                             |
-| ------------------------------ | -------------------------------------------- | -------------------------------------------------- |
-| Block / node model             | Custom node classes, decorators for React    | Schema-based nodes, node views for React           |
-| Stored JSON                    | Lexical-specific tree, versioned             | ProseMirror JSON, stable and widely understood     |
-| Nested layout blocks (columns) | Possible, more manual                        | Natural via schema content expressions             |
-| Plugin extension API           | Nodes + commands + React plugins             | Single `Extension` / `Node` object, well documented|
-| Server-side HTML               | Own renderer over JSON                       | `@tiptap/html` (DOM-based) or own renderer         |
-| Bundle size (rough)            | Smaller **(verify)**                         | Larger **(verify)**                                |
-| Licence                        | MIT                                          | MIT core, some paid add-ons we would avoid         |
-| Ecosystem / docs               | Smaller, improving                           | Larger, many examples                              |
-| API stability                  | Historically pre-1.0 churn **(verify)**      | Stable 2.x, major migrations occasionally          |
-| Governance                     | Meta open source                             | Company-backed, open core                          |
+| Criterion                      | Lexical                                   | Tiptap                                              |
+| ------------------------------ | ----------------------------------------- | --------------------------------------------------- |
+| Block / node model             | Custom node classes, decorators for React | Schema-based nodes, node views for React            |
+| Stored JSON                    | Lexical-specific tree, versioned          | ProseMirror JSON, stable and widely understood      |
+| Nested layout blocks (columns) | Possible, more manual                     | Natural via schema content expressions              |
+| Plugin extension API           | Nodes + commands + React plugins          | Single `Extension` / `Node` object, well documented |
+| Server-side HTML               | Own renderer over JSON                    | `@tiptap/html` (DOM-based) or own renderer          |
+| Bundle size (rough)            | Smaller **(verify)**                      | Larger **(verify)**                                 |
+| Licence                        | MIT                                       | MIT core, some paid add-ons we would avoid          |
+| Ecosystem / docs               | Smaller, improving                        | Larger, many examples                               |
+| API stability                  | Historically pre-1.0 churn **(verify)**   | Stable 2.x, major migrations occasionally           |
+| Governance                     | Meta open source                          | Company-backed, open core                           |
 
 ## Trade-offs that matter for NodePress
 
