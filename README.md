@@ -18,6 +18,7 @@ pnpm dev                                  # http://localhost:3000
 
 - `GET /` — temporary front page (shows plugin filters in action)
 - `GET /api/health` — kernel, database and plugin status
+- `GET /admin/` — the admin dashboard (build it first with `pnpm build`; sign-in uses the auth API below)
 - `POST /api/v1/auth/login` — JSON `{ email, password }`; sets an HttpOnly session cookie and returns the user and a CSRF token
 - `GET /api/v1/auth/me` — the signed-in user and CSRF token
 - `POST /api/v1/auth/logout` — ends the session (send the CSRF token in `X-CSRF-Token`)
@@ -54,6 +55,8 @@ Uploads are stored on local disk in `MEDIA_DIR` (default `./media`) and served f
 
 Webhooks are off until `WEBHOOK_SIGNING_KEY` (32+ characters, kept out of the database) is set. Administrators (`manage_options`) manage them under `/api/v1/webhooks` (list, create, patch, delete, `POST /:id/rotate-secret`, `POST /:id/test`). Events: `content.created`, `content.updated`, `content.published`, `content.trashed`, `content.deleted` (or `*`). Each delivery is a JSON `POST` with `X-NodePress-Event`, `X-NodePress-Delivery`, `X-NodePress-Timestamp` and `X-NodePress-Signature: v1=<HMAC-SHA256 hex of "<timestamp>.<body>">`, retried with backoff (6 tries) until the endpoint answers 2xx. The secret is shown once, when the webhook is created or rotated; `verifyWebhookSignature()` from `@nodepress/core` checks a request. URLs that point at loopback or private networks are refused (set `WEBHOOK_ALLOW_PRIVATE=true` for local development).
 
+The admin app lives in `apps/admin` (React, Vite, TanStack Router and Query, Tailwind) and is served by the server at `/admin` from `apps/admin/dist` (`ADMIN_DIR` overrides the folder). For a first sign-in during development, start the server with `ADMIN_EMAIL` and `ADMIN_PASSWORD`: while the site has no users, that administrator is created. For hot reload run `pnpm --filter @nodepress/admin dev` (http://localhost:5173, proxies the API to port 3000; start the server with `COOKIE_SECURE=false`). `pnpm --filter @nodepress/admin e2e` runs the Playwright tests against a built server (first run: `pnpm --filter @nodepress/admin exec playwright install chromium`).
+
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 
 ## Repository layout
@@ -64,6 +67,7 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 | `packages/sdk`            | Public API for plugin and theme authors (`definePlugin`, types)          |
 | `packages/db`             | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
 | `apps/server`             | Hono HTTP server that boots a NodePress site                             |
+| `apps/admin`              | React admin dashboard, served by the server at `/admin`                  |
 | `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
 
 ## Writing a plugin

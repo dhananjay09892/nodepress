@@ -5,3 +5,5 @@ dist/
 *.db
 uploads/
 /media/
+playwright-report/
+test-results/

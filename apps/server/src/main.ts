@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import {
   createApiTokensService,
@@ -162,8 +164,27 @@ const media = createMediaService({
   ...(process.env.MAX_UPLOAD_BYTES ? { maxBytes: Number(process.env.MAX_UPLOAD_BYTES) } : {}),
 });
 
+// Optional first administrator for development and CI (the installer in Phase 5 replaces this).
+// Only used while the site has no users; the password is hashed like any other.
+if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && (await users.list()).length === 0) {
+  await users.create({
+    email: process.env.ADMIN_EMAIL,
+    password: process.env.ADMIN_PASSWORD,
+    displayName: 'Administrator',
+    role: 'administrator',
+  });
+  np.logger.info(`Created administrator ${process.env.ADMIN_EMAIL}`);
+}
+
+// The built admin app is served at /admin; ADMIN_DIR overrides where it is looked up.
+const adminDir =
+  process.env.ADMIN_DIR ?? fileURLToPath(new URL('../../admin/dist', import.meta.url));
+const admin = existsSync(adminDir) ? { dir: adminDir } : undefined;
+if (!admin) np.logger.info('Admin app not built (run `pnpm build`); /admin is disabled.');
+
 const capabilities = createCapabilities(np.hooks);
 const app = createApp(np, database, {
+  ...(admin ? { admin } : {}),
   permalinks,
   content: {
     service: content,
