@@ -36,7 +36,10 @@ const NpImage = Node.create({
   atom: true,
   draggable: true,
   addAttributes() {
-    return { ...nullableAttrs('src', 'mediaId', 'width', 'height', 'caption'), alt: { default: '' } };
+    return {
+      ...nullableAttrs('src', 'mediaId', 'width', 'height', 'caption'),
+      alt: { default: '' },
+    };
   },
   parseHTML() {
     return [{ tag: 'figure[data-np-block="image"]' }];

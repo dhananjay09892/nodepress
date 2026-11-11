@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createBlockRegistry } from './core-blocks.js';
 import { renderBlocks, validateDocument } from './render.js';
-import { blockFromTiptap, blockToTiptap, envelopeToTiptap, tiptapToEnvelope } from './tiptap-json.js';
+import {
+  blockFromTiptap,
+  blockToTiptap,
+  envelopeToTiptap,
+  tiptapToEnvelope,
+} from './tiptap-json.js';
 import type { Block, BlockDocument } from './types.js';
 
 const doc = (...blocks: Block[]): BlockDocument => ({ version: 1, blocks });
@@ -90,7 +95,11 @@ describe('envelope <-> Tiptap JSON', () => {
   });
 
   it('keeps unknown (plugin) blocks untouched', () => {
-    const plugin: Block = { type: 'acme/gallery', attrs: { ids: [1, 2] }, children: [{ type: 'x' }] };
+    const plugin: Block = {
+      type: 'acme/gallery',
+      attrs: { ids: [1, 2] },
+      children: [{ type: 'x' }],
+    };
     expect(blockToTiptap(plugin).type).toBe('npUnknown');
     expect(blockFromTiptap(blockToTiptap(plugin))).toEqual(plugin);
   });
@@ -98,7 +107,10 @@ describe('envelope <-> Tiptap JSON', () => {
   it('gives an empty document one empty paragraph, and a column at least one block', () => {
     expect(envelopeToTiptap(doc()).content).toEqual([{ type: 'paragraph' }]);
     expect(envelopeToTiptap(null).content).toEqual([{ type: 'paragraph' }]);
-    const empty: Block = { type: 'core/columns', children: [{ type: 'core/column' }, { type: 'core/column' }] };
+    const empty: Block = {
+      type: 'core/columns',
+      children: [{ type: 'core/column' }, { type: 'core/column' }],
+    };
     expect(blockToTiptap(empty).content?.[0]?.content).toEqual([{ type: 'paragraph' }]);
   });
 
@@ -106,7 +118,11 @@ describe('envelope <-> Tiptap JSON', () => {
     const result = blockFromTiptap({
       type: 'paragraph',
       content: [
-        { type: 'text', text: 'a', marks: [{ type: 'highlight' }, { type: 'link', attrs: { href: '' } }] },
+        {
+          type: 'text',
+          text: 'a',
+          marks: [{ type: 'highlight' }, { type: 'link', attrs: { href: '' } }],
+        },
       ],
     });
     expect(result).toEqual({ type: 'core/paragraph', content: [{ text: 'a' }] });
