@@ -10,6 +10,7 @@ import { Shell } from './screens/Shell.js';
 import { Dashboard } from './screens/Dashboard.js';
 import { LoginScreen } from './screens/Login.js';
 import { ComingSoon } from './screens/ComingSoon.js';
+import { ContentList } from './screens/ContentList.js';
 import { NAV_ITEMS } from './nav.js';
 import { sessionQuery } from './session.js';
 
@@ -46,13 +47,22 @@ const dashboardRoute = createRoute({
   component: Dashboard,
 });
 
-const sectionRoutes = NAV_ITEMS.map((item) =>
-  createRoute({
+// Screens that exist; every other sidebar section is still a placeholder.
+const contentScreens: Record<string, { type: string; title: string }> = {
+  '/posts': { type: 'post', title: 'Posts' },
+  '/pages': { type: 'page', title: 'Pages' },
+};
+
+const sectionRoutes = NAV_ITEMS.map((item) => {
+  const screen = contentScreens[item.to];
+  return createRoute({
     getParentRoute: () => shellRoute,
     path: item.to,
-    component: () => <ComingSoon title={item.label} />,
-  }),
-);
+    component: screen
+      ? () => <ContentList type={screen.type} title={screen.title} />
+      : () => <ComingSoon title={item.label} />,
+  });
+});
 
 const routeTree = rootRoute.addChildren([
   loginRoute,

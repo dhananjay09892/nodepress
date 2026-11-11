@@ -245,7 +245,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] Admin shell: login, navigation, dashboard
 - [ ] Editor spike: Lexical vs Tiptap → pick one
 - [ ] Block editor with core blocks (paragraph, heading, image, list, quote, code, embed, columns, button)
-- [ ] Posts/pages lists, filters, bulk actions
+- [x] Posts/pages lists, filters, bulk actions
 - [ ] Media library, users, settings screens
 - [ ] Admin extension points (plugins add menus, pages, fields)
 
