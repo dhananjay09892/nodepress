@@ -246,6 +246,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] Editor spike: Lexical vs Tiptap → pick one (Tiptap, ADR 0001)
 - [ ] Block editor with core blocks (paragraph, heading, image, list, quote, code, embed, columns, button) — block model, registry, core blocks and server renderer done (`packages/editor`); Tiptap admin UI (N44) built, pending CI and measurements (N45)
 - [x] Posts/pages lists, filters, bulk actions
+- [ ] Post edit screen — editor, status, publish date, slug, excerpt, draft autosave and revision history done (N18); categories, tags and featured image next (N46)
 - [x] Media library screen
 - [ ] Users and settings screens
 - [ ] Admin extension points (plugins add menus, pages, fields)

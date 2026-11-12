@@ -149,6 +149,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: editor plus sidebar (status, publish date, slug, excerpt, categories, tags, featured image), autosave, revision history view.
 - Done when: Playwright test writes and publishes a post.
 
+### N46 · Post edit sidebar: categories, tags and featured image
+
+- Depends on: N18
+- Scope: follow-up to N18, which delivered the edit screen (editor, status, publish date, slug, excerpt, draft autosave, revision history) and `GET /api/v1/content/:type/:id/revisions`. Add the remaining sidebar panels: categories (hierarchical checklist) and tags (type-ahead, create on the fly) through the `terms` field of the content API (needs the `manage_categories` capability; hide the panels without it), and a featured image picker that reuses the media library (stored as a `featured_image` custom field on the content types, registered by core). Show a diff of title and text between the current form and a chosen revision.
+- Done when: Playwright test assigns a category and a tag and sets a featured image on a post.
+
 ### N19 · Media library screen
 
 - Depends on: N14, N11
