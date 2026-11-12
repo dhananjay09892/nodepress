@@ -21,7 +21,7 @@ NodePress needs a block editor in the admin (`apps/admin`) and a new `packages/e
 
 ## How this was evaluated
 
-This record was written in an automated session where the npm registry was unreachable, so **no prototype was built and no bundle was measured**. The comparison below rests on the public documentation and design of both projects as known at the time of writing. Items marked **(verify)** should be checked in a quick hands-on spike before N17 starts; the numbers in particular are rough orders of magnitude, not measurements. A suggested spike is at the end.
+The first version of this record was written in an automated session where the npm registry was unreachable, so it rested on the public documentation and design of both projects. After the owner chose Tiptap, N17 and N44 built the integration and N45 measured it in GitHub Actions (Ubuntu runner, Node 22, `vite build` production output, run on 2026-11-12). Every claim that used to be marked unverified now carries either a measured result for Tiptap or the statement that it was **not measured** because Lexical was not built. The measured numbers are in "Measurements (N45)" below.
 
 ## Options
 
@@ -31,12 +31,12 @@ An extensible text editor framework with a small core and a React binding (`@lex
 
 - **Block model:** a tree of nodes (`ElementNode`, `DecoratorNode`, `TextNode`). Blocks are custom node classes; non-text blocks (image, embed, button) are `DecoratorNode`s that render React components. Columns would be a custom `ElementNode` with child column nodes.
 - **JSON storage:** editor state serialises to JSON natively (`editorState.toJSON()`), with a versioned node format. Each node type defines `exportJSON` / `importJSON`, so the stored shape is ours to control per block. The JSON is Lexical-specific (nodes like `root`, `paragraph`, `text` with numeric format bitfields), which is more tied to the engine than Tiptap's output.
-- **Extension API:** nodes, commands, plugins (React components or imperative registrations) and a newer `defineExtension` direction **(verify current status)**. Plugin authors write TypeScript classes plus React components.
+- **Extension API:** nodes, commands, plugins (React components or imperative registrations) and a newer `defineExtension` direction (not evaluated: Lexical was not built). Plugin authors write TypeScript classes plus React components.
 - **Server-side rendering:** Lexical is designed around a live editor instance; headless use exists (`@lexical/headless`) but rendering HTML from stored JSON would normally mean our own small renderer that walks the JSON. For a block registry that already needs a renderer per block this is fine and keeps the server free of the editor.
-- **Bundle size:** core is small (order of 20-30 kB gzipped for core plus React binding, more with rich text, lists, links and code packages) **(verify)**. Generally lighter than a ProseMirror stack.
+- **Bundle size:** core is small (order of 20-30 kB gzipped for core plus React binding, more with rich text, lists, links and code packages); not measured, since Lexical was not built. Generally lighter than a ProseMirror stack.
 - **Licence:** MIT.
-- **Accessibility:** contenteditable-based with ARIA support in the rich text package; keyboard handling and screen reader behaviour for custom decorator blocks are our responsibility **(verify with a screen reader)**.
-- **Maturity and risks:** used in production by Meta and others; API has been pre-1.0 for a long time and has had breaking changes between minor versions **(verify current version and stability policy)**. Smaller ecosystem of ready-made block-level extensions than Tiptap; tables, collaborative editing (Yjs) and markdown shortcuts exist as packages.
+- **Accessibility:** contenteditable-based with ARIA support in the rich text package; keyboard handling and screen reader behaviour for custom decorator blocks are our responsibility (not tested, since Lexical was not built).
+- **Maturity and risks:** used in production by Meta and others; API has been pre-1.0 for a long time and has had breaking changes between minor versions (current version and stability policy not checked). Smaller ecosystem of ready-made block-level extensions than Tiptap; tables, collaborative editing (Yjs) and markdown shortcuts exist as packages.
 
 ### Option B: Tiptap (on ProseMirror)
 
@@ -45,11 +45,11 @@ A headless editor framework built on ProseMirror, with React bindings (`@tiptap/
 - **Block model:** a ProseMirror schema of nodes and marks. Blocks are Tiptap `Node` extensions; non-text blocks use `ReactNodeViewRenderer`. Columns are a custom node with a constrained content expression (`column+`), which ProseMirror's schema handles well.
 - **JSON storage:** documents serialise to a plain, stable, schema-shaped JSON (`{ type: "doc", content: [...] }`) via `editor.getJSON()`. ProseMirror JSON is a widely used format with a long track record, and there are libraries to render it without a browser.
 - **Extension API:** mature and well documented. Each extension declares schema, commands, keyboard shortcuts, input rules and node views in one place, which maps cleanly onto "plugins register blocks".
-- **Server-side rendering:** `@tiptap/html` can generate HTML from JSON on the server, but it relies on a DOM implementation (it has used `zeed-dom` or similar for Node) **(verify)**. Alternatively we write our own walker over the JSON, as in option A.
-- **Bundle size:** larger than Lexical because ProseMirror packages (state, view, model, transform, commands, keymap and more) come with it; order of 50-100 kB gzipped for a typical editor **(verify)**.
+- **Server-side rendering:** `@tiptap/html` can generate HTML from JSON on the server, but it relies on a DOM implementation (it has used `zeed-dom` or similar for Node). **Measured:** we do not use it. NodePress renders its own block envelope with the registry-driven renderer in `@nodepress/editor`, which runs in plain Node with no `document` or `window` global (see Measurements).
+- **Bundle size:** larger than Lexical because ProseMirror packages (state, view, model, transform, commands, keymap and more) come with it; **Measured: the editor adds about 170 kB gzipped** (623 kB minified) on top of React, well above the 50-100 kB first estimate. See Measurements.
 - **Licence:** Tiptap core and most extensions are MIT. Some features (collaboration cloud, AI, some pro extensions) are commercial. We would only depend on the MIT packages. ProseMirror itself is MIT.
-- **Accessibility:** also contenteditable; ProseMirror has a long record of handling IME, selection and clipboard edge cases. Same caveat that custom node views need our own ARIA and keyboard work **(verify)**.
-- **Maturity and risks:** Tiptap 2.x is stable and widely deployed; a 3.x line exists **(verify current major and migration cost)**. A commercial company drives it, so the risk is feature gating over time rather than abandonment.
+- **Accessibility:** also contenteditable; ProseMirror has a long record of handling IME, selection and clipboard edge cases. Custom node views need our own ARIA and keyboard work. **Measured:** the toolbar (a `role=toolbar` group of labelled buttons) and the editing area (`role=textbox`, `aria-multiline`, accessible name) can be operated with the keyboard alone, covered by the Playwright test `editor-keyboard.spec.ts`. A screen reader pass has not been done and needs a person.
+- **Maturity and risks:** Tiptap 2.x is stable and widely deployed; the integration was built directly on the 3.x line (3.33.1 at measurement time), so there was no 2.x to 3.x migration. A commercial company drives it, so the risk is feature gating over time rather than abandonment.
 
 ## Comparison
 
@@ -60,10 +60,10 @@ A headless editor framework built on ProseMirror, with React bindings (`@tiptap/
 | Nested layout blocks (columns) | Possible, more manual                     | Natural via schema content expressions              |
 | Plugin extension API           | Nodes + commands + React plugins          | Single `Extension` / `Node` object, well documented |
 | Server-side HTML               | Own renderer over JSON                    | `@tiptap/html` (DOM-based) or own renderer          |
-| Bundle size (rough)            | Smaller **(verify)**                      | Larger **(verify)**                                 |
+| Bundle size (rough)            | Not measured (not built)                  | About 170 kB gzip added to the admin (measured)     |
 | Licence                        | MIT                                       | MIT core, some paid add-ons we would avoid          |
 | Ecosystem / docs               | Smaller, improving                        | Larger, many examples                               |
-| API stability                  | Historically pre-1.0 churn **(verify)**   | Stable 2.x, major migrations occasionally           |
+| API stability                  | Historically pre-1.0 churn (not checked)  | 3.x line, major migrations occasionally             |
 | Governance                     | Meta open source                          | Company-backed, open core                           |
 
 ## Trade-offs that matter for NodePress
@@ -84,16 +84,28 @@ Choose **Lexical** instead if bundle size and a lighter core outweigh plugin-aut
 
 Either way, N17 should store our own block envelope and keep `packages/editor` as the only package that imports the engine.
 
-## Suggested spike before N17 (about half a day)
+## Measurements (N45)
 
-1. Build a throwaway page in `apps/admin` with the paragraph, heading, image and columns blocks in each engine.
-2. Measure the production bundle for the editor chunk (gzip) with `vite build`.
-3. Round-trip: editor to our block envelope to HTML on the server (Node, no DOM) and back.
-4. Check keyboard-only use and a screen reader on the columns and image blocks.
-5. Record the numbers in this file and replace every **(verify)** marker.
+Produced by `apps/admin/scripts/measure-editor.mjs`, which the admin job in `.github/workflows/ci.yml` runs after `pnpm build` (so the numbers reappear in every CI log). Packages measured: `@tiptap/core`, `@tiptap/react`, `@tiptap/starter-kit` and `@tiptap/pm`, all 3.33.1, all MIT.
+
+| Measurement                                             | Result                                                                                                           |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| React + ReactDOM only (probe bundle)                    | 355.0 kB minified, 80.0 kB gzip                                                                                  |
+| React + ReactDOM + `BlockEditor` (probe bundle)         | 978.1 kB minified, 250.3 kB gzip                                                                                 |
+| **Editor adds**                                         | **623.1 kB minified, 170.3 kB gzip**                                                                             |
+| Whole admin build (`dist/assets`, one JS chunk)         | 244.3 kB gzip (React, router, query and editor)                                                                  |
+| Server render round trip, all nine core blocks          | 9 of 9 identical after envelope to Tiptap to envelope; every document passes `validateDocument` and renders HTML |
+| Server render needs a DOM                               | No: ran with no `document` or `window` global                                                                    |
+| Keyboard-only use of the toolbar (Playwright, Chromium) | Pass: Shift+Tab reaches "Heading 2", Space applies it, typing then produces a `core/heading` block               |
+
+Notes:
+
+- The editor currently ships inside the single admin chunk because `/editor-preview` imports it statically, so every admin page pays for it. N18 (post edit screen) should load the editor with a dynamic `import()` on the edit route only. The cost is acceptable for a logged-in admin but counts against the N41 performance budget.
+- The round-trip probe covers one representative block per core type. The exhaustive fixtures (marks, nested lists, empty blocks, media-library images) are in `packages/editor/src/tiptap-json.test.ts`.
+- Not done: a screen reader test (needs a person) and any measurement of Lexical (not built, since Tiptap was chosen).
 
 ## Consequences
 
 - PLAN.md section 2, section 8 and the Phase 2 spike checkbox are updated to reflect Tiptap.
 - N17 is unblocked: `packages/editor` is the only package that imports Tiptap, and it stores NodePress's own block envelope rather than raw ProseMirror JSON.
-- The **(verify)** items above are still unmeasured. N17 should record real bundle size and server-render results here once it has them.
+- N45 measured the Tiptap integration; the editor adds about 170 kB gzip, which N18 should offset by lazy-loading it.

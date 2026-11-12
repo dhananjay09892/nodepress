@@ -123,6 +123,12 @@ jobs:
       - if: hashFiles('packages/db/drizzle/sqlite/**') == '' || hashFiles('packages/db/drizzle/postgres/**') == ''
         run: pnpm --filter @nodepress/db db:generate
       - run: pnpm build
+      - name: Report editor size and server-render round trip
+        run: |
+          node apps/admin/scripts/measure-editor.mjs
+          for p in @tiptap/core @tiptap/react @tiptap/starter-kit @tiptap/pm; do
+            node -e "const p=require('./packages/editor/node_modules/$p/package.json');console.log(p.name,p.version,p.license)"
+          done
       - name: Install Playwright browser
         run: pnpm --filter @nodepress/admin exec playwright install --with-deps chromium
       - name: Run Playwright tests
