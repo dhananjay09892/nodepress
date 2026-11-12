@@ -1,5 +1,5 @@
 // Measures the block editor for docs/adr/0001-editor.md. Run in CI by
-// .github/workflows/measure-editor.yml after `pnpm build`:
+// the admin job in .github/workflows/ci.yml after `pnpm build`:
 //   node apps/admin/scripts/measure-editor.mjs
 // 1. Editor chunk size: bundles a probe that imports the editor, and a baseline with only
 //    React, then reports the gzip difference (what the editor adds to the admin).
@@ -26,6 +26,8 @@ async function bundle(name, source) {
     configFile: false,
     logLevel: 'error',
     plugins: [(await import('@vitejs/plugin-react')).default()],
+    // Library mode does not replace this, which would bundle React's development build.
+    define: { 'process.env.NODE_ENV': '"production"' },
     build: {
       outDir: out,
       emptyOutDir: true,
