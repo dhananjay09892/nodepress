@@ -130,6 +130,28 @@ export function buildPatch(
   return patch;
 }
 
+/**
+ * The form after a save. What the person typed while the request ran is kept, but a value the
+ * server chose is taken when the form still held the one that was sent (or none): a slug made
+ * from the title, the publish date set when an item goes live, a status the server adjusted.
+ * Without this the form would look changed right after saving and would send the old value back.
+ */
+export function adoptServerValues(
+  current: EditState,
+  base: EditState,
+  sent: ContentPatch,
+  next: EditState,
+): EditState {
+  const sentDate =
+    sent.publishedAt === undefined ? base.publishedAt : isoToLocalInput(sent.publishedAt);
+  return {
+    ...current,
+    slug: current.slug === (sent.slug ?? base.slug) ? next.slug : current.slug,
+    publishedAt: current.publishedAt === sentDate ? next.publishedAt : current.publishedAt,
+    status: current.status === (sent.status ?? base.status) ? next.status : current.status,
+  };
+}
+
 /** True when saving `current` would change anything on the server. */
 export function isDirty(current: EditState, saved: EditState): boolean {
   return Object.keys(buildPatch(current, saved)).length > 0;

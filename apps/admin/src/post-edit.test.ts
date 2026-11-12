@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from './api.js';
 import {
+  adoptServerValues,
   buildPatch,
   canAutosave,
   createContent,
@@ -190,5 +191,43 @@ describe('describeSaveError', () => {
     expect(describeSaveError(new ApiError(401, 'unauthorized'))).toMatch(/signed out/);
     expect(describeSaveError(new ApiError(403, 'forbidden'))).toMatch(/permission/);
     expect(describeSaveError(new TypeError('network'))).toMatch(/Could not reach/);
+  });
+});
+
+describe('adoptServerValues', () => {
+  const publishedAt = '2027-05-06T07:08:00.000Z';
+  const afterPublish = toEditState({
+    title: 'Hello',
+    slug: 'hello',
+    excerpt: null,
+    status: 'published',
+    publishedAt,
+    body: saved.body,
+  });
+
+  it('takes the publish date the server set when the form had none', () => {
+    const current = { ...saved, status: 'published' as const };
+    const next = adoptServerValues(current, saved, { status: 'published' }, afterPublish);
+    expect(next.publishedAt).toBe(isoToLocalInput(publishedAt));
+    // The form now matches what is saved, so it is not dirty and sends nothing.
+    expect(isDirty(next, afterPublish)).toBe(false);
+  });
+
+  it('takes a generated slug when the form still held the empty one', () => {
+    const base = { ...EMPTY_STATE, title: 'Hello' };
+    const next = adoptServerValues(base, EMPTY_STATE, { title: 'Hello' }, { ...saved });
+    expect(next.slug).toBe('hello');
+  });
+
+  it('keeps what was typed while the request ran', () => {
+    const typed = {
+      ...saved,
+      status: 'published' as const,
+      slug: 'typed-later',
+      publishedAt: '2030-01-01T00:00',
+    };
+    const next = adoptServerValues(typed, saved, { status: 'published' }, afterPublish);
+    expect(next.slug).toBe('typed-later');
+    expect(next.publishedAt).toBe('2030-01-01T00:00');
   });
 });

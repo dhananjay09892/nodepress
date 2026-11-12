@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { STATUS_LABELS } from '../content.js';
 import {
+  adoptServerValues,
   buildPatch,
   canAutosave,
   createContent,
@@ -143,11 +144,9 @@ function EditForm({ type, noun, item }: FormProps) {
     onSuccess: async ({ item: result, sent }) => {
       if (!result) return;
       const next = toEditState(result);
-      const sentSlug = sent.slug ?? latest.current.saved.slug;
+      const base = latest.current.saved;
       setSaved(next);
-      // Keep what the person typed while the request ran, but take the slug the server chose
-      // when the form still held the one that was sent (or none, so one was generated).
-      setForm((current) => (current.slug === sentSlug ? { ...current, slug: next.slug } : current));
+      setForm((current) => adoptServerValues(current, base, sent, next));
       setLastSavedAt(new Date());
       setNotice(null);
       // Refreshes the list screens and this item's revision history.
