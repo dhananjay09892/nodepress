@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
 import { describeError } from '../api.js';
 import {
@@ -35,6 +36,35 @@ const buttonClass =
 function formatDate(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+const linkButtonClass = `${buttonClass} inline-block`;
+
+/** Links are written out per type so the router can check each route and its parameters. */
+function AddLink({ type, title }: Props) {
+  const label = `Add new ${title.replace(/s$/, '').toLowerCase()}`;
+  return type === 'page' ? (
+    <Link to="/pages/new" className={linkButtonClass}>
+      {label}
+    </Link>
+  ) : (
+    <Link to="/posts/new" className={linkButtonClass}>
+      {label}
+    </Link>
+  );
+}
+
+function EditLink({ type, id, children }: { type: string; id: number; children: string }) {
+  const className = 'underline hover:text-slate-600';
+  return type === 'page' ? (
+    <Link to="/pages/$id" params={{ id: String(id) }} className={className}>
+      {children}
+    </Link>
+  ) : (
+    <Link to="/posts/$id" params={{ id: String(id) }} className={className}>
+      {children}
+    </Link>
+  );
 }
 
 export function ContentList({ type, title }: Props) {
@@ -94,7 +124,10 @@ export function ContentList({ type, title }: Props) {
 
   return (
     <section>
-      <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
+        <AddLink type={type} title={title} />
+      </div>
 
       <div className="mt-4 flex flex-wrap items-end gap-4">
         <form onSubmit={onSearch} role="search" className="flex items-end gap-2">
@@ -200,7 +233,11 @@ export function ContentList({ type, title }: Props) {
                   onChange={() => toggle(item.id)}
                 />
               </td>
-              <td className="px-3 py-2 font-medium text-slate-900">{item.title}</td>
+              <td className="px-3 py-2 font-medium text-slate-900">
+                <EditLink type={type} id={item.id}>
+                  {item.title === '' ? '(no title)' : item.title}
+                </EditLink>
+              </td>
               <td className="px-3 py-2 text-slate-800">{STATUS_LABELS[item.status]}</td>
               <td className="px-3 py-2 text-slate-800">{formatDate(item.updatedAt)}</td>
             </tr>

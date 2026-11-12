@@ -598,6 +598,63 @@ describe('api:response filter', () => {
   });
 });
 
+describe('revisions', () => {
+  it('lists the saved versions of an item, newest first', async () => {
+    const post = await make('author', {
+      title: 'First',
+      body: [{ type: 'core/paragraph', text: 'one' }],
+    });
+    await call('PATCH', `/content/post/${post.id}`, 'author', { title: 'Second' });
+    await call('PATCH', `/content/post/${post.id}`, 'author', { title: 'Third' });
+    const res = await call('GET', `/content/post/${post.id}/revisions`, 'author');
+    expect(res.status).toBe(200);
+    const revisions = res.json!.revisions as Json[];
+    // One revision for the creation and one for each change.
+    expect(revisions.map((r) => r.snapshot.title)).toEqual(['Third', 'Second', 'First']);
+    const revisionIds = revisions.map((r) => r.id as number);
+    expect(revisionIds).toEqual([...revisionIds].sort((a, b) => b - a));
+    expect(revisions[0]!.contentId).toBe(post.id);
+    expect(revisions[0]!.authorId).toBe(ids.author);
+    expect(typeof revisions[0]!.createdAt).toBe('string');
+  });
+
+  it('is refused without credentials, and for users who cannot edit the item', async () => {
+    const post = await make('author', { title: 'Private draft' });
+    const path = `/content/post/${post.id}/revisions`;
+    expect((await call('GET', path, null)).status).toBe(401);
+    expect((await call('GET', path, 'subscriber')).status).toBe(404);
+    // Authors cannot read the history of other authors' items; editors can.
+    expect((await call('GET', path, 'author2')).status).toBe(404);
+    expect((await call('GET', path, 'editor')).status).toBe(200);
+    expect((await call('GET', path, 'administrator')).status).toBe(200);
+  });
+
+  it('answers 404 for a missing item or unknown type', async () => {
+    expect((await call('GET', '/content/post/9999/revisions', 'administrator')).status).toBe(404);
+    expect((await call('GET', '/content/nope/1/revisions', 'administrator')).status).toBe(404);
+    expect((await call('GET', '/content/post/abc/revisions', 'administrator')).status).toBe(404);
+  });
+
+  it('is never readable anonymously, even when public reads are on', async () => {
+    const options = createOptionsService({ store: createOptionsStore(database), hooks: np.hooks });
+    mount({ options });
+    await options.set('api_public_read', true);
+    const post = await make('author', { title: 'Live', status: 'published' });
+    expect((await call('GET', `/content/post/${post.id}`, null)).status).toBe(200);
+    expect((await call('GET', `/content/post/${post.id}/revisions`, null)).status).toBe(401);
+  });
+
+  it('can be reshaped by the api:response filter', async () => {
+    const post = await make('author');
+    np.hooks.addFilter('api:response', (body, ctx) =>
+      ctx.route === 'content:revisions' ? { ...(body as object), seen: true } : body,
+    );
+    expect((await call('GET', `/content/post/${post.id}/revisions`, 'author')).json!.seen).toBe(
+      true,
+    );
+  });
+});
+
 describe('OpenAPI document', () => {
   it('is public and describes every route and the registered types', async () => {
     types.register({ name: 'product' });
@@ -609,6 +666,7 @@ describe('OpenAPI document', () => {
       '/api/v1/content-types',
       '/api/v1/content/{type}',
       '/api/v1/content/{type}/{id}',
+      '/api/v1/content/{type}/{id}/revisions',
     ]);
     expect(Object.keys(doc.paths['/api/v1/content/{type}'])).toEqual(['get', 'post']);
     expect(Object.keys(doc.paths['/api/v1/content/{type}/{id}'])).toEqual([

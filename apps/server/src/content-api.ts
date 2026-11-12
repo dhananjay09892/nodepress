@@ -34,7 +34,8 @@ declare module '@nodepress/core' {
     /**
      * The JSON body of a successful content API response, just before it is sent. Return an
      * object to replace it; anything else is ignored. `route` is one of `content-types:list`,
-     * `content:list`, `content:get`, `content:create`, `content:update` or `content:trash`.
+     * `content:list`, `content:get`, `content:create`, `content:update`, `content:trash` or
+     * `content:revisions`.
      */
     'api:response': {
       value: unknown;
@@ -773,6 +774,33 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
     }
   });
 
+  // The saved versions of an item, newest first. A revision holds the whole item as it was
+  // (including an unpublished draft's text), so it needs the same rights as editing the item;
+  // anonymous callers never see it, even when public reads are on.
+  routes.get('/content/:type/:id/revisions', async (c) => {
+    if (c.get('principal') === null) return c.json({ error: 'unauthorized' }, 401);
+    const found = await find(c);
+    if (!found) return notFound(c);
+    const user = userOf(c);
+    const { item, caps } = found;
+    if (!(await can(user, caps.edit))) return c.json({ error: 'forbidden' }, 403);
+    if (item.authorId !== user.id && !(await can(user, caps.editOthers))) {
+      return c.json({ error: 'forbidden' }, 403);
+    }
+    const revisions = await content.listRevisions(item.id);
+    return respond(c, 'content:revisions', 200, {
+      revisions: revisions
+        .map((revision) => ({
+          id: revision.id,
+          contentId: revision.contentId,
+          authorId: revision.authorId,
+          createdAt: revision.createdAt.toISOString(),
+          snapshot: revision.snapshot,
+        }))
+        .sort((a, b) => b.id - a.id),
+    });
+  });
+
   routes.get('/openapi.json', async (c) => {
     c.header('Cache-Control', 'no-cache');
     return c.json(
@@ -1066,6 +1094,33 @@ export function createOpenApiDocument(
           },
         },
       },
+      '/api/v1/content/{type}/{id}/revisions': {
+        get: {
+          operationId: 'listContentRevisions',
+          summary: 'List the saved versions of an item',
+          description:
+            "Newest first. Needs the type's edit capability (and the edit-others capability for items by other authors). Anonymous requests are always refused.",
+          security,
+          parameters: [typeParam, idParam],
+          responses: {
+            '200': {
+              description: 'The revisions.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['revisions'],
+                    properties: { revisions: { type: 'array', items: ref('Revision') } },
+                  },
+                },
+              },
+            },
+            '401': unauthorized,
+            '403': forbidden,
+            '404': missing,
+          },
+        },
+      },
       '/api/v1/content/{type}/{id}': {
         get: {
           operationId: 'getContent',
@@ -1144,6 +1199,31 @@ export function createOpenApiDocument(
             attrs: { type: 'object', additionalProperties: true },
             text: { type: 'string' },
             children: { type: 'array', items: { $ref: '#/components/schemas/Block' } },
+          },
+        },
+        Revision: {
+          type: 'object',
+          required: ['id', 'contentId', 'authorId', 'createdAt', 'snapshot'],
+          properties: {
+            id: { type: 'integer' },
+            contentId: { type: 'integer' },
+            authorId: { type: ['integer', 'null'] },
+            createdAt: { type: 'string', format: 'date-time' },
+            snapshot: {
+              type: 'object',
+              description: 'The editable fields as they were saved.',
+              required: ['title', 'slug', 'status', 'body', 'excerpt', 'publishedAt'],
+              properties: {
+                title: { type: 'string' },
+                slug: { type: 'string' },
+                status: { type: 'string' },
+                body: { type: 'array', items: ref('Block') },
+                excerpt: { type: ['string', 'null'] },
+                authorId: { type: ['integer', 'null'] },
+                parentId: { type: ['integer', 'null'] },
+                publishedAt: { type: ['string', 'null'], format: 'date-time' },
+              },
+            },
           },
         },
         Content: {

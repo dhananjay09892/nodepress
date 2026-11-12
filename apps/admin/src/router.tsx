@@ -13,6 +13,7 @@ import { ComingSoon } from './screens/ComingSoon.js';
 import { ContentList } from './screens/ContentList.js';
 import { MediaLibrary } from './screens/MediaLibrary.js';
 import { EditorPreview } from './screens/EditorPreview.js';
+import { PostEdit } from './screens/PostEdit.js';
 import { NAV_ITEMS } from './nav.js';
 import { sessionQuery } from './session.js';
 
@@ -68,7 +69,30 @@ const sectionRoutes = NAV_ITEMS.map((item) => {
   });
 });
 
-// Temporary, unlinked route for trying the block editor until the post edit screen (N18).
+// The edit screens. `/posts/new` is static, so it wins over `/posts/$id`. The four routes are
+// written out so the router can type-check every link and parameter.
+const postNewRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/posts/new',
+  component: () => <PostEdit type="post" noun="Post" />,
+});
+const postEditRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/posts/$id',
+  component: () => <PostEdit type="post" noun="Post" />,
+});
+const pageNewRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/pages/new',
+  component: () => <PostEdit type="page" noun="Page" />,
+});
+const pageEditRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/pages/$id',
+  component: () => <PostEdit type="page" noun="Page" />,
+});
+
+// Temporary, unlinked route for trying the block editor on its own (nothing is saved).
 const editorPreviewRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/editor-preview',
@@ -77,7 +101,15 @@ const editorPreviewRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  shellRoute.addChildren([dashboardRoute, ...sectionRoutes, editorPreviewRoute]),
+  shellRoute.addChildren([
+    dashboardRoute,
+    ...sectionRoutes,
+    postNewRoute,
+    postEditRoute,
+    pageNewRoute,
+    pageEditRoute,
+    editorPreviewRoute,
+  ]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {
