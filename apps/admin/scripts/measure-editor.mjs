@@ -5,8 +5,10 @@
 //    React, then reports the gzip difference (what the editor adds to the admin).
 // 2. Server render round trip: envelope -> Tiptap JSON -> envelope -> HTML in plain Node,
 //    with no DOM global present.
+import console from 'node:console';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { build } from 'vite';
