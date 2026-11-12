@@ -88,15 +88,15 @@ Either way, N17 should store our own block envelope and keep `packages/editor` a
 
 Produced by `apps/admin/scripts/measure-editor.mjs`, which the admin job in `.github/workflows/ci.yml` runs after `pnpm build` (so the numbers reappear in every CI log). Packages measured: `@tiptap/core`, `@tiptap/react`, `@tiptap/starter-kit` and `@tiptap/pm`, all 3.33.1, all MIT.
 
-| Measurement                                              | Result                                          |
-| -------------------------------------------------------- | ----------------------------------------------- |
-| React + ReactDOM only (probe bundle)                     | 355.0 kB minified, 80.0 kB gzip                 |
-| React + ReactDOM + `BlockEditor` (probe bundle)          | 978.1 kB minified, 250.3 kB gzip                |
-| **Editor adds**                                          | **623.1 kB minified, 170.3 kB gzip**            |
-| Whole admin build (`dist/assets`, one JS chunk)          | 244.3 kB gzip (React, router, query and editor) |
-| Server render round trip, all nine core blocks           | 9 of 9 identical after envelope to Tiptap to envelope; every document passes `validateDocument` and renders HTML |
-| Server render needs a DOM                                | No: ran with no `document` or `window` global   |
-| Keyboard-only use of the toolbar (Playwright, Chromium)  | Pass: Shift+Tab reaches "Heading 2", Space applies it, typing then produces a `core/heading` block |
+| Measurement                                             | Result                                                                                                           |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| React + ReactDOM only (probe bundle)                    | 355.0 kB minified, 80.0 kB gzip                                                                                  |
+| React + ReactDOM + `BlockEditor` (probe bundle)         | 978.1 kB minified, 250.3 kB gzip                                                                                 |
+| **Editor adds**                                         | **623.1 kB minified, 170.3 kB gzip**                                                                             |
+| Whole admin build (`dist/assets`, one JS chunk)         | 244.3 kB gzip (React, router, query and editor)                                                                  |
+| Server render round trip, all nine core blocks          | 9 of 9 identical after envelope to Tiptap to envelope; every document passes `validateDocument` and renders HTML |
+| Server render needs a DOM                               | No: ran with no `document` or `window` global                                                                    |
+| Keyboard-only use of the toolbar (Playwright, Chromium) | Pass: Shift+Tab reaches "Heading 2", Space applies it, typing then produces a `core/heading` block               |
 
 Notes:
 
