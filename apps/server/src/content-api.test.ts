@@ -611,8 +611,8 @@ describe('revisions', () => {
     const revisions = res.json!.revisions as Json[];
     // One revision for the creation and one for each change.
     expect(revisions.map((r) => r.snapshot.title)).toEqual(['Third', 'Second', 'First']);
-    const ids = revisions.map((r) => r.id as number);
-    expect(ids).toEqual([...ids].sort((a, b) => b - a));
+    const revisionIds = revisions.map((r) => r.id as number);
+    expect(revisionIds).toEqual([...revisionIds].sort((a, b) => b - a));
     expect(revisions[0]!.contentId).toBe(post.id);
     expect(revisions[0]!.authorId).toBe(ids.author);
     expect(typeof revisions[0]!.createdAt).toBe('string');
