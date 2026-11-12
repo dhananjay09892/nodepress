@@ -600,7 +600,10 @@ describe('api:response filter', () => {
 
 describe('revisions', () => {
   it('lists the saved versions of an item, newest first', async () => {
-    const post = await make('author', { title: 'First', body: [{ type: 'core/paragraph', text: 'one' }] });
+    const post = await make('author', {
+      title: 'First',
+      body: [{ type: 'core/paragraph', text: 'one' }],
+    });
     await call('PATCH', `/content/post/${post.id}`, 'author', { title: 'Second' });
     await call('PATCH', `/content/post/${post.id}`, 'author', { title: 'Third' });
     const res = await call('GET', `/content/post/${post.id}/revisions`, 'author');
@@ -646,7 +649,9 @@ describe('revisions', () => {
     np.hooks.addFilter('api:response', (body, ctx) =>
       ctx.route === 'content:revisions' ? { ...(body as object), seen: true } : body,
     );
-    expect((await call('GET', `/content/post/${post.id}/revisions`, 'author')).json!.seen).toBe(true);
+    expect((await call('GET', `/content/post/${post.id}/revisions`, 'author')).json!.seen).toBe(
+      true,
+    );
   });
 });
 

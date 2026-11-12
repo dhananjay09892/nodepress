@@ -159,7 +159,8 @@ export function saveLabel(isNew: boolean, status: ContentStatus): string {
 /** A short line naming what a revision holds, for the history list. */
 export function describeRevision(revision: RevisionItem, index: number, total: number): string {
   const title = revision.snapshot.title.trim() === '' ? '(no title)' : revision.snapshot.title;
-  const position = index === 0 ? 'Latest' : index === total - 1 ? 'First' : `Version ${total - index}`;
+  const position =
+    index === 0 ? 'Latest' : index === total - 1 ? 'First' : `Version ${total - index}`;
   return `${position}: ${title} (${revision.snapshot.status})`;
 }
 
@@ -167,8 +168,7 @@ function csrfHeaders(csrfToken: string): HeadersInit {
   return { 'x-csrf-token': csrfToken };
 }
 
-const itemPath = (type: string, id: number) =>
-  `/api/v1/content/${encodeURIComponent(type)}/${id}`;
+const itemPath = (type: string, id: number) => `/api/v1/content/${encodeURIComponent(type)}/${id}`;
 
 export async function fetchContent(type: string, id: number): Promise<ContentItem> {
   const res = await request(itemPath(type, id));
@@ -220,7 +220,8 @@ export function describeSaveError(error: unknown): string {
     }
     if (error.code === 'not_found') return 'This item no longer exists, or you cannot see it.';
     if (error.code === 'payload_too_large') return 'This content is too large to save.';
-    if (error.status === 401) return 'You were signed out. Sign in again; your edits on this page are still here.';
+    if (error.status === 401)
+      return 'You were signed out. Sign in again; your edits on this page are still here.';
   }
   return describeError(error);
 }

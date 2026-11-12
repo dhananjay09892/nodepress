@@ -44,7 +44,8 @@ interface Props {
 /** Loads the item named in the URL (or starts an empty one) and shows the edit form. */
 export function PostEdit({ type, noun }: Props) {
   const params = useParams({ strict: false }) as { id?: string };
-  const id = params.id === undefined ? null : /^[0-9]{1,15}$/.test(params.id) ? Number(params.id) : NaN;
+  const id =
+    params.id === undefined ? null : /^[0-9]{1,15}$/.test(params.id) ? Number(params.id) : NaN;
 
   const item = useQuery({
     queryKey: ['content', type, 'item', id],
@@ -153,7 +154,8 @@ function EditForm({ type, noun, item }: FormProps) {
       await queryClient.invalidateQueries({ queryKey: ['content', type] });
       if (isNew) {
         const to = String(result.id);
-        if (type === 'page') await navigate({ to: '/pages/$id', params: { id: to }, replace: true });
+        if (type === 'page')
+          await navigate({ to: '/pages/$id', params: { id: to }, replace: true });
         else await navigate({ to: '/posts/$id', params: { id: to }, replace: true });
       }
     },
@@ -310,7 +312,11 @@ function EditForm({ type, noun, item }: FormProps) {
                 className={inputClass}
               />
             </div>
-            <button type="submit" className={primaryClass} disabled={save.isPending || (!isNew && !dirty)}>
+            <button
+              type="submit"
+              className={primaryClass}
+              disabled={save.isPending || (!isNew && !dirty)}
+            >
               {saveLabel(isNew, form.status)}
             </button>
             <p role="status" className="min-h-5 text-sm text-slate-700">
