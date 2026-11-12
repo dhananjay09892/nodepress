@@ -80,7 +80,8 @@ for (const file of readdirSync(assets)) {
 console.log(`admin JS total: ${kb(total)} gzip`);
 
 console.log('\n## Server-side render round trip (Node, no DOM)');
-const noDom = typeof globalThis.document === 'undefined' && typeof globalThis.window === 'undefined';
+const noDom =
+  typeof globalThis.document === 'undefined' && typeof globalThis.window === 'undefined';
 console.log(`No document/window global: ${noDom}`);
 const editor = await import(
   pathToFileURL(resolve(adminRoot, '../../packages/editor/dist/index.js')).href
@@ -89,7 +90,10 @@ const { createBlockRegistry, envelopeToTiptap, tiptapToEnvelope, renderBlocks, v
   editor;
 const registry = createBlockRegistry();
 const blocks = [
-  { type: 'core/paragraph', content: [{ text: 'Hi ' }, { text: 'there', marks: [{ type: 'bold' }] }] },
+  {
+    type: 'core/paragraph',
+    content: [{ text: 'Hi ' }, { text: 'there', marks: [{ type: 'bold' }] }],
+  },
   { type: 'core/heading', attrs: { level: 2 }, content: [{ text: 'Title' }] },
   { type: 'core/image', attrs: { src: '/uploads/a.png', alt: 'A' } },
   {
@@ -118,7 +122,9 @@ for (const block of blocks) {
   const html = renderBlocks(back, registry);
   const ok = same && issues.length === 0 && html.length > 0;
   if (!ok) failures += 1;
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${block.type}: round trip equal=${same}, issues=${issues.length}`);
+  console.log(
+    `${ok ? 'ok  ' : 'FAIL'} ${block.type}: round trip equal=${same}, issues=${issues.length}`,
+  );
   console.log(`     ${html.replace(/\n/g, ' ')}`);
 }
 console.log(`Round-trip failures: ${failures}`);
