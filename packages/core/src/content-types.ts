@@ -371,9 +371,28 @@ export interface ContentTypeRegistryOptions {
   logger?: Logger;
 }
 
+/** The featured image of a post or page: the id of an item in the media library. */
+const FEATURED_IMAGE_FIELD: FieldDefinition = {
+  name: 'featured_image',
+  type: 'media',
+  label: 'Featured image',
+};
+
 const BUILTIN_DEFINITIONS: ContentTypeDefinition[] = [
-  { name: 'post', label: 'Post', labelPlural: 'Posts', hierarchical: false, fields: [] },
-  { name: 'page', label: 'Page', labelPlural: 'Pages', hierarchical: true, fields: [] },
+  {
+    name: 'post',
+    label: 'Post',
+    labelPlural: 'Posts',
+    hierarchical: false,
+    fields: [FEATURED_IMAGE_FIELD],
+  },
+  {
+    name: 'page',
+    label: 'Page',
+    labelPlural: 'Pages',
+    hierarchical: true,
+    fields: [FEATURED_IMAGE_FIELD],
+  },
 ];
 
 function normalize(def: ContentTypeDefinition, builtin: boolean): RegisteredContentType {

@@ -37,6 +37,21 @@ describe('built-in types', () => {
     expect(registry.get('post')?.builtin).toBe(true);
   });
 
+  it('give posts and pages a featured image field that holds a media id', () => {
+    const registry = createContentTypeRegistry();
+    for (const name of ['post', 'page']) {
+      expect(registry.get(name)?.fields).toEqual([
+        { name: 'featured_image', type: 'media', label: 'Featured image' },
+      ]);
+      expect(registry.validate(name, { featured_image: 5 })).toEqual({
+        ok: true,
+        value: { featured_image: 5 },
+      });
+      expect(registry.validate(name, { featured_image: 'x' }).ok).toBe(false);
+      expect(registry.validate(name, { featured_image: [1, 2] }).ok).toBe(false);
+    }
+  });
+
   it('cannot be replaced or removed', () => {
     const registry = createContentTypeRegistry();
     expect(() => registry.register({ name: 'post' })).toThrow(/built in/);

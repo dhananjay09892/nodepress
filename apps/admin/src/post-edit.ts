@@ -1,6 +1,10 @@
 import type { Block } from '@nodepress/editor';
 import { ApiError, describeError, request, toError } from './api.js';
 import type { ContentStatus } from './content.js';
+import { CATEGORY_TAXONOMY, sameIds, TAG_TAXONOMY, type TermItem } from './terms.js';
+
+/** The custom field (registered by core) that holds a post's featured image: a media id. */
+export const FEATURED_IMAGE_FIELD = 'featured_image';
 
 /** A content item as the edit screen uses it (the content API's full item shape). */
 export interface ContentItem {
@@ -14,6 +18,10 @@ export interface ContentItem {
   excerpt: string | null;
   authorId: number | null;
   publishedAt: string | null;
+  /** Custom field values (present when the server stores them). */
+  meta?: Record<string, unknown>;
+  /** Assigned terms by taxonomy name (present when the server has taxonomies). */
+  terms?: Record<string, TermItem[]>;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +50,10 @@ export interface EditState {
   status: ContentStatus;
   publishedAt: string;
   body: Block[];
+  categoryIds: number[];
+  tagIds: number[];
+  /** The id of the featured image in the media library, or `null`. */
+  featuredImage: number | null;
 }
 
 /** The fields the API accepts on a write, as the edit screen sends them. */
@@ -52,6 +64,10 @@ export interface ContentPatch {
   status?: ContentStatus;
   publishedAt?: string | null;
   body?: Block[];
+  /** Taxonomy name to the full list of term ids (the API replaces the assignment). */
+  terms?: Record<string, number[]>;
+  /** Custom field values; `null` clears one. */
+  meta?: Record<string, number | null>;
 }
 
 export const EMPTY_STATE: EditState = {
@@ -61,6 +77,9 @@ export const EMPTY_STATE: EditState = {
   status: 'draft',
   publishedAt: '',
   body: [],
+  categoryIds: [],
+  tagIds: [],
+  featuredImage: null,
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -91,7 +110,10 @@ export function toEditState(source: {
   status: string;
   publishedAt: string | null;
   body: Block[];
+  meta?: Record<string, unknown> | undefined;
+  terms?: Record<string, { id: number }[]> | undefined;
 }): EditState {
+  const image = source.meta?.[FEATURED_IMAGE_FIELD];
   return {
     title: source.title,
     slug: source.slug,
@@ -99,6 +121,9 @@ export function toEditState(source: {
     status: source.status as ContentStatus,
     publishedAt: isoToLocalInput(source.publishedAt),
     body: source.body,
+    categoryIds: (source.terms?.[CATEGORY_TAXONOMY] ?? []).map((t) => t.id),
+    tagIds: (source.terms?.[TAG_TAXONOMY] ?? []).map((t) => t.id),
+    featuredImage: typeof image === 'number' ? image : null,
   };
 }
 
@@ -127,6 +152,16 @@ export function buildPatch(
     if (iso !== undefined) patch.publishedAt = iso;
   }
   if (JSON.stringify(current.body) !== JSON.stringify(saved.body)) patch.body = current.body;
+  // Terms are sent per taxonomy and only for the ones that changed; the server needs
+  // `manage_categories` for any `terms` key, so untouched ones must not be sent.
+  const terms: Record<string, number[]> = {};
+  if (!sameIds(current.categoryIds, saved.categoryIds))
+    terms[CATEGORY_TAXONOMY] = current.categoryIds;
+  if (!sameIds(current.tagIds, saved.tagIds)) terms[TAG_TAXONOMY] = current.tagIds;
+  if (Object.keys(terms).length > 0) patch.terms = terms;
+  if (current.featuredImage !== saved.featuredImage) {
+    patch.meta = { [FEATURED_IMAGE_FIELD]: current.featuredImage };
+  }
   return patch;
 }
 

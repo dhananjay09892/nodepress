@@ -24,6 +24,7 @@ import {
   type RevisionItem,
 } from '../post-edit.js';
 import { sessionQuery } from '../session.js';
+import { CategoriesPanel, FeaturedImagePanel, RevisionDiffView, TagsPanel } from './PostPanels.js';
 
 /** How long the form must sit unchanged before a draft saves itself. */
 export const AUTOSAVE_DELAY_MS = 2000;
@@ -123,6 +124,7 @@ function EditForm({ type, noun, item }: FormProps) {
   });
   const [notice, setNotice] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [comparing, setComparing] = useState<number | null>(null);
 
   const dirty = isDirty(form, saved);
   // A ref so the autosave timer and the save callback always see the latest values.
@@ -329,6 +331,17 @@ function EditForm({ type, noun, item }: FormProps) {
             )}
           </div>
 
+          {type === 'post' && (
+            <>
+              <CategoriesPanel ids={form.categoryIds} onChange={(ids) => set('categoryIds', ids)} />
+              <TagsPanel ids={form.tagIds} onChange={(ids) => set('tagIds', ids)} />
+            </>
+          )}
+          <FeaturedImagePanel
+            value={form.featuredImage}
+            onChange={(id) => set('featuredImage', id)}
+          />
+
           {!isNew && (
             <div className="rounded bg-white p-4 shadow">
               <h2 className="text-base font-semibold text-slate-900">Revision history</h2>
@@ -352,7 +365,23 @@ function EditForm({ type, noun, item }: FormProps) {
                       onClick={() => restore(revision)}
                     >
                       Restore
+                    </button>{' '}
+                    <button
+                      type="button"
+                      className={`${buttonClass} mt-1`}
+                      aria-label={`Compare ${describeRevision(revision, index, all.length)}`}
+                      aria-pressed={comparing === revision.id}
+                      onClick={() => setComparing(comparing === revision.id ? null : revision.id)}
+                    >
+                      Compare
                     </button>
+                    {comparing === revision.id && (
+                      <RevisionDiffView
+                        revision={revision}
+                        form={form}
+                        onClose={() => setComparing(null)}
+                      />
+                    )}
                   </li>
                 ))}
               </ol>

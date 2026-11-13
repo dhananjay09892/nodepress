@@ -38,6 +38,9 @@ const saved: EditState = {
   status: 'draft',
   publishedAt: '',
   body: [paragraph('one')],
+  categoryIds: [],
+  tagIds: [],
+  featuredImage: null,
 };
 
 describe('date conversion', () => {
@@ -66,6 +69,56 @@ describe('toEditState', () => {
       body: [],
     });
     expect(state).toEqual({ ...EMPTY_STATE, title: 'T', slug: 's', status: 'published' });
+  });
+});
+
+describe('toEditState with terms and custom fields', () => {
+  it('reads category and tag ids and the featured image', () => {
+    const state = toEditState({
+      title: 'T',
+      slug: 's',
+      excerpt: null,
+      status: 'draft',
+      publishedAt: null,
+      body: [],
+      meta: { featured_image: 12 },
+      terms: { category: [{ id: 3 }, { id: 1 }], tag: [{ id: 9 }] },
+    });
+    expect(state).toMatchObject({ categoryIds: [3, 1], tagIds: [9], featuredImage: 12 });
+  });
+
+  it('ignores a featured image that is not an id', () => {
+    const state = toEditState({
+      ...saved,
+      excerpt: null,
+      publishedAt: null,
+      meta: { featured_image: 'x' },
+    });
+    expect(state.featuredImage).toBeNull();
+  });
+});
+
+describe('buildPatch terms and featured image', () => {
+  it('sends only the taxonomies that changed, ignoring order', () => {
+    const base = { ...saved, categoryIds: [1, 2], tagIds: [5] };
+    expect(buildPatch({ ...base, categoryIds: [2, 1] }, base)).toEqual({});
+    expect(buildPatch({ ...base, tagIds: [5, 6] }, base)).toEqual({ terms: { tag: [5, 6] } });
+    expect(buildPatch({ ...base, categoryIds: [] }, base)).toEqual({ terms: { category: [] } });
+  });
+
+  it('sends the featured image, and null to remove it', () => {
+    expect(buildPatch({ ...saved, featuredImage: 4 }, saved)).toEqual({
+      meta: { featured_image: 4 },
+    });
+    const withImage = { ...saved, featuredImage: 4 };
+    expect(buildPatch({ ...withImage, featuredImage: null }, withImage)).toEqual({
+      meta: { featured_image: null },
+    });
+  });
+
+  it('counts a term change as a change to save', () => {
+    expect(isDirty({ ...saved, tagIds: [1] }, saved)).toBe(true);
+    expect(isDirty({ ...saved, featuredImage: 2 }, saved)).toBe(true);
   });
 });
 

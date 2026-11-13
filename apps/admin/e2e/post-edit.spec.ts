@@ -122,3 +122,108 @@ test('the posts list opens the edit screen', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Edit post' })).toBeVisible();
   await expect(page.getByLabel('Title')).toHaveValue(title);
 });
+
+// A valid 1x1 PNG.
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+test('assign a category and a tag and set a featured image', async ({ page }) => {
+  const stamp = Date.now();
+  const title = `Sidebar${stamp}`;
+  const category = `Cat${stamp}`;
+  const tag = `tag${stamp}`;
+  const alt = `Picture ${stamp}`;
+  await signIn(page);
+  const me = await page.request.get('/api/v1/auth/me');
+  const { csrfToken } = (await me.json()) as { csrfToken: string };
+  const headers = { 'x-csrf-token': csrfToken };
+
+  // Seed a category and an image through the API, the way another screen would.
+  const madeCategory = await page.request.post('/api/v1/taxonomies/category/terms', {
+    headers,
+    data: { name: category },
+  });
+  expect(madeCategory.status()).toBe(201);
+  const categoryId = ((await madeCategory.json()) as { term: { id: number } }).term.id;
+  const upload = await page.request.post('/api/v1/media', {
+    headers,
+    multipart: { file: { name: `sidebar-${stamp}.png`, mimeType: 'image/png', buffer: PNG } },
+  });
+  expect(upload.status()).toBe(201);
+  const mediaId = ((await upload.json()) as { media: { id: number } }).media.id;
+  const altSaved = await page.request.patch(`/api/v1/media/${mediaId}`, {
+    headers,
+    data: { alt },
+  });
+  expect(altSaved.ok()).toBe(true);
+
+  await page.goto('/admin/posts/new');
+  await page.getByLabel('Title').fill(title);
+
+  // Categories are a checklist.
+  await page.getByRole('checkbox', { name: category }).check();
+
+  // A tag that does not exist yet is created on the fly; Enter does not submit the form.
+  await page.getByLabel('Add tag').fill(tag);
+  await page.getByRole('button', { name: `Create tag “${tag}”` }).click();
+  await expect(
+    page.getByRole('list', { name: 'Chosen tags' }).getByRole('listitem').filter({ hasText: tag }),
+  ).toBeVisible();
+
+  // The featured image comes from the media library.
+  await page.getByRole('button', { name: 'Set featured image' }).click();
+  await page
+    .getByRole('dialog', { name: 'Choose featured image' })
+    .getByRole('button', { name: `Use ${alt}` })
+    .click();
+  await expect(page.getByRole('img', { name: alt })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Save draft' }).click();
+  await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
+  const id = idFromUrl(page);
+
+  const saved = await page.request.get(`/api/v1/content/post/${id}`);
+  const item = (
+    (await saved.json()) as {
+      item: {
+        meta: { featured_image?: number };
+        terms: { category: { id: number }[]; tag: { name: string }[] };
+      };
+    }
+  ).item;
+  expect(item.terms.category.map((t) => t.id)).toEqual([categoryId]);
+  expect(item.terms.tag.map((t) => t.name)).toEqual([tag]);
+  expect(item.meta.featured_image).toBe(mediaId);
+
+  // The saved choices come back when the screen is reopened, and can be removed again.
+  await page.reload();
+  await expect(page.getByRole('checkbox', { name: category })).toBeChecked();
+  await page.getByRole('button', { name: `Remove tag ${tag}` }).click();
+  await page.getByRole('button', { name: 'Remove featured image' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Saved at' })).toBeVisible();
+  const cleared = await page.request.get(`/api/v1/content/post/${id}`);
+  const after = ((await cleared.json()) as { item: { meta: object; terms: { tag: unknown[] } } })
+    .item;
+  expect(after.terms.tag).toEqual([]);
+  expect(after.meta).toEqual({});
+});
+
+test('compare a revision with the form', async ({ page }) => {
+  const title = `Diff${Date.now()}`;
+  await signIn(page);
+  await page.goto('/admin/posts/new');
+  await page.getByLabel('Title').fill(title);
+  await page.getByRole('button', { name: 'Save draft' }).click();
+  await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
+
+  await page.getByLabel('Title').fill(`${title} renamed`);
+  await page.getByRole('button', { name: `Compare Latest: ${title} (draft)` }).click();
+  const diff = page.getByRole('region', { name: 'Changes since this version' });
+  await expect(diff).toContainText(`Removed: ${title}`);
+  await expect(diff).toContainText(`Added: ${title} renamed`);
+  await diff.getByRole('button', { name: 'Hide changes' }).click();
+  await expect(diff).toBeHidden();
+});

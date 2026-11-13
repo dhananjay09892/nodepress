@@ -50,6 +50,12 @@ export async function fetchMediaPage(page: number): Promise<MediaPage> {
   };
 }
 
+export async function fetchMedia(id: number): Promise<MediaItem> {
+  const res = await request(`/api/v1/media/${id}`);
+  if (!res.ok) throw await toError(res);
+  return ((await res.json()) as { media: MediaItem }).media;
+}
+
 /** Uploads one file. The body is multipart, so the browser (not `request`) sets the content type. */
 export async function uploadFile(file: File, csrfToken: string): Promise<MediaItem> {
   const form = new FormData();
