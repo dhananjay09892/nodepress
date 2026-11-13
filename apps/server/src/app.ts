@@ -15,6 +15,7 @@ import { Hono } from 'hono';
 import { createAdminHandler } from './admin.js';
 import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
+import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createWebhookRoutes } from './webhooks.js';
 
@@ -78,6 +79,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           ...(options.content.meta ? { meta: options.content.meta } : {}),
           ...(options.content.taxonomies ? { taxonomies: options.content.taxonomies } : {}),
           ...(options.content.options ? { options: options.content.options } : {}),
+        }),
+      );
+    }
+    if (options.content?.taxonomies) {
+      app.route(
+        '/api/v1/taxonomies',
+        createTaxonomyRoutes(auth, {
+          taxonomies: options.content.taxonomies,
+          capabilities: options.content.capabilities,
         }),
       );
     }
