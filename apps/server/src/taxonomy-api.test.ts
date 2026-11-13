@@ -54,7 +54,11 @@ beforeEach(async () => {
     hooks: np.hooks,
   });
   for (const role of ['administrator', 'editor', 'author'] as const) {
-    const user = await users.create({ email: `${role}@example.com`, password: 'pw-pw-pw-pw-1', role });
+    const user = await users.create({
+      email: `${role}@example.com`,
+      password: 'pw-pw-pw-pw-1',
+      role,
+    });
     tokens[role] = (await apiTokens.create(user.id, { name: role })).token;
   }
   const taxonomies = createTaxonomyService({
@@ -134,9 +138,13 @@ describe('taxonomy routes', () => {
 
   it('rejects unknown taxonomies and invalid names', async () => {
     expect((await call('GET', '/taxonomies/nope/terms', 'editor')).status).toBe(404);
-    expect((await call('POST', '/taxonomies/nope/terms', 'editor', { name: 'x' })).status).toBe(404);
+    expect((await call('POST', '/taxonomies/nope/terms', 'editor', { name: 'x' })).status).toBe(
+      404,
+    );
     expect((await call('POST', '/taxonomies/tag/terms', 'editor', {})).status).toBe(400);
-    expect((await call('POST', '/taxonomies/tag/terms', 'editor', { name: '   ' })).status).toBe(400);
+    expect((await call('POST', '/taxonomies/tag/terms', 'editor', { name: '   ' })).status).toBe(
+      400,
+    );
     expect(
       (await call('POST', '/taxonomies/tag/terms', 'editor', { name: 'x'.repeat(500) })).status,
     ).toBe(400);

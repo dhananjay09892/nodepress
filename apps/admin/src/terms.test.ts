@@ -109,7 +109,7 @@ describe('term requests', () => {
   });
 
   it('creates a term with the CSRF token', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(json({ term: term(7, 'New')}, 201));
+    const fetchMock = vi.fn().mockResolvedValue(json({ term: term(7, 'New') }, 201));
     vi.stubGlobal('fetch', fetchMock);
     expect(await createTerm('tag', 'New', 'csrf-1')).toEqual(term(7, 'New'));
     const [url, init] = fetchMock.mock.calls[0]! as [string, RequestInit];

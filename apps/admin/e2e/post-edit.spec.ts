@@ -174,7 +174,10 @@ test('assign a category and a tag and set a featured image', async ({ page }) =>
 
   // The featured image comes from the media library.
   await page.getByRole('button', { name: 'Set featured image' }).click();
-  await page.getByRole('dialog', { name: 'Choose featured image' }).getByRole('button', { name: `Use ${alt}` }).click();
+  await page
+    .getByRole('dialog', { name: 'Choose featured image' })
+    .getByRole('button', { name: `Use ${alt}` })
+    .click();
   await expect(page.getByRole('img', { name: alt })).toBeVisible();
 
   await page.getByRole('button', { name: 'Save draft' }).click();
@@ -202,9 +205,8 @@ test('assign a category and a tag and set a featured image', async ({ page }) =>
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Saved at' })).toBeVisible();
   const cleared = await page.request.get(`/api/v1/content/post/${id}`);
-  const after = (
-    (await cleared.json()) as { item: { meta: object; terms: { tag: unknown[] } } }
-  ).item;
+  const after = ((await cleared.json()) as { item: { meta: object; terms: { tag: unknown[] } } })
+    .item;
   expect(after.terms.tag).toEqual([]);
   expect(after.meta).toEqual({});
 });

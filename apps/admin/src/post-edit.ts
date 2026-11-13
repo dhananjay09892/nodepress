@@ -155,7 +155,8 @@ export function buildPatch(
   // Terms are sent per taxonomy and only for the ones that changed; the server needs
   // `manage_categories` for any `terms` key, so untouched ones must not be sent.
   const terms: Record<string, number[]> = {};
-  if (!sameIds(current.categoryIds, saved.categoryIds)) terms[CATEGORY_TAXONOMY] = current.categoryIds;
+  if (!sameIds(current.categoryIds, saved.categoryIds))
+    terms[CATEGORY_TAXONOMY] = current.categoryIds;
   if (!sameIds(current.tagIds, saved.tagIds)) terms[TAG_TAXONOMY] = current.tagIds;
   if (Object.keys(terms).length > 0) patch.terms = terms;
   if (current.featuredImage !== saved.featuredImage) {

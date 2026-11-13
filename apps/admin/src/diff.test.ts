@@ -59,8 +59,8 @@ describe('diffRevision', () => {
   });
 
   it('is identical when nothing differs', () => {
-    expect(diffRevision({ title: 'T', body: [p('x')] }, { title: 'T', body: [p('x')] }).identical).toBe(
-      true,
-    );
+    expect(
+      diffRevision({ title: 'T', body: [p('x')] }, { title: 'T', body: [p('x')] }).identical,
+    ).toBe(true);
   });
 });
