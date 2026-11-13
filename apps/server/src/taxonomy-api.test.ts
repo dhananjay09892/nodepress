@@ -28,6 +28,8 @@ const hasher: PasswordHasher = {
   verify: async (hash, password) => hash === `fake$${password}`,
 };
 
+const PASSWORD = 'correct horse battery staple';
+
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 let database: DatabaseHandle;
@@ -56,7 +58,7 @@ beforeEach(async () => {
   for (const role of ['administrator', 'editor', 'author'] as const) {
     const user = await users.create({
       email: `${role}@example.com`,
-      password: 'pw-pw-pw-pw-1',
+      password: PASSWORD,
       role,
     });
     tokens[role] = (await apiTokens.create(user.id, { name: role })).token;
