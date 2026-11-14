@@ -12,6 +12,7 @@ import { LoginScreen } from './screens/Login.js';
 import { ComingSoon } from './screens/ComingSoon.js';
 import { ContentList } from './screens/ContentList.js';
 import { MediaLibrary } from './screens/MediaLibrary.js';
+import { Users } from './screens/Users.js';
 import { EditorPreview } from './screens/EditorPreview.js';
 import { PostEdit } from './screens/PostEdit.js';
 import { NAV_ITEMS } from './nav.js';
@@ -65,7 +66,9 @@ const sectionRoutes = NAV_ITEMS.map((item) => {
       ? () => <ContentList type={screen.type} title={screen.title} />
       : item.to === '/media'
         ? MediaLibrary
-        : () => <ComingSoon title={item.label} />,
+        : item.to === '/users'
+          ? Users
+          : () => <ComingSoon title={item.label} />,
   });
 });
 
