@@ -1,5 +1,6 @@
 import {
   DuplicateEmailError,
+  MAX_PASSWORD_LENGTH,
   ROLES,
   UserNotFoundError,
   UserValidationError,
@@ -111,6 +112,15 @@ export function createUserRoutes(auth: Auth, options: UserRoutesOptions): Hono<A
     if (typeError) return typeError;
     if (typeof email !== 'string' || typeof password !== 'string') {
       return c.json({ error: 'invalid_request', message: 'email and password are required' }, 400);
+    }
+    if (password.length === 0 || password.length > MAX_PASSWORD_LENGTH) {
+      return c.json(
+        {
+          error: 'invalid_request',
+          message: `password must be 1 to ${MAX_PASSWORD_LENGTH} characters`,
+        },
+        400,
+      );
     }
     if (role !== undefined && role !== 'subscriber' && !(await allowed(c, 'promote_users'))) {
       return c.json({ error: 'forbidden' }, 403);

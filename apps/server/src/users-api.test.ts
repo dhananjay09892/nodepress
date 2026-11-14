@@ -254,7 +254,7 @@ describe('POST /api/v1/users', () => {
     expect(((await res.json()) as { user: Json }).user.role).toBe('subscriber');
   });
 
-  it('rejects missing fields, a duplicate email, a short password and an unknown role', async () => {
+  it('rejects missing fields, a duplicate email, an empty or oversized password and an unknown role', async () => {
     const admin = await signIn('admin');
     expect((await call('POST', '', admin, { email: 'a@example.com' })).status).toBe(400);
     expect((await call('POST', '', admin, { password: PASSWORD })).status).toBe(400);
@@ -262,7 +262,11 @@ describe('POST /api/v1/users', () => {
     const dup = await call('POST', '', admin, { email: 'editor@example.com', password: PASSWORD });
     expect(dup.status).toBe(409);
     expect(
-      (await call('POST', '', admin, { email: 'b@example.com', password: 'short' })).status,
+      (await call('POST', '', admin, { email: 'b@example.com', password: '' })).status,
+    ).toBe(400);
+    expect(
+      (await call('POST', '', admin, { email: 'b@example.com', password: 'x'.repeat(2000) }))
+        .status,
     ).toBe(400);
     const role = await call('POST', '', admin, {
       email: 'c@example.com',
