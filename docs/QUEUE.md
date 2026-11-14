@@ -167,6 +167,18 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: users list and edit (roles), general/reading/permalink settings screens.
 - Done when: Playwright tests cover changing a role and a setting.
 
+### N47 · Settings screens: general, reading and permalinks
+
+- Depends on: N20
+- Scope: follow-up to N20, which delivered the users API (`/api/v1/users`: list, read, create, edit name, email and role) and the Users screen. Add a settings API (`GET`/`PATCH /api/v1/settings`, `manage_options` only, a fixed list of known keys validated per key: site title, tagline, timezone, front page and posts per page, search-engine visibility, permalink pattern from N09, `api_public_read`) and the Settings screens (General, Reading, Permalinks) in the admin, saving through the options service.
+- Done when: API tests cover validation and permission denial, and a Playwright test changes a setting and sees it persisted after a reload.
+
+### N48 · Users: add, delete and reset password
+
+- Depends on: N20
+- Scope: follow-up to N20. Add the admin UI to create a user (`POST /api/v1/users` already exists), delete a user with a confirmation (new `DELETE /api/v1/users/:id`, `delete_users`, never yourself, reassign or keep their content as `authorId = null`), and set a new password for a user (`password` on `PATCH`, `edit_users`; ends that user's sessions).
+- Done when: API tests cover delete and password reset (including sessions ended), and a Playwright test adds and deletes a user.
+
 ### N21 · Admin extension points
 
 - Depends on: N20
