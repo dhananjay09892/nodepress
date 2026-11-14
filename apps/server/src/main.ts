@@ -195,6 +195,7 @@ const app = createApp(np, database, {
     options,
   },
   media: { service: media, storage: mediaStorage, capabilities },
+  users: { service: users, capabilities },
   ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
   auth: {
     users,

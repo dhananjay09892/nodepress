@@ -8,6 +8,7 @@ import type {
   PermalinkService,
   StorageAdapter,
   TaxonomyService,
+  UsersService,
   WebhookService,
 } from '@nodepress/core';
 import type { ContentMetaTableStore, DatabaseHandle } from '@nodepress/db';
@@ -17,6 +18,7 @@ import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
+import { createUserRoutes } from './users-api.js';
 import { createWebhookRoutes } from './webhooks.js';
 
 declare module '@nodepress/core' {
@@ -55,6 +57,14 @@ export interface AppOptions {
     taxonomies?: TaxonomyService;
     options?: OptionsService;
   };
+  /**
+   * Enables `/api/v1/users` (needs `auth`): list, create and edit users (name, email, role).
+   * Reading needs `list_users`, editing `edit_users`, changing a role `promote_users`.
+   */
+  users?: {
+    service: Pick<UsersService, 'list' | 'findById' | 'create' | 'update'>;
+    capabilities: Capabilities;
+  };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
   /** Serves the built admin app (`dir` = its `dist` folder) at `/admin`. */
@@ -88,6 +98,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         createTaxonomyRoutes(auth, {
           taxonomies: options.content.taxonomies,
           capabilities: options.content.capabilities,
+        }),
+      );
+    }
+    if (options.users) {
+      app.route(
+        '/api/v1/users',
+        createUserRoutes(auth, {
+          users: options.users.service,
+          capabilities: options.users.capabilities,
         }),
       );
     }

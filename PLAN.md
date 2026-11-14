@@ -248,7 +248,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] Posts/pages lists, filters, bulk actions
 - [x] Post edit screen — editor, status, publish date, slug, excerpt, draft autosave and revision history (N18); categories, tags, featured image and revision diff (N46)
 - [x] Media library screen
-- [ ] Users and settings screens
+- [ ] Users and settings screens — users list, role/name/email edit and users API done (N20); settings screens next (N47), then add/delete/password reset (N48)
 - [ ] Admin extension points (plugins add menus, pages, fields)
 
 **Exit:** a non-developer can write and publish a post entirely in the admin.
