@@ -100,7 +100,7 @@ describe('roleLabel', () => {
 
 describe('API calls', () => {
   it('fetchUsers returns the users and roles', async () => {
-    const fetchMock = vi.fn(async () => json({ users: people, roles: ['editor'] }));
+    const fetchMock = vi.fn(async (_url: string) => json({ users: people, roles: ['editor'] }));
     vi.stubGlobal('fetch', fetchMock);
     const list = await fetchUsers();
     expect(list.users).toHaveLength(3);
