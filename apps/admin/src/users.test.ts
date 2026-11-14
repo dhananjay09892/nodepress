@@ -63,7 +63,11 @@ describe('paging', () => {
   it('slices pages and never goes below the first', () => {
     const items = Array.from({ length: USERS_PAGE_SIZE + 3 }, (_, i) => i);
     expect(pageOfUsers(items, 0)).toHaveLength(USERS_PAGE_SIZE);
-    expect(pageOfUsers(items, 1)).toEqual([USERS_PAGE_SIZE, USERS_PAGE_SIZE + 1, USERS_PAGE_SIZE + 2]);
+    expect(pageOfUsers(items, 1)).toEqual([
+      USERS_PAGE_SIZE,
+      USERS_PAGE_SIZE + 1,
+      USERS_PAGE_SIZE + 2,
+    ]);
     expect(pageOfUsers(items, -4)).toHaveLength(USERS_PAGE_SIZE);
   });
 });
@@ -105,7 +109,10 @@ describe('API calls', () => {
   });
 
   it('fetchUsers throws the API error code', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json({ error: 'forbidden' }, 403)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'forbidden' }, 403)),
+    );
     await expect(fetchUsers()).rejects.toMatchObject({ status: 403, code: 'forbidden' });
   });
 
@@ -124,7 +131,10 @@ describe('API calls', () => {
   });
 
   it('updateUser surfaces a conflict as an ApiError', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json({ error: 'duplicate_email' }, 409)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'duplicate_email' }, 409)),
+    );
     const error = await updateUser(3, { email: 'x@example.com' }, 'c').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).code).toBe('duplicate_email');

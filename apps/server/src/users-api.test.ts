@@ -232,7 +232,11 @@ describe('POST /api/v1/users', () => {
     });
     expect(res.status).toBe(201);
     const { user } = (await res.json()) as { user: Json };
-    expect(user).toMatchObject({ email: 'new@example.com', displayName: 'Newbie', role: 'contributor' });
+    expect(user).toMatchObject({
+      email: 'new@example.com',
+      displayName: 'Newbie',
+      role: 'contributor',
+    });
     expect(JSON.stringify(user)).not.toContain('fake$');
     const login = await app.request(`${BASE}/api/v1/auth/login`, {
       method: 'POST',
@@ -257,9 +261,9 @@ describe('POST /api/v1/users', () => {
     expect((await call('POST', '', admin, { email: 5, password: PASSWORD })).status).toBe(400);
     const dup = await call('POST', '', admin, { email: 'editor@example.com', password: PASSWORD });
     expect(dup.status).toBe(409);
-    expect((await call('POST', '', admin, { email: 'b@example.com', password: 'short' })).status).toBe(
-      400,
-    );
+    expect(
+      (await call('POST', '', admin, { email: 'b@example.com', password: 'short' })).status,
+    ).toBe(400);
     const role = await call('POST', '', admin, {
       email: 'c@example.com',
       password: PASSWORD,
