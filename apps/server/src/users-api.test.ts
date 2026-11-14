@@ -261,9 +261,9 @@ describe('POST /api/v1/users', () => {
     expect((await call('POST', '', admin, { email: 5, password: PASSWORD })).status).toBe(400);
     const dup = await call('POST', '', admin, { email: 'editor@example.com', password: PASSWORD });
     expect(dup.status).toBe(409);
-    expect(
-      (await call('POST', '', admin, { email: 'b@example.com', password: '' })).status,
-    ).toBe(400);
+    expect((await call('POST', '', admin, { email: 'b@example.com', password: '' })).status).toBe(
+      400,
+    );
     expect(
       (await call('POST', '', admin, { email: 'b@example.com', password: 'x'.repeat(2000) }))
         .status,
