@@ -157,7 +157,13 @@ export function timezoneNames(current?: string): string[] {
   try {
     names = Intl.supportedValuesOf('timeZone');
   } catch {
-    names = ['America/New_York', 'America/Los_Angeles', 'Europe/London', 'Europe/Berlin', 'Asia/Tokyo'];
+    names = [
+      'America/New_York',
+      'America/Los_Angeles',
+      'Europe/London',
+      'Europe/Berlin',
+      'Asia/Tokyo',
+    ];
   }
   const all = new Set(['UTC', ...names]);
   if (current) all.add(current);
@@ -190,7 +196,8 @@ export function describeSettingsError(error: unknown): string {
   }
   if (error instanceof ApiError) {
     if (error.code === 'forbidden') return 'You do not have permission to change settings.';
-    if (error.code === 'csrf_failed') return 'Your session expired. Reload the page and sign in again.';
+    if (error.code === 'csrf_failed')
+      return 'Your session expired. Reload the page and sign in again.';
   }
   return 'Something went wrong. Please try again.';
 }

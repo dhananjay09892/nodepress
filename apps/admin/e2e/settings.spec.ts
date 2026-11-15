@@ -39,7 +39,10 @@ test('change the site title and see it persisted after a reload', async ({ page 
 test('reading settings: posts per page is validated and then saved', async ({ page }) => {
   await signIn(page);
   await openSettings(page);
-  await page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Reading' }).click();
+  await page
+    .getByRole('navigation', { name: 'Settings sections' })
+    .getByRole('link', { name: 'Reading' })
+    .click();
 
   const perPage = page.getByLabel('Posts per page');
   await perPage.fill('500');
@@ -56,7 +59,10 @@ test('reading settings: posts per page is validated and then saved', async ({ pa
 test('permalinks: choose a preset and an invalid custom pattern is refused', async ({ page }) => {
   await signIn(page);
   await openSettings(page);
-  await page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Permalinks' }).click();
+  await page
+    .getByRole('navigation', { name: 'Settings sections' })
+    .getByRole('link', { name: 'Permalinks' })
+    .click();
 
   await page.getByLabel('Post URL structure').selectOption('/:year/:month/:slug');
   await page.getByRole('button', { name: 'Save changes' }).click();

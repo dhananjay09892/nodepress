@@ -148,7 +148,8 @@ export class SettingsService {
     const result: Record<string, unknown> = {};
     for (const key of SETTING_KEYS) {
       const stored = await this.#options.get(key);
-      result[key] = stored === undefined || !this.#valid(key, stored) ? SETTING_DEFAULTS[key] : stored;
+      result[key] =
+        stored === undefined || !this.#valid(key, stored) ? SETTING_DEFAULTS[key] : stored;
     }
     return result as unknown as Settings;
   }

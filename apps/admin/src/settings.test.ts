@@ -41,8 +41,16 @@ describe('diffSettings', () => {
   });
 
   it('sends only the changed keys of the screen, trimmed', () => {
-    const draft = { ...toDraft(saved), site_title: '  Field Notes ', tagline: 'Hi', posts_per_page: '3' };
-    expect(diffSettings('general', saved, draft)).toEqual({ site_title: 'Field Notes', tagline: 'Hi' });
+    const draft = {
+      ...toDraft(saved),
+      site_title: '  Field Notes ',
+      tagline: 'Hi',
+      posts_per_page: '3',
+    };
+    expect(diffSettings('general', saved, draft)).toEqual({
+      site_title: 'Field Notes',
+      tagline: 'Hi',
+    });
     // posts_per_page belongs to Reading, so General never sends it.
     expect(diffSettings('reading', saved, draft)).toEqual({ posts_per_page: 3 });
   });
@@ -51,7 +59,9 @@ describe('diffSettings', () => {
     const draft = { ...toDraft(saved), front_page_id: '12' };
     expect(diffSettings('reading', saved, draft)).toEqual({ front_page_id: 12 });
     const back = toDraft({ ...saved, front_page_id: 12 });
-    expect(diffSettings('reading', { ...saved, front_page_id: 12 }, { ...back, front_page_id: '' })).toEqual({
+    expect(
+      diffSettings('reading', { ...saved, front_page_id: 12 }, { ...back, front_page_id: '' }),
+    ).toEqual({
       front_page_id: null,
     });
   });
@@ -68,7 +78,9 @@ describe('diffSettings', () => {
   it('sends checkbox changes and a new permalink pattern', () => {
     const draft = { ...toDraft(saved), api_public_read: true, permalink_structure: '/:year/:slug' };
     expect(diffSettings('reading', saved, draft)).toEqual({ api_public_read: true });
-    expect(diffSettings('permalinks', saved, draft)).toEqual({ permalink_structure: '/:year/:slug' });
+    expect(diffSettings('permalinks', saved, draft)).toEqual({
+      permalink_structure: '/:year/:slug',
+    });
   });
 });
 
@@ -86,12 +98,12 @@ describe('helpers', () => {
   });
 
   it('describes errors in plain language', () => {
-    expect(describeSettingsError(new SettingsError(400, 'invalid_request', 'posts_per_page'))).toContain(
-      '1 to 100',
-    );
-    expect(describeSettingsError(new SettingsError(400, 'invalid_request', 'permalink_structure'))).toContain(
-      ':slug',
-    );
+    expect(
+      describeSettingsError(new SettingsError(400, 'invalid_request', 'posts_per_page')),
+    ).toContain('1 to 100');
+    expect(
+      describeSettingsError(new SettingsError(400, 'invalid_request', 'permalink_structure')),
+    ).toContain(':slug');
     expect(describeSettingsError(new SettingsError(400, 'invalid_request', null))).toBe(
       'Check the values and try again.',
     );
@@ -104,7 +116,10 @@ describe('API calls', () => {
   it('fetches settings', async () => {
     const fn = stubFetch(200, { settings: saved });
     expect(await fetchSettings()).toEqual(saved);
-    expect(fn).toHaveBeenCalledWith('/api/v1/settings', expect.objectContaining({ credentials: 'same-origin' }));
+    expect(fn).toHaveBeenCalledWith(
+      '/api/v1/settings',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
   });
 
   it('saves a patch with the CSRF token', async () => {

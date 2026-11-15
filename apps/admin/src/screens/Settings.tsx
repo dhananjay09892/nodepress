@@ -309,7 +309,12 @@ export function Settings({ section }: { section: SettingsSection }) {
     <section>
       <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
       <nav aria-label="Settings sections" className="mt-4 flex gap-1">
-        <Link to="/settings" activeOptions={{ exact: true }} className={subLinkClass} activeProps={subActive}>
+        <Link
+          to="/settings"
+          activeOptions={{ exact: true }}
+          className={subLinkClass}
+          activeProps={subActive}
+        >
           General
         </Link>
         <Link to="/settings/reading" className={subLinkClass} activeProps={subActive}>
