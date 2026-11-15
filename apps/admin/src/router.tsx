@@ -13,6 +13,7 @@ import { ComingSoon } from './screens/ComingSoon.js';
 import { ContentList } from './screens/ContentList.js';
 import { MediaLibrary } from './screens/MediaLibrary.js';
 import { Users } from './screens/Users.js';
+import { Settings } from './screens/Settings.js';
 import { EditorPreview } from './screens/EditorPreview.js';
 import { PostEdit } from './screens/PostEdit.js';
 import { NAV_ITEMS } from './nav.js';
@@ -68,7 +69,9 @@ const sectionRoutes = NAV_ITEMS.map((item) => {
         ? MediaLibrary
         : item.to === '/users'
           ? Users
-          : () => <ComingSoon title={item.label} />,
+          : item.to === '/settings'
+            ? () => <Settings section="general" />
+            : () => <ComingSoon title={item.label} />,
   });
 });
 
@@ -95,6 +98,17 @@ const pageEditRoute = createRoute({
   component: () => <PostEdit type="page" noun="Page" />,
 });
 
+const settingsReadingRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/reading',
+  component: () => <Settings section="reading" />,
+});
+const settingsPermalinksRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/permalinks',
+  component: () => <Settings section="permalinks" />,
+});
+
 // Temporary, unlinked route for trying the block editor on its own (nothing is saved).
 const editorPreviewRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -111,6 +125,8 @@ const routeTree = rootRoute.addChildren([
     postEditRoute,
     pageNewRoute,
     pageEditRoute,
+    settingsReadingRoute,
+    settingsPermalinksRoute,
     editorPreviewRoute,
   ]),
 ]);

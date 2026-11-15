@@ -6,6 +6,7 @@ import type {
   NodePress,
   OptionsService,
   PermalinkService,
+  SettingsService,
   StorageAdapter,
   TaxonomyService,
   UsersService,
@@ -18,6 +19,7 @@ import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
+import { createSettingsRoutes } from './settings-api.js';
 import { createUserRoutes } from './users-api.js';
 import { createWebhookRoutes } from './webhooks.js';
 
@@ -65,6 +67,11 @@ export interface AppOptions {
     service: Pick<UsersService, 'list' | 'findById' | 'create' | 'update'>;
     capabilities: Capabilities;
   };
+  /**
+   * Enables `/api/v1/settings` (needs `auth`): read and change the site settings,
+   * `manage_options` only.
+   */
+  settings?: { service: Pick<SettingsService, 'getAll' | 'update'>; capabilities: Capabilities };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
   /** Serves the built admin app (`dir` = its `dist` folder) at `/admin`. */
@@ -107,6 +114,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         createUserRoutes(auth, {
           users: options.users.service,
           capabilities: options.users.capabilities,
+        }),
+      );
+    }
+    if (options.settings) {
+      app.route(
+        '/api/v1/settings',
+        createSettingsRoutes(auth, {
+          settings: options.settings.service,
+          capabilities: options.settings.capabilities,
         }),
       );
     }
