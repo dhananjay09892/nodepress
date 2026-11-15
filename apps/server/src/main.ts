@@ -14,6 +14,7 @@ import {
   createOptionsService,
   createPermalinkService,
   createScheduledPublisher,
+  createSettingsService,
   createSharpProcessor,
   createSessionsService,
   createTaxonomyService,
@@ -196,6 +197,16 @@ const app = createApp(np, database, {
   },
   media: { service: media, storage: mediaStorage, capabilities },
   users: { service: users, capabilities },
+  settings: {
+    service: createSettingsService({
+      options,
+      isPublishedPage: async (id) => {
+        const page = await content.get(id);
+        return page?.type === 'page' && page.status === 'published';
+      },
+    }),
+    capabilities,
+  },
   ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
   auth: {
     users,

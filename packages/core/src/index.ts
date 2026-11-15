@@ -44,6 +44,20 @@ export {
   type SetOptionOptions,
 } from './options.js';
 export {
+  SettingsService,
+  SettingValidationError,
+  createSettingsService,
+  isSettingKey,
+  SETTING_DEFAULTS,
+  SETTING_KEYS,
+  MAX_SITE_TITLE_LENGTH,
+  MAX_TAGLINE_LENGTH,
+  MAX_POSTS_PER_PAGE,
+  type Settings,
+  type SettingKey,
+  type SettingsServiceOptions,
+} from './settings.js';
+export {
   PermalinkService,
   PermalinkPatternError,
   createPermalinkService,
