@@ -107,7 +107,8 @@ test('add a user, set a new password and delete them', async ({ page }) => {
   const dialog = panel.getByRole('alertdialog');
   await expect(dialog).toContainText(`Delete Added ${tag}?`);
   await dialog.getByRole('button', { name: 'Confirm delete' }).click();
-  await expect(page.getByRole('status')).toHaveText(`Deleted Added ${tag}.`);
+  // The page status comes first; the panel's own password status may still be on screen.
+  await expect(page.getByRole('status').first()).toHaveText(`Deleted Added ${tag}.`);
   await expect(page.getByRole('row', { name: new RegExp(tag) })).toHaveCount(0);
 });
 
