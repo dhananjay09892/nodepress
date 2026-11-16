@@ -196,7 +196,12 @@ const app = createApp(np, database, {
     options,
   },
   media: { service: media, storage: mediaStorage, capabilities },
-  users: { service: users, capabilities },
+  users: {
+    service: users,
+    capabilities,
+    sessions,
+    reassignContent: (fromId, toId) => contentStore.reassignAuthor(fromId, toId),
+  },
   settings: {
     service: createSettingsService({
       options,

@@ -88,6 +88,11 @@ export interface ContentTableStore {
   list(query: ContentRowQuery): Promise<ContentRow[]>;
   /** How many rows match, ignoring paging. */
   count(filter: ContentRowFilter): Promise<number>;
+  /**
+   * Moves every item (and revision) written by `fromId` to `toId`, or to nobody (`null`).
+   * Returns how many content items changed. Used when a user is deleted.
+   */
+  reassignAuthor(fromId: number, toId: number | null): Promise<number>;
   insertRevision(row: {
     contentId: number;
     snapshot: unknown;
@@ -194,6 +199,15 @@ function build(
     async count(filter) {
       const [row] = await db.select({ value: count() }).from(content).where(where(filter));
       return Number(row?.value ?? 0);
+    },
+    async reassignAuthor(fromId, toId) {
+      await db.update(revisions).set({ authorId: toId }).where(eq(revisions.authorId, fromId));
+      const moved = await db
+        .update(content)
+        .set({ authorId: toId })
+        .where(eq(content.authorId, fromId))
+        .returning({ id: content.id });
+      return moved.length;
     },
     async insertRevision(row) {
       const [created] = await db.insert(revisions).values(row).returning();

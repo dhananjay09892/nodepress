@@ -60,12 +60,17 @@ export interface AppOptions {
     options?: OptionsService;
   };
   /**
-   * Enables `/api/v1/users` (needs `auth`): list, create and edit users (name, email, role).
-   * Reading needs `list_users`, editing `edit_users`, changing a role `promote_users`.
+   * Enables `/api/v1/users` (needs `auth`): list, create, edit and delete users, and set a new
+   * password. Reading needs `list_users`, editing `edit_users`, deleting `delete_users`,
+   * changing a role `promote_users`.
    */
   users?: {
-    service: Pick<UsersService, 'list' | 'findById' | 'create' | 'update'>;
+    service: Pick<UsersService, 'list' | 'findById' | 'create' | 'update' | 'delete'>;
     capabilities: Capabilities;
+    /** Ends a user's sessions after a password reset or a delete. */
+    sessions?: { destroyAllForUser(userId: number): Promise<number> };
+    /** Moves a deleted user's content to another user, or to nobody (`null`). */
+    reassignContent?: (fromId: number, toId: number | null) => Promise<number>;
   };
   /**
    * Enables `/api/v1/settings` (needs `auth`): read and change the site settings,
@@ -114,6 +119,10 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         createUserRoutes(auth, {
           users: options.users.service,
           capabilities: options.users.capabilities,
+          ...(options.users.sessions ? { sessions: options.users.sessions } : {}),
+          ...(options.users.reassignContent
+            ? { reassignContent: options.users.reassignContent }
+            : {}),
         }),
       );
     }

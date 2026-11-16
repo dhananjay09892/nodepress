@@ -13,8 +13,12 @@ import { Hono, type Context } from 'hono';
 import type { Auth, AuthEnv } from './auth.js';
 
 export interface UserRoutesOptions {
-  users: Pick<UsersService, 'list' | 'findById' | 'create' | 'update'>;
+  users: Pick<UsersService, 'list' | 'findById' | 'create' | 'update' | 'delete'>;
   capabilities: Capabilities;
+  /** Ends every session of a user: after a password reset and when the user is deleted. */
+  sessions?: { destroyAllForUser(userId: number): Promise<number> };
+  /** Moves a user's content to another user (or to nobody) when the user is deleted. */
+  reassignContent?: (fromId: number, toId: number | null) => Promise<number>;
 }
 
 const MAX_BODY_BYTES = 8 * 1024;
@@ -32,14 +36,15 @@ export function publicUser(user: User) {
 }
 
 /**
- * Routes for `/api/v1/users`: list, read, create and edit users. Reading needs `list_users`,
- * creating `create_users`, editing `edit_users`, and setting a role other than the default
+ * Routes for `/api/v1/users`: list, read, create, edit and delete users. Reading needs `list_users`,
+ * creating `create_users`, editing (and setting a new password) `edit_users`, deleting
+ * `delete_users`, and setting a role other than the default
  * (creating) or changing one (editing) also needs `promote_users`.
  * Nobody can change their own role (so an administrator cannot lock themselves out); the
  * users service still refuses to demote the last administrator.
  */
 export function createUserRoutes(auth: Auth, options: UserRoutesOptions): Hono<AuthEnv> {
-  const { users, capabilities } = options;
+  const { users, capabilities, sessions, reassignContent } = options;
   const routes = new Hono<AuthEnv>();
   routes.use('*', async (c, next) => {
     c.header('Cache-Control', 'no-store');
@@ -154,9 +159,21 @@ export function createUserRoutes(auth: Auth, options: UserRoutesOptions): Hono<A
     if ('error' in parsed) return parsed.error;
     const body = parsed.body;
 
-    const { email, displayName, role } = body;
-    const typeError = wrongType(c, { email, displayName, role });
+    const { email, displayName, role, password } = body;
+    const typeError = wrongType(c, { email, displayName, role, password });
     if (typeError) return typeError;
+    if (
+      password !== undefined &&
+      (password === '' || (password as string).length > MAX_PASSWORD_LENGTH)
+    ) {
+      return c.json(
+        {
+          error: 'invalid_request',
+          message: `password must be 1 to ${MAX_PASSWORD_LENGTH} characters`,
+        },
+        400,
+      );
+    }
 
     if (role !== undefined) {
       if (!(await allowed(c, 'promote_users'))) return c.json({ error: 'forbidden' }, 403);
@@ -175,8 +192,55 @@ export function createUserRoutes(auth: Auth, options: UserRoutesOptions): Hono<A
         ...(email !== undefined ? { email: email as string } : {}),
         ...(displayName !== undefined ? { displayName: displayName as string } : {}),
         ...(role !== undefined ? { role: role as RoleName } : {}),
+        ...(password !== undefined ? { password: password as string } : {}),
       });
+      // A new password signs that user out everywhere; a stolen session must not outlive it.
+      if (password !== undefined) await sessions?.destroyAllForUser(id);
       return c.json({ user: publicUser(updated) });
+    } catch (error) {
+      return fail(c, error);
+    }
+  });
+
+  routes.delete('/:id', async (c) => {
+    if (!(await allowed(c, 'delete_users'))) return c.json({ error: 'forbidden' }, 403);
+    const id = parseId(c);
+    if (id === null) return c.json({ error: 'not_found' }, 404);
+    if (id === c.get('principal')!.user.id) {
+      return c.json({ error: 'invalid_request', message: 'You cannot delete yourself' }, 400);
+    }
+    const existing = await users.findById(id);
+    if (!existing) return c.json({ error: 'not_found' }, 404);
+
+    // Content goes to `reassignTo` when given, otherwise it is kept with no author.
+    const rawTarget = c.req.query('reassignTo');
+    let target: number | null = null;
+    if (rawTarget !== undefined && rawTarget !== '') {
+      if (!/^[1-9]\d{0,15}$/.test(rawTarget) || Number(rawTarget) === id) {
+        return c.json({ error: 'invalid_request', message: 'reassignTo is not valid' }, 400);
+      }
+      target = Number(rawTarget);
+      if (!(await users.findById(target))) {
+        return c.json({ error: 'invalid_request', message: 'reassignTo user does not exist' }, 400);
+      }
+    }
+
+    // Checked before anything moves, so a refused delete leaves the content where it was.
+    if (existing.role === 'administrator') {
+      const admins = (await users.list()).filter((u) => u.role === 'administrator');
+      if (admins.length <= 1) {
+        return c.json(
+          { error: 'invalid_request', message: 'The last administrator cannot be removed' },
+          400,
+        );
+      }
+    }
+
+    try {
+      await sessions?.destroyAllForUser(id);
+      await reassignContent?.(id, target);
+      if (!(await users.delete(id))) return c.json({ error: 'not_found' }, 404);
+      return c.body(null, 204);
     } catch (error) {
       return fail(c, error);
     }

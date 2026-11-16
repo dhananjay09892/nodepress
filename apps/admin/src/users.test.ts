@@ -2,14 +2,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from './api.js';
 import {
   describeUserError,
+  createUser,
+  deleteUser,
   diffUser,
   fetchUsers,
   filterUsers,
+  newUserPayload,
   pageOfUsers,
+  resetPassword,
   roleLabel,
   updateUser,
   userPageCount,
   USERS_PAGE_SIZE,
+  validateNewUser,
+  validatePassword,
   type UserItem,
 } from './users.js';
 
@@ -146,6 +152,97 @@ describe('describeUserError', () => {
     expect(describeUserError('duplicate_email')).toMatch(/already has that email/);
     expect(describeUserError('forbidden')).toMatch(/permission/);
     expect(describeUserError('invalid_request')).toMatch(/last administrator/);
+    expect(describeUserError('invalid_request')).toMatch(/delete yourself/);
     expect(describeUserError('anything-else')).toMatch(/Something went wrong/);
+  });
+});
+
+describe('new user form', () => {
+  it('checks the email and password before sending', () => {
+    expect(validateNewUser({ email: ' ', password: 'pw' })).toMatch(/email/);
+    expect(validateNewUser({ email: 'nope', password: 'pw' })).toMatch(/valid email/);
+    expect(validateNewUser({ email: 'a@example.com', password: '' })).toMatch(/password/);
+    expect(validateNewUser({ email: 'a@example.com', password: 'x'.repeat(5000) })).toMatch(/long/);
+    expect(validateNewUser({ email: ' a@example.com ', password: 'pw' })).toBeNull();
+    expect(validatePassword('')).not.toBeNull();
+    expect(validatePassword('ok')).toBeNull();
+  });
+
+  it('trims fields and leaves out empty optional ones', () => {
+    expect(
+      newUserPayload({ email: ' a@example.com ', password: ' pw ', displayName: '  ', role: '' }),
+    ).toEqual({ email: 'a@example.com', password: ' pw ' });
+    expect(
+      newUserPayload({
+        email: 'a@example.com',
+        password: 'pw',
+        displayName: ' Ada ',
+        role: 'editor',
+      }),
+    ).toEqual({ email: 'a@example.com', password: 'pw', displayName: 'Ada', role: 'editor' });
+  });
+});
+
+describe('create, delete and reset calls', () => {
+  it('createUser posts the trimmed payload with the CSRF token', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      json({ user: people[2]! }, 201),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const created = await createUser({ email: ' alan@example.com ', password: 'pw' }, 'csrf-2');
+    expect(created.id).toBe(3);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('/api/v1/users');
+    expect(init?.method).toBe('POST');
+    expect(new Headers(init?.headers).get('x-csrf-token')).toBe('csrf-2');
+    expect(init?.body).toBe(JSON.stringify({ email: 'alan@example.com', password: 'pw' }));
+  });
+
+  it('createUser surfaces a duplicate email', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'duplicate_email' }, 409)),
+    );
+    await expect(createUser({ email: 'a@example.com', password: 'pw' }, 'c')).rejects.toMatchObject(
+      { status: 409, code: 'duplicate_email' },
+    );
+  });
+
+  it('deleteUser sends DELETE, with reassignTo only when given', async () => {
+    const fetchMock = vi.fn(
+      async (_url: string, _init?: RequestInit) => new Response(null, { status: 204 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    await deleteUser(3, 'csrf-3');
+    await deleteUser(3, 'csrf-3', 1);
+    expect(fetchMock.mock.calls[0]![0]).toBe('/api/v1/users/3');
+    expect(fetchMock.mock.calls[1]![0]).toBe('/api/v1/users/3?reassignTo=1');
+    const init = fetchMock.mock.calls[0]![1];
+    expect(init?.method).toBe('DELETE');
+    expect(new Headers(init?.headers).get('x-csrf-token')).toBe('csrf-3');
+    expect(init?.body).toBeUndefined();
+  });
+
+  it('deleteUser throws the API error code', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'invalid_request' }, 400)),
+    );
+    await expect(deleteUser(1, 'c')).rejects.toMatchObject({
+      status: 400,
+      code: 'invalid_request',
+    });
+  });
+
+  it('resetPassword patches only the password', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      json({ user: people[2]! }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    await resetPassword(3, 'new password', 'csrf-4');
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('/api/v1/users/3');
+    expect(init?.method).toBe('PATCH');
+    expect(init?.body).toBe(JSON.stringify({ password: 'new password' }));
   });
 });

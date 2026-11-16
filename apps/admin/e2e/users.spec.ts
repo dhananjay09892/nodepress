@@ -78,3 +78,51 @@ test('you cannot change your own role', async ({ page }) => {
   await expect(panel.getByLabel('Role')).toBeDisabled();
   await expect(panel).toContainText('You cannot change your own role.');
 });
+
+test('add a user, set a new password and delete them', async ({ page }) => {
+  const tag = `new${Date.now()}`;
+  const email = `${tag}@example.test`;
+  await signIn(page);
+  await openUsers(page);
+
+  await page.getByRole('button', { name: 'Add user' }).click();
+  const add = page.getByRole('complementary', { name: 'Add user' });
+  await add.getByLabel('Display name').fill(`Added ${tag}`);
+  await add.getByLabel('Email').fill(email);
+  await add.getByLabel('Password').fill(PASSWORD);
+  await add.getByLabel('Role').selectOption('editor');
+  await add.getByRole('button', { name: 'Create user' }).click();
+  await expect(page.getByRole('status')).toHaveText(`Added Added ${tag}.`);
+
+  await page.getByLabel('Search users').fill(tag);
+  await expect(page.getByRole('row', { name: new RegExp(tag) })).toContainText('Editor');
+
+  await page.getByRole('button', { name: `Edit Added ${tag}` }).click();
+  const panel = page.getByRole('complementary', { name: 'Edit user' });
+  await panel.getByLabel('New password').fill('another-e2e-password-2');
+  await panel.getByRole('button', { name: 'Set password' }).click();
+  await expect(panel.getByRole('status')).toHaveText(`Password changed for Added ${tag}.`);
+
+  await panel.getByRole('button', { name: 'Delete user' }).click();
+  const dialog = panel.getByRole('alertdialog');
+  await expect(dialog).toContainText(`Delete Added ${tag}?`);
+  await dialog.getByRole('button', { name: 'Confirm delete' }).click();
+  await expect(page.getByRole('status')).toHaveText(`Deleted Added ${tag}.`);
+  await expect(page.getByRole('row', { name: new RegExp(tag) })).toHaveCount(0);
+});
+
+test('a bad new user is explained, and you cannot delete yourself', async ({ page }) => {
+  await signIn(page);
+  await openUsers(page);
+  await page.getByRole('button', { name: 'Add user' }).click();
+  const add = page.getByRole('complementary', { name: 'Add user' });
+  await add.getByLabel('Email').fill('not-an-email');
+  await add.getByRole('button', { name: 'Create user' }).click();
+  await expect(add.getByRole('alert')).toHaveText('Enter a valid email address.');
+  await add.getByRole('button', { name: 'Close' }).click();
+
+  await page.getByLabel('Search users').fill(EMAIL);
+  await page.getByRole('button', { name: 'Edit Administrator' }).click();
+  const panel = page.getByRole('complementary', { name: 'Edit user' });
+  await expect(panel.getByRole('button', { name: 'Delete user' })).toHaveCount(0);
+});
