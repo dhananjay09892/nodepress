@@ -14,6 +14,7 @@ import { ContentList } from './screens/ContentList.js';
 import { MediaLibrary } from './screens/MediaLibrary.js';
 import { Users } from './screens/Users.js';
 import { Settings } from './screens/Settings.js';
+import { ExtensionPage } from './screens/ExtensionPage.js';
 import { EditorPreview } from './screens/EditorPreview.js';
 import { PostEdit } from './screens/PostEdit.js';
 import { NAV_ITEMS } from './nav.js';
@@ -109,6 +110,13 @@ const settingsPermalinksRoute = createRoute({
   component: () => <Settings section="permalinks" />,
 });
 
+// Pages added by plugins; the sidebar links to them from the menu items plugins declare.
+const extensionPageRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/extensions/$plugin/$page',
+  component: ExtensionPage,
+});
+
 // Temporary, unlinked route for trying the block editor on its own (nothing is saved).
 const editorPreviewRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -127,6 +135,7 @@ const routeTree = rootRoute.addChildren([
     pageEditRoute,
     settingsReadingRoute,
     settingsPermalinksRoute,
+    extensionPageRoute,
     editorPreviewRoute,
   ]),
 ]);

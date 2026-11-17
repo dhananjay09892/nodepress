@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate } from '@tanstack/react-router';
 import { logout } from '../api.js';
+import { fetchExtensions } from '../extensions.js';
 import { NAV_ITEMS } from '../nav.js';
 import { sessionQuery } from '../session.js';
 
@@ -11,6 +12,13 @@ export function Shell() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { data: session } = useSuspenseQuery(sessionQuery);
+
+  // Menu items added by plugins. If this fails the sidebar simply shows no plugin items.
+  const extensions = useQuery({
+    queryKey: ['admin-extensions'],
+    queryFn: fetchExtensions,
+    staleTime: 60_000,
+  });
 
   const signOut = useMutation({
     mutationFn: async () => {
@@ -38,6 +46,17 @@ export function Shell() {
           </Link>
           {NAV_ITEMS.map((item) => (
             <Link key={item.to} to={item.to} className={linkClass} activeProps={activeClass}>
+              {item.label}
+            </Link>
+          ))}
+          {extensions.data?.menu.map((item) => (
+            <Link
+              key={`${item.plugin}/${item.id}`}
+              to="/extensions/$plugin/$page"
+              params={{ plugin: item.plugin, page: item.page }}
+              className={linkClass}
+              activeProps={activeClass}
+            >
               {item.label}
             </Link>
           ))}

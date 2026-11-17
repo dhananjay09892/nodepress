@@ -185,6 +185,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: plugins can add admin menu items, pages, settings panels and custom fields in the post sidebar.
 - Done when: the example plugin adds a settings page, covered by a test.
 
+### N49 · Plugin fields in the post sidebar
+
+- Depends on: N21
+- Scope: follow-up to N21, which delivered the admin extension registry (`context.admin`: `addPage`, `addMenuItem`, `addPostField`), `GET`/`PATCH /api/v1/admin-extensions`, the sidebar menu items and plugin settings pages, and made fields added with `addPostField` part of the content type (`content-type:fields` filter), so the content API already stores, validates and returns them in `meta`. Show them in the post edit sidebar: the edit screen reads the content type's `fields` from `/api/v1/content-types`, draws a "Custom fields" panel for every field that core does not already have a panel for (text, number, boolean, date, select; skip media, relation and rich text for now), saves them through `meta` with the rest of the post, and sends only the fields that changed. Add an example `subtitle` field to `plugins/hello-nodepress`.
+- Done when: Playwright test fills in the example plugin's field on a post, saves, reloads and sees it; unit tests cover the draft/diff helpers.
+
 ## Phase 3: Themes & front end
 
 ### N22 · Theme loader and template hierarchy

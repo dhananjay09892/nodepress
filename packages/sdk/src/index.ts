@@ -24,6 +24,14 @@ export {
   type Logger,
 } from '@nodepress/core';
 export type {
+  AdminMenuItemDefinition,
+  AdminPageDefinition,
+  AdminPanelDefinition,
+  AdminPostFieldDefinition,
+  PanelField,
+  ScopedAdmin,
+} from '@nodepress/core';
+export type {
   ContentTypeDefinition,
   FieldDefinition,
   TextField,

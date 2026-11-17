@@ -84,6 +84,8 @@ const apiTokens = createApiTokensService({
 });
 
 const options = createOptionsService({ store: createOptionsStore(database), hooks: np.hooks });
+// Plugin settings pages save their values through the options service.
+np.admin.useOptions(options);
 const contentStore = createContentStore(database);
 const permalinks = createPermalinkService({
   store: contentStore,
@@ -187,6 +189,7 @@ const capabilities = createCapabilities(np.hooks);
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
   permalinks,
+  adminExtensions: { capabilities },
   content: {
     service: content,
     types: contentTypes,
