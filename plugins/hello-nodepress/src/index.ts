@@ -30,7 +30,7 @@ export default definePlugin({
       panels: [
         {
           id: 'closing',
-          title: 'Closing line',
+          title: 'Closing',
           fields: [
             {
               name: 'closing_line',

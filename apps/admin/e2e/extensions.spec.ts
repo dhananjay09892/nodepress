@@ -11,6 +11,9 @@ async function signIn(page: Page) {
   await expect(page).toHaveURL(/\/admin\/$/);
 }
 
+// Exact, so the "Show the closing line" checkbox and the panel form do not match too.
+const closingLine = (page: Page) => page.getByLabel('Closing line', { exact: true });
+
 test('a plugin adds a menu item and a settings page that saves', async ({ page }) => {
   const line = `Until next time ${Date.now()}`;
   await signIn(page);
@@ -21,14 +24,14 @@ test('a plugin adds a menu item and a settings page that saves', async ({ page }
 
   const save = page.getByRole('button', { name: 'Save changes' });
   await expect(save).toBeDisabled();
-  await expect(page.getByLabel('Closing line')).toHaveValue('Thanks for reading!');
+  await expect(closingLine(page)).toHaveValue('Thanks for reading!');
 
-  await page.getByLabel('Closing line').fill(line);
+  await closingLine(page).fill(line);
   await save.click();
-  await expect(page.getByRole('status')).toHaveText('Closing line saved.');
+  await expect(page.getByRole('status')).toHaveText('Closing saved.');
 
   await page.reload();
-  await expect(page.getByLabel('Closing line')).toHaveValue(line);
+  await expect(closingLine(page)).toHaveValue(line);
 
   // The saved value reaches the site itself.
   const home = await page.request.get('/');
