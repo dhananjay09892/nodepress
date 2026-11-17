@@ -8,6 +8,7 @@ import {
 } from '@nodepress/core';
 import {
   createDatabase,
+  createContentStore,
   createSessionsStore,
   createUsersStore,
   type DatabaseHandle,
@@ -26,6 +27,7 @@ const BASE = 'http://localhost';
 let database: DatabaseHandle;
 let app: ReturnType<typeof createApp>;
 let ids: Record<string, number>;
+let contentStore: ReturnType<typeof createContentStore>;
 
 beforeEach(async () => {
   database = createDatabase({ url: ':memory:' });
@@ -42,6 +44,7 @@ beforeEach(async () => {
     hooks: np.hooks,
   });
   ids = {};
+  contentStore = createContentStore(database);
   for (const [name, role] of [
     ['admin', 'administrator'],
     ['editor', 'editor'],
@@ -57,7 +60,12 @@ beforeEach(async () => {
   }
   app = createApp(np, database, {
     auth: { users, sessions },
-    users: { service: users, capabilities: createCapabilities(np.hooks) },
+    users: {
+      service: users,
+      capabilities: createCapabilities(np.hooks),
+      sessions,
+      reassignContent: (fromId, toId) => contentStore.reassignAuthor(fromId, toId),
+    },
   });
 });
 
@@ -280,5 +288,129 @@ describe('POST /api/v1/users', () => {
     const body = { email: 'd@example.com', password: PASSWORD };
     expect((await call('POST', '', await signIn('editor'), body)).status).toBe(403);
     expect((await call('POST', '', {}, body)).status).toBe(401);
+  });
+});
+
+describe('PATCH /api/v1/users/:id with a password', () => {
+  it("sets the password and ends that user's sessions", async () => {
+    const admin = await signIn('admin');
+    const author = await signIn('author');
+    expect((await call('GET', '', author)).status).toBe(403); // signed in, just not allowed
+    const res = await call('PATCH', `/${ids.author}`, admin, { password: 'a brand new password' });
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(await res.json())).not.toContain('fake$');
+    // The old session is gone (401, not 403) and the old password no longer works.
+    expect((await call('GET', '', author)).status).toBe(401);
+    const old = await app.request(`${BASE}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'author@example.com', password: PASSWORD }),
+    });
+    expect(old.status).toBe(401);
+    const fresh = await app.request(`${BASE}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'author@example.com', password: 'a brand new password' }),
+    });
+    expect(fresh.status).toBe(200);
+    // The administrator's own session is untouched.
+    expect((await call('GET', '', admin)).status).toBe(200);
+  });
+
+  it('rejects an empty, oversized or non-string password and keeps sessions', async () => {
+    const admin = await signIn('admin');
+    const author = await signIn('author');
+    for (const password of ['', 'x'.repeat(2000), 12345]) {
+      expect((await call('PATCH', `/${ids.author}`, admin, { password })).status).toBe(400);
+    }
+    expect((await call('GET', `/${ids.author}`, author)).status).toBe(403);
+  });
+
+  it('needs edit_users', async () => {
+    const res = await call('PATCH', `/${ids.admin}`, await signIn('editor'), { password: 'x' });
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('DELETE /api/v1/users/:id', () => {
+  const post = (authorId: number, slug: string) =>
+    contentStore.insert({
+      type: 'post',
+      status: 'draft',
+      title: slug,
+      slug,
+      body: [],
+      excerpt: null,
+      authorId,
+      parentId: null,
+      publishedAt: null,
+    });
+
+  it('deletes a user, ends their sessions and keeps their content with no author', async () => {
+    const admin = await signIn('admin');
+    const author = await signIn('author');
+    const item = await post(ids.author!, 'kept');
+    const res = await call('DELETE', `/${ids.author}`, admin);
+    expect(res.status).toBe(204);
+    expect((await call('GET', `/${ids.author}`, admin)).status).toBe(404);
+    expect((await call('GET', '', author)).status).toBe(401);
+    expect((await contentStore.findById(item.id))?.authorId).toBeNull();
+  });
+
+  it('moves their content to another user with reassignTo', async () => {
+    const admin = await signIn('admin');
+    const item = await post(ids.author!, 'moved');
+    const res = await call('DELETE', `/${ids.author}?reassignTo=${ids.editor}`, admin);
+    expect(res.status).toBe(204);
+    expect((await contentStore.findById(item.id))?.authorId).toBe(ids.editor);
+  });
+
+  it('refuses a missing, self or malformed reassignTo and changes nothing', async () => {
+    const admin = await signIn('admin');
+    const item = await post(ids.author!, 'stays');
+    for (const target of ['9999', String(ids.author), 'abc', '0']) {
+      const res = await call('DELETE', `/${ids.author}?reassignTo=${target}`, admin);
+      expect(res.status).toBe(400);
+    }
+    expect((await call('GET', `/${ids.author}`, admin)).status).toBe(200);
+    expect((await contentStore.findById(item.id))?.authorId).toBe(ids.author);
+  });
+
+  it('never deletes yourself', async () => {
+    const admin = await signIn('admin');
+    expect((await call('DELETE', `/${ids.admin}`, admin)).status).toBe(400);
+    expect((await call('GET', `/${ids.admin}`, admin)).status).toBe(200);
+  });
+
+  it('refuses to delete the last administrator, and allows it once there are two', async () => {
+    const admin = await signIn('admin');
+    const second = await call('POST', '', admin, {
+      email: 'second@example.com',
+      password: PASSWORD,
+      role: 'administrator',
+    });
+    const secondId = ((await second.json()) as { user: { id: number } }).user.id;
+    expect((await call('DELETE', `/${secondId}`, admin)).status).toBe(204);
+
+    // Only one administrator is left; a lone administrator is also the caller, so promote an
+    // editor, sign in as them and try to delete the original.
+    await call('PATCH', `/${ids.editor}`, admin, { role: 'administrator' });
+    const editor = await signIn('editor');
+    expect((await call('DELETE', `/${ids.admin}`, editor)).status).toBe(204);
+    expect((await call('DELETE', `/${ids.editor}`, editor)).status).toBe(400); // self
+  });
+
+  it('needs delete_users, a session, and a known id', async () => {
+    expect((await call('DELETE', `/${ids.author}`, await signIn('editor'))).status).toBe(403);
+    expect((await call('DELETE', `/${ids.author}`, {})).status).toBe(401);
+    const admin = await signIn('admin');
+    expect((await call('DELETE', '/9999', admin)).status).toBe(404);
+    expect((await call('DELETE', '/abc', admin)).status).toBe(404);
+  });
+
+  it('refuses a cookie-authenticated delete without the CSRF token', async () => {
+    const { cookie } = await signIn('admin');
+    expect((await call('DELETE', `/${ids.author}`, { cookie })).status).toBe(403);
+    expect((await call('GET', `/${ids.author}`, await signIn('admin'))).status).toBe(200);
   });
 });

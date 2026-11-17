@@ -72,6 +72,20 @@ async function exercise(h: DatabaseHandle): Promise<void> {
   expect(await store.update(9999, { title: 'x' })).toBeUndefined();
   expect(await store.update(b.id, {})).toMatchObject({ title: 'B2' });
 
+  // Content can move to another author, or to nobody, when a user goes away.
+  const other = await createUsersStore(h).insert({
+    email: 'other@example.com',
+    passwordHash: 'x',
+    displayName: 'Other',
+    role: 'author',
+  });
+  expect(await store.reassignAuthor(author.id, other.id)).toBe(1);
+  expect((await store.findById(a.id))?.authorId).toBe(other.id);
+  expect(await store.reassignAuthor(other.id, null)).toBe(1);
+  expect((await store.findById(a.id))?.authorId).toBeNull();
+  expect(await store.reassignAuthor(other.id, null)).toBe(0);
+  await store.update(a.id, { authorId: author.id });
+
   // Newest first, with filters and paging.
   expect((await store.list({ limit: 10, offset: 0 })).map((r) => r.id)).toEqual([
     b.id,
