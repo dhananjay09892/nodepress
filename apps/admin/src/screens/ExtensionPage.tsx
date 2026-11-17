@@ -159,7 +159,10 @@ function PanelForm({
         return (
           <div key={field.name}>
             {field.type === 'boolean' ? (
-              <label htmlFor={id} className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <label
+                htmlFor={id}
+                className="flex items-center gap-2 text-sm font-medium text-slate-700"
+              >
                 {input}
                 {fieldLabel(field)}
               </label>

@@ -33,9 +33,9 @@ function stubFetch(status: number, body: unknown) {
 
 describe('toPanelDraft', () => {
   it('shows saved values as text and checkboxes as booleans', () => {
-    expect(toPanelDraft(fields, { site_id: 'abc', sample_rate: 25, enabled: true, region: 'eu' })).toEqual(
-      { site_id: 'abc', sample_rate: '25', enabled: true, region: 'eu' },
-    );
+    expect(
+      toPanelDraft(fields, { site_id: 'abc', sample_rate: 25, enabled: true, region: 'eu' }),
+    ).toEqual({ site_id: 'abc', sample_rate: '25', enabled: true, region: 'eu' });
   });
 
   it('shows missing values as empty and unchecked', () => {
@@ -117,7 +117,12 @@ describe('requests', () => {
 
 describe('describePanelError', () => {
   it('names the field that was rejected', () => {
-    const error = new PanelError(400, 'invalid_request', 'sample_rate', 'Number must be at most 100');
+    const error = new PanelError(
+      400,
+      'invalid_request',
+      'sample_rate',
+      'Number must be at most 100',
+    );
     expect(describePanelError(error, fields)).toBe('Sample rate: Number must be at most 100');
   });
 

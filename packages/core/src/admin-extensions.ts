@@ -108,7 +108,9 @@ function checkId(kind: string, id: unknown): string {
 
 function checkText(kind: string, value: unknown, max: number): string {
   if (typeof value !== 'string' || value.trim() === '' || value.length > max) {
-    throw new AdminExtensionError(`${kind} must be a non-empty string of at most ${max} characters`);
+    throw new AdminExtensionError(
+      `${kind} must be a non-empty string of at most ${max} characters`,
+    );
   }
   return value;
 }
@@ -277,7 +279,11 @@ export class AdminExtensions {
   }
 
   /** The saved values of a panel with defaults filled in. Throws if the panel is unknown. */
-  async readPanel(plugin: string, pageId: string, panelId: string): Promise<Record<string, unknown>> {
+  async readPanel(
+    plugin: string,
+    pageId: string,
+    panelId: string,
+  ): Promise<Record<string, unknown>> {
     const panel = this.#panel(plugin, pageId, panelId);
     const stored = this.#options
       ? await this.#options.get(optionKey(plugin, pageId, panelId), {})

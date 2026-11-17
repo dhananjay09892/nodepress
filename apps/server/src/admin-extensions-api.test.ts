@@ -174,7 +174,9 @@ describe('PATCH /api/v1/admin-extensions/:plugin/:page/:panel', () => {
       sample_rate: 40,
     });
     const again = await call('GET', '/stats/general', admin);
-    expect(await again.json()).toEqual({ values: { tracking: { site_id: 'abc', sample_rate: 40 } } });
+    expect(await again.json()).toEqual({
+      values: { tracking: { site_id: 'abc', sample_rate: 40 } },
+    });
   });
 
   it('names the field of an invalid value and saves nothing', async () => {
@@ -207,7 +209,9 @@ describe('PATCH /api/v1/admin-extensions/:plugin/:page/:panel', () => {
   });
 
   it('is 404 for an unknown panel, 403 without the capability, 401 without a session', async () => {
-    expect((await call('PATCH', '/stats/general/nope', await signIn('admin'), {})).status).toBe(404);
+    expect((await call('PATCH', '/stats/general/nope', await signIn('admin'), {})).status).toBe(
+      404,
+    );
     expect(
       (await call('PATCH', '/stats/general/tracking', await signIn('editor'), { site_id: 'x' }))
         .status,

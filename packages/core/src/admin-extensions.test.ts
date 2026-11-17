@@ -42,7 +42,10 @@ async function boot(...plugins: PluginDefinition[]) {
   return { np, options };
 }
 
-const allow = (...caps: string[]) => async (c: string) => caps.includes(c);
+const allow =
+  (...caps: string[]) =>
+  async (c: string) =>
+    caps.includes(c);
 
 describe('admin pages and menu items', () => {
   const plugin = definePlugin({

@@ -578,7 +578,10 @@ export class ContentTypeRegistry {
       try {
         extras = await this.#hooks!.applyFilters('content-type:fields', [], { type: name });
       } catch (error) {
-        this.#logger.error('content-type:fields filter failed', { type: name, error: String(error) });
+        this.#logger.error('content-type:fields filter failed', {
+          type: name,
+          error: String(error),
+        });
       }
       const fields: FieldDefinition[] = [...base];
       const taken = new Set(fields.map((f) => f.name));
