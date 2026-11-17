@@ -1,3 +1,4 @@
+import { AdminExtensions, type ScopedAdmin } from './admin-extensions.js';
 import { scopeHooks, type HookRegistry, type ScopedHooks } from './hooks.js';
 import type { JobQueue, ScopedJobs } from './jobs.js';
 import type { Logger } from './logger.js';
@@ -14,6 +15,11 @@ export interface PluginContext {
    * `jobs.enqueue()` queues work. Only present when the site runs a job queue.
    */
   jobs?: ScopedJobs;
+  /**
+   * Admin extension points: sidebar menu items, pages made of settings panels and custom post
+   * fields. Everything added here is removed on deactivation.
+   */
+  admin: ScopedAdmin;
 }
 
 export interface PluginDefinition {
@@ -58,11 +64,18 @@ export class PluginManager {
   #logger: Logger;
   #config: Readonly<Record<string, unknown>>;
   #jobs: JobQueue | undefined;
+  #admin: AdminExtensions;
 
   constructor(hooks: HookRegistry, logger: Logger, config: Readonly<Record<string, unknown>>) {
     this.#hooks = hooks;
     this.#logger = logger;
     this.#config = config;
+    this.#admin = new AdminExtensions({ hooks });
+  }
+
+  /** What plugins added to the admin; the server reads it to build the admin's menu and pages. */
+  get admin(): AdminExtensions {
+    return this.#admin;
   }
 
   /** Give plugins activated from now on a job queue (`context.jobs`). */
@@ -103,6 +116,7 @@ export class PluginManager {
       hooks: scopeHooks(this.#hooks, name),
       logger: this.#logger.child(name),
       config: this.#config,
+      admin: this.#admin.scoped(name),
       ...(this.#jobs ? { jobs: this.#jobs.scoped(name) } : {}),
     };
 
@@ -111,6 +125,7 @@ export class PluginManager {
     } catch (error) {
       this.#hooks.removeAllFromSource(name);
       this.#jobs?.removeAllFromSource(name);
+      this.#admin.removeAllFromSource(name);
       record.status = 'failed';
       record.error = error instanceof Error ? error.message : String(error);
       record.context = undefined;
@@ -133,6 +148,7 @@ export class PluginManager {
 
     this.#hooks.removeAllFromSource(name);
     this.#jobs?.removeAllFromSource(name);
+    this.#admin.removeAllFromSource(name);
     try {
       await record.definition.teardown?.(record.context);
     } catch (error) {

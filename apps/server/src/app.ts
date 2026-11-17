@@ -14,6 +14,7 @@ import type {
 } from '@nodepress/core';
 import type { ContentMetaTableStore, DatabaseHandle } from '@nodepress/db';
 import { Hono } from 'hono';
+import { createAdminExtensionsRoutes } from './admin-extensions-api.js';
 import { createAdminHandler } from './admin.js';
 import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
@@ -79,6 +80,12 @@ export interface AppOptions {
   settings?: { service: Pick<SettingsService, 'getAll' | 'update'>; capabilities: Capabilities };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
+  /**
+   * Enables `/api/v1/admin-extensions` (needs `auth`): the menu items, pages and settings
+   * panels plugins add to the admin (`np.admin`). Each page needs the capability its plugin
+   * chose; panel values are stored through the options service (`np.admin.useOptions()`).
+   */
+  adminExtensions?: { capabilities: Capabilities };
   /** Serves the built admin app (`dir` = its `dist` folder) at `/admin`. */
   admin?: { dir: string };
 }
@@ -132,6 +139,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         createSettingsRoutes(auth, {
           settings: options.settings.service,
           capabilities: options.settings.capabilities,
+        }),
+      );
+    }
+    if (options.adminExtensions) {
+      app.route(
+        '/api/v1/admin-extensions',
+        createAdminExtensionsRoutes(auth, {
+          registry: np.admin,
+          capabilities: options.adminExtensions.capabilities,
         }),
       );
     }

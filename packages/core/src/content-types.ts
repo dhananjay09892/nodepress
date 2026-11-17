@@ -135,6 +135,13 @@ declare module './hooks.js' {
      * logged and skipped; they never stop other types from registering.
      */
     'content-type:definitions': { value: ContentTypeDefinition[]; context: undefined };
+    /**
+     * Plugins add custom fields to any content type, built-in ones included (for example a
+     * subtitle on every post) by appending field definitions to the list. The `type` in the
+     * context is the content type being refreshed. A field that is invalid, or whose name is
+     * already taken, is logged and skipped; it never stops other fields from registering.
+     */
+    'content-type:fields': { value: FieldDefinition[]; context: { type: string } };
   }
 }
 
@@ -346,9 +353,39 @@ function hasDefault(field: FieldDefinition): boolean {
   return 'default' in field && (field as { default?: unknown }).default !== undefined;
 }
 
+/** Parse and cross-check one field definition; throws ContentTypeError describing the problem. */
+export function parseFieldDefinition(input: unknown): FieldDefinition {
+  const parsed = fieldDefinitionSchema.safeParse(input);
+  if (!parsed.success) throw new ContentTypeError(`Invalid field: ${formatIssues(parsed.error)}`);
+  const field = parsed.data as FieldDefinition;
+  const problem = checkField(field);
+  if (problem) throw new ContentTypeError(`Invalid field "${field.name}": ${problem}`);
+  return field;
+}
+
 export interface ValidateOptions {
   /** Updates: only validate the fields that are present; no required checks or defaults. */
   partial?: boolean;
+}
+
+/**
+ * Validate values against a list of fields (the same rules content types use). Unknown keys are
+ * rejected, defaults are filled in unless `partial` is set. Never throws for bad input.
+ */
+export function validateFieldValues(
+  fields: readonly FieldDefinition[],
+  input: unknown,
+  options: ValidateOptions = {},
+): ValidationResult {
+  const result = buildValidator(fields, options.partial ?? false).safeParse(input ?? {});
+  if (result.success) return { ok: true, value: result.data as Record<string, unknown> };
+  return {
+    ok: false,
+    issues: result.error.issues.map((i) => ({
+      path: i.path.join('.'),
+      message: i.code === 'unrecognized_keys' ? `Unknown field: ${i.keys.join(', ')}` : i.message,
+    })),
+  };
 }
 
 function buildValidator(fields: readonly FieldDefinition[], partial: boolean): z.ZodTypeAny {
@@ -444,6 +481,8 @@ export class ContentTypeRegistry {
   #types = new Map<string, RegisteredContentType>();
   #validators = new Map<string, z.ZodTypeAny>();
   #direct = new Map<string, RegisteredContentType>();
+  /** The fields a type was defined with, before plugins added theirs. */
+  #base = new Map<string, readonly FieldDefinition[]>();
   #hooks: HookRegistry | undefined;
   #logger: Logger;
 
@@ -451,7 +490,9 @@ export class ContentTypeRegistry {
     this.#hooks = options.hooks;
     this.#logger = options.logger ?? silentLogger;
     for (const def of BUILTIN_DEFINITIONS) {
-      this.#types.set(def.name, normalize(parseContentTypeDefinition(def), true));
+      const type = normalize(parseContentTypeDefinition(def), true);
+      this.#types.set(def.name, type);
+      this.#base.set(def.name, type.fields);
     }
   }
 
@@ -470,6 +511,7 @@ export class ContentTypeRegistry {
     const had = this.#direct.delete(name);
     if (had) {
       this.#types.delete(name);
+      this.#base.delete(name);
       this.#validators.clear();
     }
     return had;
@@ -493,23 +535,25 @@ export class ContentTypeRegistry {
    */
   async refresh(): Promise<RegisteredContentType[]> {
     for (const [name, type] of [...this.#types]) {
-      if (!type.builtin && !this.#direct.has(name)) this.#types.delete(name);
+      if (!type.builtin && !this.#direct.has(name)) {
+        this.#types.delete(name);
+        this.#base.delete(name);
+      }
     }
     this.#validators.clear();
     if (!this.#hooks) return [];
-    let definitions: unknown;
+    let definitions: unknown = [];
     try {
       definitions = await this.#hooks.applyFilters('content-type:definitions', []);
     } catch (error) {
       this.#logger.error('content-type:definitions filter failed', { error: String(error) });
-      return [];
     }
     if (!Array.isArray(definitions)) {
       this.#logger.warn('content-type:definitions must return an array; ignoring');
-      return [];
+      definitions = [];
     }
     const added: RegisteredContentType[] = [];
-    for (const definition of definitions) {
+    for (const definition of definitions as unknown[]) {
       try {
         const type = this.#add(definition, undefined);
         added.push(type);
@@ -519,8 +563,52 @@ export class ContentTypeRegistry {
         });
       }
     }
-    for (const type of added) await this.#announce(type);
-    return added;
+    await this.#applyExtraFields();
+    // Announce the final types (with the fields plugins added), not the first draft.
+    const announced = added.map((t) => this.#types.get(t.name)!);
+    for (const type of announced) await this.#announce(type);
+    return announced;
+  }
+
+  /** Re-read `content-type:fields` for every type: base fields first, then valid extras. */
+  async #applyExtraFields(): Promise<void> {
+    for (const [name, type] of [...this.#types]) {
+      const base = this.#base.get(name) ?? type.fields;
+      let extras: unknown = [];
+      try {
+        extras = await this.#hooks!.applyFilters('content-type:fields', [], { type: name });
+      } catch (error) {
+        this.#logger.error('content-type:fields filter failed', {
+          type: name,
+          error: String(error),
+        });
+      }
+      const fields: FieldDefinition[] = [...base];
+      const taken = new Set(fields.map((f) => f.name));
+      for (const candidate of Array.isArray(extras) ? extras : []) {
+        try {
+          const field = parseFieldDefinition(candidate);
+          if (taken.has(field.name)) {
+            throw new ContentTypeError(`field "${field.name}" already exists on "${name}"`);
+          }
+          if (fields.length >= MAX_FIELDS_PER_TYPE) {
+            throw new ContentTypeError(`"${name}" already has ${MAX_FIELDS_PER_TYPE} fields`);
+          }
+          taken.add(field.name);
+          fields.push(field);
+        } catch (error) {
+          this.#logger.warn('Skipping invalid custom field from plugin', {
+            type: name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+      this.#types.set(name, {
+        ...type,
+        fields: Object.freeze(fields.map((f) => Object.freeze({ ...f }) as FieldDefinition)),
+      });
+    }
+    this.#validators.clear();
   }
 
   /** Validate (and normalise) field values for a type. Never throws for bad input. */
@@ -560,6 +648,7 @@ export class ContentTypeRegistry {
     }
     const type = normalize(def, false);
     this.#types.set(type.name, type);
+    this.#base.set(type.name, type.fields);
     this.#validators.clear();
     direct?.set(type.name, type);
     return type;

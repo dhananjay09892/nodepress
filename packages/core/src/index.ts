@@ -18,6 +18,21 @@ export {
   type ScopedHooks,
 } from './hooks.js';
 export {
+  AdminExtensions,
+  AdminExtensionError,
+  PanelValidationError,
+  PANEL_FIELD_TYPES,
+  type AdminExtensionsOptions,
+  type AdminExtensionsView,
+  type AdminMenuItemDefinition,
+  type AdminPageDefinition,
+  type AdminPanelDefinition,
+  type AdminPostFieldDefinition,
+  type PanelField,
+  type PanelFieldType,
+  type ScopedAdmin,
+} from './admin-extensions.js';
+export {
   PluginManager,
   definePlugin,
   type PluginDefinition,
@@ -195,6 +210,8 @@ export {
   type FieldIssue,
   type ValidationResult,
   type ValidateOptions,
+  parseFieldDefinition,
+  validateFieldValues,
 } from './content-types.js';
 export {
   TaxonomyService,

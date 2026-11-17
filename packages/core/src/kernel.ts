@@ -1,5 +1,6 @@
 import { HookRegistry } from './hooks.js';
 import { createConsoleLogger, type Logger } from './logger.js';
+import type { AdminExtensions } from './admin-extensions.js';
 import { PluginManager, type PluginDefinition } from './plugins.js';
 
 declare module './hooks.js' {
@@ -29,6 +30,8 @@ export type KernelState = 'created' | 'booting' | 'ready' | 'stopping' | 'stoppe
 export interface NodePress {
   readonly hooks: HookRegistry;
   readonly plugins: PluginManager;
+  /** What plugins added to the admin (menu items, pages, post fields). */
+  readonly admin: AdminExtensions;
   readonly logger: Logger;
   readonly config: Readonly<Record<string, unknown>>;
   readonly state: KernelState;
@@ -50,6 +53,7 @@ export function createNodePress(options: NodePressOptions = {}): NodePress {
   return {
     hooks,
     plugins,
+    admin: plugins.admin,
     logger,
     config,
     get state() {
