@@ -25,7 +25,7 @@ test('write a post, publish it, change it and restore an earlier version', async
   await page.getByRole('link', { name: 'Add new post' }).click();
   await expect(page.getByRole('heading', { name: 'Add new post' })).toBeVisible();
 
-  await page.getByLabel('Title').fill(title);
+  await page.getByLabel('Title', { exact: true }).fill(title);
   await page.getByRole('textbox', { name: 'Content' }).click();
   await page.keyboard.type('First version of the text');
   await page.getByRole('button', { name: 'Save draft' }).click();
@@ -34,7 +34,7 @@ test('write a post, publish it, change it and restore an earlier version', async
   await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
   await expect(page.getByRole('heading', { name: 'Edit post' })).toBeVisible();
   const id = idFromUrl(page);
-  await expect(page.getByLabel('Title')).toHaveValue(title);
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue(title);
   await expect(page.getByLabel('Slug')).not.toHaveValue('');
 
   // Publish it.
@@ -49,7 +49,7 @@ test('write a post, publish it, change it and restore an earlier version', async
   expect(JSON.stringify(first.body)).toContain('First version of the text');
 
   // Change the title and the text, then update.
-  await page.getByLabel('Title').fill(`${title} changed`);
+  await page.getByLabel('Title', { exact: true }).fill(`${title} changed`);
   await page.getByRole('textbox', { name: 'Content' }).click();
   await page.keyboard.press('Control+End');
   await page.keyboard.type(' and more');
@@ -63,7 +63,7 @@ test('write a post, publish it, change it and restore an earlier version', async
 
   // Restore the first version into the form and keep it.
   await page.getByRole('button', { name: `Restore First: ${title} (draft)` }).click();
-  await expect(page.getByLabel('Title')).toHaveValue(title);
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue(title);
   await page.getByRole('button', { name: 'Update' }).click();
   await expect(history.getByRole('listitem')).toHaveCount(4);
 
@@ -80,12 +80,12 @@ test('a draft saves itself after a pause, and a published post does not', async 
   const title = `Auto${Date.now()}`;
   await signIn(page);
   await page.goto('/admin/posts/new');
-  await page.getByLabel('Title').fill(title);
+  await page.getByLabel('Title', { exact: true }).fill(title);
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
   const id = idFromUrl(page);
 
-  await page.getByLabel('Title').fill(`${title} edited`);
+  await page.getByLabel('Title', { exact: true }).fill(`${title} edited`);
   await expect(page.getByRole('status').filter({ hasText: 'Saved at' })).toBeVisible({
     timeout: 15_000,
   });
@@ -96,7 +96,7 @@ test('a draft saves itself after a pause, and a published post does not', async 
   await page.getByLabel('Status').selectOption('published');
   await page.getByRole('button', { name: 'Update' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Saved at' })).toBeVisible();
-  await page.getByLabel('Title').fill(`${title} live edit`);
+  await page.getByLabel('Title', { exact: true }).fill(`${title} live edit`);
   await expect(page.getByRole('status')).toHaveText('Unsaved changes');
   await page.waitForTimeout(4000);
   await expect(page.getByRole('status')).toHaveText('Unsaved changes');
@@ -120,7 +120,7 @@ test('the posts list opens the edit screen', async ({ page }) => {
   await page.getByRole('button', { name: 'Search' }).click();
   await page.getByRole('link', { name: title }).click();
   await expect(page.getByRole('heading', { name: 'Edit post' })).toBeVisible();
-  await expect(page.getByLabel('Title')).toHaveValue(title);
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue(title);
 });
 
 // A valid 1x1 PNG.
@@ -160,7 +160,7 @@ test('assign a category and a tag and set a featured image', async ({ page }) =>
   expect(altSaved.ok()).toBe(true);
 
   await page.goto('/admin/posts/new');
-  await page.getByLabel('Title').fill(title);
+  await page.getByLabel('Title', { exact: true }).fill(title);
 
   // Categories are a checklist.
   await page.getByRole('checkbox', { name: category }).check();
@@ -215,11 +215,11 @@ test('compare a revision with the form', async ({ page }) => {
   const title = `Diff${Date.now()}`;
   await signIn(page);
   await page.goto('/admin/posts/new');
-  await page.getByLabel('Title').fill(title);
+  await page.getByLabel('Title', { exact: true }).fill(title);
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
 
-  await page.getByLabel('Title').fill(`${title} renamed`);
+  await page.getByLabel('Title', { exact: true }).fill(`${title} renamed`);
   await page.getByRole('button', { name: `Compare Latest: ${title} (draft)` }).click();
   const diff = page.getByRole('region', { name: 'Changes since this version' });
   await expect(diff).toContainText(`Removed: ${title}`);

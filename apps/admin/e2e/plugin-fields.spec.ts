@@ -18,7 +18,7 @@ test("a plugin's custom field shows on a post, saves and survives a reload", asy
 
   await page.goto('/admin/posts/new');
   await expect(page.getByRole('heading', { name: 'Custom fields' })).toBeVisible();
-  await page.getByLabel('Title').fill(title);
+  await page.getByLabel('Title', { exact: true }).fill(title);
   await page.getByLabel('Subtitle').fill(subtitle);
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
