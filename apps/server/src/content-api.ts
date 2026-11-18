@@ -539,6 +539,7 @@ export function createContentRoutes(auth: Auth, options: ContentApiOptions): Hon
         label: t.label,
         labelPlural: t.labelPlural,
         hierarchical: t.hierarchical,
+        fields: t.fields,
       })),
     }),
   );
@@ -1183,13 +1184,46 @@ export function createOpenApiDocument(
         },
         ContentType: {
           type: 'object',
-          required: ['name', 'label', 'labelPlural', 'hierarchical'],
+          required: ['name', 'label', 'labelPlural', 'hierarchical', 'fields'],
           properties: {
             name: { type: 'string' },
             label: { type: 'string' },
             labelPlural: { type: 'string' },
             hierarchical: { type: 'boolean' },
+            fields: {
+              type: 'array',
+              description:
+                'The custom fields of the type (core fields and fields added by plugins). ' +
+                'Their values are stored and returned in `meta`.',
+              items: ref('FieldDefinition'),
+            },
           },
+        },
+        FieldDefinition: {
+          type: 'object',
+          required: ['name', 'type'],
+          properties: {
+            name: { type: 'string' },
+            type: {
+              type: 'string',
+              enum: [
+                'text',
+                'richtext',
+                'number',
+                'boolean',
+                'date',
+                'select',
+                'media',
+                'relation',
+              ],
+            },
+            label: { type: 'string' },
+            description: { type: 'string' },
+            required: { type: 'boolean' },
+            options: { type: 'array', items: { type: 'string' }, description: 'Select fields.' },
+            multiple: { type: 'boolean' },
+          },
+          additionalProperties: true,
         },
         Block: {
           type: 'object',

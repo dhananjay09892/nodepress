@@ -263,6 +263,15 @@ describe('create, read, update, delete', () => {
     ).toEqual(['post', 'page', 'product']);
   });
 
+  it('lists the fields of each content type', async () => {
+    const list = (await call('GET', '/content-types', 'author')).json!.types as Json[];
+    const post = list.find((t) => t.name === 'post')!;
+    expect(post.fields).toEqual([
+      { name: 'featured_image', type: 'media', label: 'Featured image' },
+    ]);
+    for (const t of list) expect(Array.isArray(t.fields)).toBe(true);
+  });
+
   it('answers 404 for bad ids', async () => {
     for (const id of ['0', '-1', 'abc', '1.5', '99999999999999999999', '999']) {
       expect((await call('GET', `/content/post/${id}`, 'administrator')).status).toBe(404);

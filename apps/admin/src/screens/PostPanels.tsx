@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
+import type { FieldDraft, TypeField } from '../custom-fields.js';
 import { diffRevision } from '../diff.js';
 import { fetchMedia, fetchMediaPage, isImage, previewUrl, type MediaItem } from '../media.js';
 import type { EditState, RevisionItem } from '../post-edit.js';
@@ -381,5 +382,104 @@ export function RevisionDiffView({
         Hide changes
       </button>
     </section>
+  );
+}
+
+/** Fields added by plugins (and other custom fields core has no panel for). */
+export function CustomFieldsPanel({
+  fields,
+  values,
+  onChange,
+}: {
+  fields: TypeField[];
+  values: Record<string, FieldDraft>;
+  onChange: (name: string, value: FieldDraft) => void;
+}) {
+  const prefix = useId();
+  if (fields.length === 0) return null;
+  return (
+    <div className={cardClass}>
+      <h2 className={headingClass}>Custom fields</h2>
+      <div className="mt-2 space-y-3">
+        {fields.map((field) => {
+          const id = `${prefix}-${field.name}`;
+          const label = field.label ?? field.name;
+          const value = values[field.name];
+          const help = field.description ? (
+            <p id={`${id}-help`} className="text-xs text-slate-600">
+              {field.description}
+            </p>
+          ) : null;
+          const describedBy = field.description ? `${id}-help` : undefined;
+          if (field.type === 'boolean') {
+            return (
+              <div key={field.name} className="space-y-1">
+                <label htmlFor={id} className="flex items-center gap-2 text-sm text-slate-800">
+                  <input
+                    id={id}
+                    type="checkbox"
+                    checked={value === true}
+                    aria-describedby={describedBy}
+                    onChange={(e) => onChange(field.name, e.target.checked)}
+                  />
+                  {label}
+                </label>
+                {help}
+              </div>
+            );
+          }
+          const text = typeof value === 'string' ? value : '';
+          return (
+            <div key={field.name} className="space-y-1">
+              <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+                {label}
+              </label>
+              {field.type === 'select' ? (
+                <select
+                  id={id}
+                  value={text}
+                  aria-describedby={describedBy}
+                  onChange={(e) => onChange(field.name, e.target.value)}
+                  className={`${inputClass} bg-white`}
+                >
+                  <option value="">(none)</option>
+                  {(field.options ?? []).map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              ) : field.type === 'text' && field.multiline ? (
+                <textarea
+                  id={id}
+                  rows={3}
+                  value={text}
+                  maxLength={field.maxLength}
+                  aria-describedby={describedBy}
+                  onChange={(e) => onChange(field.name, e.target.value)}
+                  className={inputClass}
+                />
+              ) : (
+                <input
+                  id={id}
+                  type={
+                    field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'
+                  }
+                  value={text}
+                  maxLength={field.type === 'text' ? field.maxLength : undefined}
+                  min={field.type === 'number' ? field.min : undefined}
+                  max={field.type === 'number' ? field.max : undefined}
+                  step={field.type === 'number' ? (field.integer ? 1 : 'any') : undefined}
+                  aria-describedby={describedBy}
+                  onChange={(e) => onChange(field.name, e.target.value)}
+                  className={inputClass}
+                />
+              )}
+              {help}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
