@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { STATUS_LABELS } from '../content.js';
-import { fetchTypeFields, panelFields, toDrafts, type FieldDraft, type TypeField } from '../custom-fields.js';
+import {
+  fetchTypeFields,
+  panelFields,
+  toDrafts,
+  type FieldDraft,
+  type TypeField,
+} from '../custom-fields.js';
 import {
   adoptServerValues,
   buildPatch,

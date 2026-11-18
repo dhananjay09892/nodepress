@@ -462,7 +462,9 @@ export function CustomFieldsPanel({
               ) : (
                 <input
                   id={id}
-                  type={field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
+                  type={
+                    field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'
+                  }
                   value={text}
                   maxLength={field.type === 'text' ? field.maxLength : undefined}
                   min={field.type === 'number' ? field.min : undefined}

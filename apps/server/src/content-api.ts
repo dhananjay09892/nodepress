@@ -1206,7 +1206,16 @@ export function createOpenApiDocument(
             name: { type: 'string' },
             type: {
               type: 'string',
-              enum: ['text', 'richtext', 'number', 'boolean', 'date', 'select', 'media', 'relation'],
+              enum: [
+                'text',
+                'richtext',
+                'number',
+                'boolean',
+                'date',
+                'select',
+                'media',
+                'relation',
+              ],
             },
             label: { type: 'string' },
             description: { type: 'string' },

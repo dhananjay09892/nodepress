@@ -292,7 +292,15 @@ describe('custom fields in the edit state', () => {
     { name: 'rating', type: 'number' },
   ];
   const withMeta = toEditState(
-    { title: 'T', slug: 't', excerpt: null, status: 'draft', publishedAt: null, body: [], meta: { subtitle: 'Hi', rating: 3 } },
+    {
+      title: 'T',
+      slug: 't',
+      excerpt: null,
+      status: 'draft',
+      publishedAt: null,
+      body: [],
+      meta: { subtitle: 'Hi', rating: 3 },
+    },
     fields,
   );
 
@@ -311,6 +319,8 @@ describe('custom fields in the edit state', () => {
 
   it('is dirty only when a custom field value changed', () => {
     expect(isDirty(withMeta, withMeta, fields)).toBe(false);
-    expect(isDirty({ ...withMeta, custom: { ...withMeta.custom, rating: '4' } }, withMeta, fields)).toBe(true);
+    expect(
+      isDirty({ ...withMeta, custom: { ...withMeta.custom, rating: '4' } }, withMeta, fields),
+    ).toBe(true);
   });
 });

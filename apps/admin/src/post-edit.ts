@@ -107,16 +107,19 @@ export function localInputToIso(value: string): string | null | undefined {
 }
 
 /** The form state for a saved item or one of its revisions. */
-export function toEditState(source: {
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  status: string;
-  publishedAt: string | null;
-  body: Block[];
-  meta?: Record<string, unknown> | undefined;
-  terms?: Record<string, { id: number }[]> | undefined;
-}, fields: readonly TypeField[] = []): EditState {
+export function toEditState(
+  source: {
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    status: string;
+    publishedAt: string | null;
+    body: Block[];
+    meta?: Record<string, unknown> | undefined;
+    terms?: Record<string, { id: number }[]> | undefined;
+  },
+  fields: readonly TypeField[] = [],
+): EditState {
   const image = source.meta?.[FEATURED_IMAGE_FIELD];
   return {
     title: source.title,

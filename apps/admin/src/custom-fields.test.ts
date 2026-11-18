@@ -34,8 +34,15 @@ describe('panelFields', () => {
 
 describe('drafts', () => {
   it('turns stored values into form values', () => {
-    expect(toDrafts(fields, { subtitle: 'Hi', rating: 4.5, event_day: '2027-02-03T00:00:00.000Z' }))
-      .toEqual({ subtitle: 'Hi', rating: '4.5', sponsored: false, event_day: '2027-02-03', mood: '' });
+    expect(
+      toDrafts(fields, { subtitle: 'Hi', rating: 4.5, event_day: '2027-02-03T00:00:00.000Z' }),
+    ).toEqual({
+      subtitle: 'Hi',
+      rating: '4.5',
+      sponsored: false,
+      event_day: '2027-02-03',
+      mood: '',
+    });
     expect(toDraft({ name: 'a', type: 'text' }, 7)).toBe('');
     expect(toDraft({ name: 'a', type: 'boolean' }, true)).toBe(true);
   });
