@@ -8,6 +8,7 @@ export const DEFAULT_CLOSING_LINE = 'Thanks for reading!';
  *
  * - Logs a greeting when the site is ready (an action).
  * - Adds a friendly line to the end of every post (a filter).
+ * - Adds a "Subtitle" field to the post edit screen (an admin extension point).
  * - Adds a "Hello" page to the admin where that line can be changed (an admin extension point:
  *   a page made of a settings panel, plus a sidebar menu item that opens it).
  */
@@ -49,6 +50,18 @@ export default definePlugin({
           ],
         },
       ],
+    });
+    // A custom field in the post edit sidebar ("Custom fields" panel). Its value is stored with
+    // the post and returned in the content API's `meta`.
+    admin.addPostField({
+      field: {
+        name: 'subtitle',
+        type: 'text',
+        label: 'Subtitle',
+        description: 'A short line shown under the title.',
+        maxLength: 200,
+      },
+      contentTypes: ['post'],
     });
     admin.addMenuItem({ id: 'hello', label: 'Hello', page: 'settings', order: 90 });
 

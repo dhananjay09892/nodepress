@@ -1,6 +1,7 @@
 import type { Block } from '@nodepress/editor';
 import { ApiError, describeError, request, toError } from './api.js';
 import type { ContentStatus } from './content.js';
+import { diffCustom, toDrafts, type FieldDraft, type TypeField } from './custom-fields.js';
 import { CATEGORY_TAXONOMY, sameIds, TAG_TAXONOMY, type TermItem } from './terms.js';
 
 /** The custom field (registered by core) that holds a post's featured image: a media id. */
@@ -54,6 +55,8 @@ export interface EditState {
   tagIds: number[];
   /** The id of the featured image in the media library, or `null`. */
   featuredImage: number | null;
+  /** Plugin and other custom fields shown in the "Custom fields" panel, by field name. */
+  custom: Record<string, FieldDraft>;
 }
 
 /** The fields the API accepts on a write, as the edit screen sends them. */
@@ -67,7 +70,7 @@ export interface ContentPatch {
   /** Taxonomy name to the full list of term ids (the API replaces the assignment). */
   terms?: Record<string, number[]>;
   /** Custom field values; `null` clears one. */
-  meta?: Record<string, number | null>;
+  meta?: Record<string, unknown>;
 }
 
 export const EMPTY_STATE: EditState = {
@@ -80,6 +83,7 @@ export const EMPTY_STATE: EditState = {
   categoryIds: [],
   tagIds: [],
   featuredImage: null,
+  custom: {},
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -112,7 +116,7 @@ export function toEditState(source: {
   body: Block[];
   meta?: Record<string, unknown> | undefined;
   terms?: Record<string, { id: number }[]> | undefined;
-}): EditState {
+}, fields: readonly TypeField[] = []): EditState {
   const image = source.meta?.[FEATURED_IMAGE_FIELD];
   return {
     title: source.title,
@@ -124,6 +128,7 @@ export function toEditState(source: {
     categoryIds: (source.terms?.[CATEGORY_TAXONOMY] ?? []).map((t) => t.id),
     tagIds: (source.terms?.[TAG_TAXONOMY] ?? []).map((t) => t.id),
     featuredImage: typeof image === 'number' ? image : null,
+    custom: toDrafts(fields, source.meta),
   };
 }
 
@@ -135,7 +140,7 @@ export function toEditState(source: {
 export function buildPatch(
   current: EditState,
   saved: EditState,
-  options: { includeStatus?: boolean } = {},
+  options: { includeStatus?: boolean; fields?: readonly TypeField[] } = {},
 ): ContentPatch {
   const includeStatus = options.includeStatus ?? true;
   const patch: ContentPatch = {};
@@ -159,9 +164,15 @@ export function buildPatch(
     terms[CATEGORY_TAXONOMY] = current.categoryIds;
   if (!sameIds(current.tagIds, saved.tagIds)) terms[TAG_TAXONOMY] = current.tagIds;
   if (Object.keys(terms).length > 0) patch.terms = terms;
+  const meta: Record<string, unknown> = diffCustom(
+    options.fields ?? [],
+    current.custom,
+    saved.custom,
+  );
   if (current.featuredImage !== saved.featuredImage) {
-    patch.meta = { [FEATURED_IMAGE_FIELD]: current.featuredImage };
+    meta[FEATURED_IMAGE_FIELD] = current.featuredImage;
   }
+  if (Object.keys(meta).length > 0) patch.meta = meta;
   return patch;
 }
 
@@ -188,8 +199,12 @@ export function adoptServerValues(
 }
 
 /** True when saving `current` would change anything on the server. */
-export function isDirty(current: EditState, saved: EditState): boolean {
-  return Object.keys(buildPatch(current, saved)).length > 0;
+export function isDirty(
+  current: EditState,
+  saved: EditState,
+  fields?: readonly TypeField[],
+): boolean {
+  return Object.keys(buildPatch(current, saved, fields ? { fields } : {})).length > 0;
 }
 
 /**

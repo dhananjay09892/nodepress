@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { STATUS_LABELS } from '../content.js';
+import { fetchTypeFields, panelFields, toDrafts, type FieldDraft, type TypeField } from '../custom-fields.js';
 import {
   adoptServerValues,
   buildPatch,
@@ -24,7 +25,15 @@ import {
   type RevisionItem,
 } from '../post-edit.js';
 import { sessionQuery } from '../session.js';
-import { CategoriesPanel, FeaturedImagePanel, RevisionDiffView, TagsPanel } from './PostPanels.js';
+import {
+  CategoriesPanel,
+  CustomFieldsPanel,
+  FeaturedImagePanel,
+  RevisionDiffView,
+  TagsPanel,
+} from './PostPanels.js';
+
+const NO_FIELDS: TypeField[] = [];
 
 /** How long the form must sit unchanged before a draft saves itself. */
 export const AUTOSAVE_DELAY_MS = 2000;
@@ -58,6 +67,16 @@ export function PostEdit({ type, noun }: Props) {
     gcTime: 0,
   });
 
+  // The content type's fields say which custom fields to draw. If they cannot be loaded the
+  // form still works, just without that panel.
+  const typeFields = useQuery({
+    queryKey: ['content-types', type, 'fields'],
+    queryFn: () => fetchTypeFields(type),
+    staleTime: Infinity,
+    gcTime: 0,
+    retry: false,
+  });
+
   if (id !== null && Number.isNaN(id)) {
     return <NotFound type={type} noun={noun} />;
   }
@@ -74,7 +93,16 @@ export function PostEdit({ type, noun }: Props) {
     }
     if (!item.data) return <p className="text-slate-700">Loading…</p>;
   }
-  return <EditForm key={item.data?.id ?? 'new'} type={type} noun={noun} item={item.data ?? null} />;
+  if (typeFields.isPending) return <p className="text-slate-700">Loading…</p>;
+  return (
+    <EditForm
+      key={item.data?.id ?? 'new'}
+      type={type}
+      noun={noun}
+      item={item.data ?? null}
+      fields={typeFields.data ?? NO_FIELDS}
+    />
+  );
 }
 
 function NotFound({ type, noun }: Props) {
@@ -106,15 +134,20 @@ function formatTime(value: string): string {
 interface FormProps extends Props {
   /** The saved item, or `null` for a new one. */
   item: ContentItem | null;
+  /** The content type's fields. */
+  fields: TypeField[];
 }
 
-function EditForm({ type, noun, item }: FormProps) {
+function EditForm({ type, noun, item, fields }: FormProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const itemId = item?.id ?? null;
   const isNew = itemId === null;
 
-  const [saved, setSaved] = useState<EditState>(() => (item ? toEditState(item) : EMPTY_STATE));
+  const customFields = panelFields(fields);
+  const [saved, setSaved] = useState<EditState>(() =>
+    item ? toEditState(item, fields) : { ...EMPTY_STATE, custom: toDrafts(fields, undefined) },
+  );
   const [form, setForm] = useState<EditState>(saved);
   // The editor takes its content once; restoring a revision replaces it by changing the key.
   const [editorKey, setEditorKey] = useState(0);
@@ -126,7 +159,7 @@ function EditForm({ type, noun, item }: FormProps) {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [comparing, setComparing] = useState<number | null>(null);
 
-  const dirty = isDirty(form, saved);
+  const dirty = isDirty(form, saved, fields);
   // A ref so the autosave timer and the save callback always see the latest values.
   const latest = useRef({ form, saved });
   latest.current = { form, saved };
@@ -136,7 +169,7 @@ function EditForm({ type, noun, item }: FormProps) {
       const session = queryClient.getQueryData(sessionQuery.queryKey);
       if (!session) throw new Error('signed out');
       const { form: current, saved: base } = latest.current;
-      const patch = buildPatch(current, base, { includeStatus: mode === 'manual' });
+      const patch = buildPatch(current, base, { includeStatus: mode === 'manual', fields });
       if (itemId === null) {
         return { item: await createContent(type, patch, session.csrfToken), sent: patch };
       }
@@ -145,7 +178,7 @@ function EditForm({ type, noun, item }: FormProps) {
     },
     onSuccess: async ({ item: result, sent }) => {
       if (!result) return;
-      const next = toEditState(result);
+      const next = toEditState(result, fields);
       const base = latest.current.saved;
       setSaved(next);
       setForm((current) => adoptServerValues(current, base, sent, next));
@@ -167,10 +200,10 @@ function EditForm({ type, noun, item }: FormProps) {
   // Drafts save themselves a moment after the last change. The status never autosaves.
   useEffect(() => {
     if (isNew || !canAutosave(saved) || isSaving) return;
-    if (Object.keys(buildPatch(form, saved, { includeStatus: false })).length === 0) return;
+    if (Object.keys(buildPatch(form, saved, { includeStatus: false, fields })).length === 0) return;
     const timer = setTimeout(() => mutate('auto'), AUTOSAVE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [form, saved, isNew, isSaving, mutate]);
+  }, [form, saved, isNew, isSaving, mutate, fields]);
 
   // Warn before leaving the page with edits that are not saved.
   useEffect(() => {
@@ -188,6 +221,9 @@ function EditForm({ type, noun, item }: FormProps) {
 
   const set = <K extends keyof EditState>(key: K, value: EditState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
+
+  const setCustom = (name: string, value: FieldDraft) =>
+    setForm((current) => ({ ...current, custom: { ...current.custom, [name]: value } }));
 
   const restore = (revision: RevisionItem) => {
     const snapshot = revision.snapshot;
@@ -341,6 +377,8 @@ function EditForm({ type, noun, item }: FormProps) {
             value={form.featuredImage}
             onChange={(id) => set('featuredImage', id)}
           />
+
+          <CustomFieldsPanel fields={customFields} values={form.custom} onChange={setCustom} />
 
           {!isNew && (
             <div className="rounded bg-white p-4 shadow">

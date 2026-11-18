@@ -41,6 +41,7 @@ const saved: EditState = {
   categoryIds: [],
   tagIds: [],
   featuredImage: null,
+  custom: {},
 };
 
 describe('date conversion', () => {
@@ -282,5 +283,34 @@ describe('adoptServerValues', () => {
     const next = adoptServerValues(typed, saved, { status: 'published' }, afterPublish);
     expect(next.slug).toBe('typed-later');
     expect(next.publishedAt).toBe('2030-01-01T00:00');
+  });
+});
+
+describe('custom fields in the edit state', () => {
+  const fields = [
+    { name: 'subtitle', type: 'text' },
+    { name: 'rating', type: 'number' },
+  ];
+  const withMeta = toEditState(
+    { title: 'T', slug: 't', excerpt: null, status: 'draft', publishedAt: null, body: [], meta: { subtitle: 'Hi', rating: 3 } },
+    fields,
+  );
+
+  it('reads custom field values into drafts', () => {
+    expect(withMeta.custom).toEqual({ subtitle: 'Hi', rating: '3' });
+  });
+
+  it('sends only the changed custom fields, together with the featured image', () => {
+    const edited = { ...withMeta, custom: { ...withMeta.custom, subtitle: 'Bye' } };
+    expect(buildPatch(edited, withMeta, { fields })).toEqual({ meta: { subtitle: 'Bye' } });
+    expect(buildPatch({ ...edited, featuredImage: 2 }, withMeta, { fields })).toEqual({
+      meta: { subtitle: 'Bye', featured_image: 2 },
+    });
+    expect(buildPatch(withMeta, withMeta, { fields })).toEqual({});
+  });
+
+  it('is dirty only when a custom field value changed', () => {
+    expect(isDirty(withMeta, withMeta, fields)).toBe(false);
+    expect(isDirty({ ...withMeta, custom: { ...withMeta.custom, rating: '4' } }, withMeta, fields)).toBe(true);
   });
 });
