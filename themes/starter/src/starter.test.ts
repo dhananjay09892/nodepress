@@ -37,8 +37,8 @@ describe('starter theme templates', () => {
 
   it('index falls back to the 404 or single template by status', async () => {
     expect(await render(Index({ ...base, status: 404 }))).toContain('Page not found');
-    expect(
-      await render(Index({ ...base, content: { title: 'T' } as Item })),
-    ).toContain('<h1>T</h1>');
+    expect(await render(Index({ ...base, content: { title: 'T' } as Item }))).toContain(
+      '<h1>T</h1>',
+    );
   });
 });
