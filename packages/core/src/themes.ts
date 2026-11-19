@@ -78,7 +78,10 @@ export function parseThemeManifest(raw: unknown): ThemeManifest {
   if (typeof title !== 'string' || title.trim() === '' || title.length > 100) {
     throw new ThemeError('"title" must be a non-empty string (max 100)');
   }
-  if (raw.description !== undefined && (typeof raw.description !== 'string' || raw.description.length > 500)) {
+  if (
+    raw.description !== undefined &&
+    (typeof raw.description !== 'string' || raw.description.length > 500)
+  ) {
     throw new ThemeError('"description" must be a string (max 500)');
   }
   const supports = raw.supports ?? [];
@@ -367,7 +370,9 @@ export class ThemeService {
         (module) => {
           const component = isRecord(module) ? module.default : undefined;
           if (typeof component === 'function') return component as TemplateComponent;
-          this.#logger.warn(`Theme "${theme.manifest.name}": template "${name}" has no default export function`);
+          this.#logger.warn(
+            `Theme "${theme.manifest.name}": template "${name}" has no default export function`,
+          );
           return undefined;
         },
         (error: unknown) => {

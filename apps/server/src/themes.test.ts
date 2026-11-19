@@ -48,7 +48,10 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'np-server-themes-'));
   await mkdir(join(root, 'demo', 'templates'), { recursive: true });
   await mkdir(join(root, 'demo', 'assets'), { recursive: true });
-  await writeFile(join(root, 'demo', 'theme.json'), JSON.stringify({ name: 'demo', version: '1.2.3' }));
+  await writeFile(
+    join(root, 'demo', 'theme.json'),
+    JSON.stringify({ name: 'demo', version: '1.2.3' }),
+  );
   await writeFile(join(root, 'demo', 'assets', 'style.css'), 'body{color:red}');
   await writeFile(join(root, 'secret.txt'), 'top secret');
 
@@ -81,10 +84,7 @@ afterEach(async () => {
 
 describe('theme rendering', () => {
   it('renders content with the most specific template and passes the page props', async () => {
-    await writeTemplate(
-      'index',
-      `export default (p) => '<main>index ' + p.status + '</main>';`,
-    );
+    await writeTemplate('index', `export default (p) => '<main>index ' + p.status + '</main>';`);
     await writeTemplate(
       'single-post',
       `export default (p) =>
@@ -179,7 +179,11 @@ describe('theme assets', () => {
     await boot();
     const first = (await app.request(`${BASE}/themes/demo/assets/style.css`)).headers.get('etag');
     await writeFile(join(root, 'demo', 'assets', 'style.css'), 'body{color:blue;margin:0}');
-    await utimes(join(root, 'demo', 'assets', 'style.css'), new Date(), new Date(Date.now() + 5000));
+    await utimes(
+      join(root, 'demo', 'assets', 'style.css'),
+      new Date(),
+      new Date(Date.now() + 5000),
+    );
     const second = (await app.request(`${BASE}/themes/demo/assets/style.css`)).headers.get('etag');
     expect(second).not.toBe(first);
   });

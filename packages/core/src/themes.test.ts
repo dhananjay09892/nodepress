@@ -154,7 +154,10 @@ describe('discoverThemes', () => {
     await makeTheme('bad-json', '{ nope');
     await makeTheme('bad-fields', { name: 'bad-fields', version: 'x' });
     await makeTheme('moved', { name: 'other', version: '1.0.0' });
-    await makeTheme('huge', JSON.stringify({ name: 'huge', version: '1.0.0', pad: 'x'.repeat(70_000) }));
+    await makeTheme(
+      'huge',
+      JSON.stringify({ name: 'huge', version: '1.0.0', pad: 'x'.repeat(70_000) }),
+    );
     const { themes, errors } = await discoverThemes(root);
     expect(themes.map((t) => t.manifest.name)).toEqual(['good']);
     expect(Object.fromEntries(errors.map((e) => [e.dir, e.message]))).toEqual({
@@ -175,7 +178,10 @@ describe('discoverThemes', () => {
   it('follows symlinked theme folders (workspace links)', async () => {
     const elsewhere = await mkdtemp(join(tmpdir(), 'np-theme-src-'));
     try {
-      await writeFile(join(elsewhere, 'theme.json'), JSON.stringify({ name: 'linked', version: '1.0.0' }));
+      await writeFile(
+        join(elsewhere, 'theme.json'),
+        JSON.stringify({ name: 'linked', version: '1.0.0' }),
+      );
       await symlink(elsewhere, join(root, 'linked'));
       const { themes } = await discoverThemes(root);
       expect(themes.map((t) => t.manifest.name)).toEqual(['linked']);
@@ -220,7 +226,12 @@ describe('ThemeService', () => {
         return module;
       },
     });
-    service.register([fakeTheme('demo', templates ?? Object.keys(modules).map((f) => f.split('/').pop()!.replace('.js', '')))]);
+    service.register([
+      fakeTheme(
+        'demo',
+        templates ?? Object.keys(modules).map((f) => f.split('/').pop()!.replace('.js', '')),
+      ),
+    ]);
     service.activate('demo');
     return { hooks, service, imported, warnings };
   }
@@ -234,10 +245,12 @@ describe('ThemeService', () => {
       [file('single')]: { default: component },
       [file('single-product')]: { default: component },
     });
-    expect(
-      (await service.resolve({ kind: 'single', type: 'product', slug: 'mug' }))?.name,
-    ).toBe('single-product');
-    expect((await service.resolve({ kind: 'single', type: 'post', slug: 'a' }))?.name).toBe('single');
+    expect((await service.resolve({ kind: 'single', type: 'product', slug: 'mug' }))?.name).toBe(
+      'single-product',
+    );
+    expect((await service.resolve({ kind: 'single', type: 'post', slug: 'a' }))?.name).toBe(
+      'single',
+    );
     expect((await service.resolve({ kind: 'not_found' }))?.name).toBe('index');
   });
 
@@ -259,8 +272,12 @@ describe('ThemeService', () => {
     hooks.addFilter('template:resolve', (names, { target }) =>
       target.kind === 'single' && target.slug === 'sale' ? ['landing', ...names] : names,
     );
-    expect((await service.resolve({ kind: 'single', type: 'page', slug: 'sale' }))?.name).toBe('landing');
-    expect((await service.resolve({ kind: 'single', type: 'page', slug: 'other' }))?.name).toBe('index');
+    expect((await service.resolve({ kind: 'single', type: 'page', slug: 'sale' }))?.name).toBe(
+      'landing',
+    );
+    expect((await service.resolve({ kind: 'single', type: 'page', slug: 'other' }))?.name).toBe(
+      'index',
+    );
   });
 
   it('ignores invalid names a plugin adds, so no path can be built from them', async () => {
