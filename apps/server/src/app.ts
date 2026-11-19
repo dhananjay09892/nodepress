@@ -1,5 +1,6 @@
 import type {
   Capabilities,
+  Content,
   ContentService,
   ContentTypeRegistry,
   MediaService,
@@ -9,6 +10,8 @@ import type {
   SettingsService,
   StorageAdapter,
   TaxonomyService,
+  TemplateTarget,
+  ThemeService,
   UsersService,
   WebhookService,
 } from '@nodepress/core';
@@ -21,6 +24,7 @@ import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createSettingsRoutes } from './settings-api.js';
+import { createThemeAssetsHandler, renderTemplate, themeAssetsUrl } from './themes.js';
 import { createUserRoutes } from './users-api.js';
 import { createWebhookRoutes } from './webhooks.js';
 
@@ -86,6 +90,16 @@ export interface AppOptions {
    * chose; panel values are stored through the options service (`np.admin.useOptions()`).
    */
   adminExtensions?: { capabilities: Capabilities };
+  /**
+   * Draws content pages and the 404 page with the active theme's templates (the template
+   * hierarchy picks the file) and serves theme files at `/themes/:name/assets/*`. Needs
+   * `permalinks`. Without an active theme, or if a template fails, the built-in page is used.
+   * `renderBody` turns a content item's blocks into HTML for the template's `html` prop.
+   */
+  themes?: {
+    service: ThemeService;
+    renderBody?: (content: Content) => string | Promise<string>;
+  };
   /** Serves the built admin app (`dir` = its `dist` folder) at `/admin`. */
   admin?: { dir: string };
 }
@@ -172,6 +186,9 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     }
   }
   if (options.media) app.get('/uploads/*', createUploadsHandler(options.media.storage));
+  if (options.themes) {
+    app.get('/themes/:name/assets/*', createThemeAssetsHandler(options.themes.service));
+  }
   if (options.admin) {
     const admin = createAdminHandler(options.admin);
     app.get('/admin', admin);
@@ -210,7 +227,47 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     return c.html(await np.hooks.applyFilters('render:html', html, { path: c.req.path }));
   });
 
-  const { permalinks } = options;
+  const { permalinks, themes } = options;
+
+  /** The page drawn by the active theme, or undefined to use the built-in page. */
+  async function renderThemed(
+    route: { kind: 'content'; content: Content } | { kind: 'not_found' },
+    path: string,
+    siteName: string,
+    status: 200 | 404,
+  ): Promise<string | undefined> {
+    if (!themes?.service.active) return undefined;
+    const target: TemplateTarget =
+      route.kind === 'content'
+        ? { kind: 'single', type: route.content.type, slug: route.content.slug }
+        : { kind: 'not_found' };
+    try {
+      const template = await themes.service.resolve(target);
+      const theme = themes.service.active;
+      if (!template || !theme) return undefined;
+      const html =
+        route.kind === 'content' && themes.renderBody
+          ? await themes.renderBody(route.content)
+          : undefined;
+      return await renderTemplate(template.component, {
+        siteName,
+        path,
+        status,
+        ...(route.kind === 'content' ? { content: route.content } : {}),
+        ...(html !== undefined ? { html } : {}),
+        theme: {
+          name: theme.manifest.name,
+          version: theme.manifest.version,
+          assetsUrl: themeAssetsUrl(theme.manifest.name),
+        },
+      });
+    } catch (error) {
+      // A broken template must not take the page down.
+      np.logger.warn(`Theme template failed for ${path}: ${String(error)}`);
+      return undefined;
+    }
+  }
+
   if (permalinks) {
     // Registered last so every API and system route above wins.
     app.get('*', async (c) => {
@@ -222,11 +279,18 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         return c.redirect(route.to + query, route.status);
       }
       const siteName = String(np.config.siteName ?? 'NodePress');
-      // Temporary markup until the theme system lands in Phase 3.
-      const [title, heading, status] =
+      const status = route.kind === 'content' ? (200 as const) : (404 as const);
+
+      const themed = await renderThemed(route, path, siteName, status);
+      if (themed !== undefined) {
+        return c.html(await np.hooks.applyFilters('render:html', themed, { path }), status);
+      }
+
+      // Built-in markup, used when there is no active theme or its template fails.
+      const [title, heading] =
         route.kind === 'content'
-          ? [route.content.title, route.content.title, 200 as const]
-          : ['Page not found', 'Page not found', 404 as const];
+          ? [route.content.title, route.content.title]
+          : ['Page not found', 'Page not found'];
       const excerpt = route.kind === 'content' ? (route.content.excerpt ?? '') : '';
       const html = `<!doctype html>
 <html lang="en">

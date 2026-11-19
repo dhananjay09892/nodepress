@@ -61,6 +61,8 @@ Plugins extend the admin through `context.admin` in `setup()`, with plain declar
 
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 
+Themes are folders with a `theme.json` (`name` equal to the folder name, `version`, optional `title`, `description`, `supports`, `settings`, `templates` and `assets` folders) and templates named like WordPress ones: `page-{slug}` → `page` → `single` → `index` for pages, `single-{type}` → `single` → `index` for other content, `404` → `index` for the not-found page (`archive-{type}` and `front` are ready for the routes that will use them). A template is a TSX component (a default export, compiled to `.js`; Hono's JSX is used on the server) that receives `siteName`, `path`, `status`, `content`, `html` and `theme.assetsUrl` and returns markup; the `template:resolve` filter lets plugins change the list of names tried. Files in a theme's `assets` folder are served at `/themes/<name>/assets/…` with `Cache-Control` and an `ETag`. The server reads themes from `./themes` (`THEMES_DIR` overrides) and activates `THEME` (default `starter`); a missing theme, a broken `theme.json` or a template that throws is logged and the built-in page is shown instead, so a theme can never take the site down. The front page `/` still uses the temporary markup until the Aurora theme (N23) replaces it.
+
 ## Repository layout
 
 | Path                      | What it is                                                               |
@@ -71,6 +73,7 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 | `packages/editor`         | Block model, block registry, core blocks and server-side HTML renderer   |
 | `apps/server`             | Hono HTTP server that boots a NodePress site                             |
 | `apps/admin`              | React admin dashboard, served by the server at `/admin`                  |
+| `themes/starter`          | Minimal example theme in TSX — copy it to start your own                 |
 | `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
 
 ## Writing a plugin

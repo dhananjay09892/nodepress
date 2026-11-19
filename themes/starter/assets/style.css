@@ -1,0 +1,20 @@
+:root {
+  color-scheme: light dark;
+  --max: 42rem;
+}
+body {
+  margin: 0;
+  font: 1.0625rem/1.6 system-ui, sans-serif;
+}
+.np-starter-header,
+.np-starter-main {
+  box-sizing: border-box;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 1rem;
+}
+.np-starter-header a {
+  font-weight: 700;
+  text-decoration: none;
+  color: inherit;
+}
