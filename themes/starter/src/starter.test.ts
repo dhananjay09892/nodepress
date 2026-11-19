@@ -4,6 +4,7 @@ import Index from './index.js';
 import NotFound from './404.js';
 import Single from './single.js';
 
+type Item = NonNullable<TemplateProps['content']>;
 const theme = { name: 'starter', version: '0.1.0', assetsUrl: '/themes/starter/assets' };
 const base: TemplateProps = { siteName: 'My <Site>', path: '/blog/hi', status: 200, theme };
 
@@ -16,7 +17,7 @@ describe('starter theme templates', () => {
     const html = await render(
       Single({
         ...base,
-        content: { title: 'Hello <b>', excerpt: 'A & B' } as TemplateProps['content'],
+        content: { title: 'Hello <b>', excerpt: 'A & B' } as Item,
         html: '<p>Body</p>',
       }),
     );
@@ -37,7 +38,7 @@ describe('starter theme templates', () => {
   it('index falls back to the 404 or single template by status', async () => {
     expect(await render(Index({ ...base, status: 404 }))).toContain('Page not found');
     expect(
-      await render(Index({ ...base, content: { title: 'T' } as TemplateProps['content'] })),
+      await render(Index({ ...base, content: { title: 'T' } as Item })),
     ).toContain('<h1>T</h1>');
   });
 });
