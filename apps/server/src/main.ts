@@ -420,6 +420,7 @@ const app = createApp(np, database, {
     meta: contentMeta,
     users,
     capabilities,
+    media: { service: media },
     logger: np.logger.child('import'),
   },
   contact: { contact, capabilities, trustProxy: process.env.TRUST_PROXY === 'true' },

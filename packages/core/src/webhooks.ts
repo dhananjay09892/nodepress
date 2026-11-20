@@ -178,7 +178,7 @@ export function isPrivateAddress(address: string): boolean {
   return false;
 }
 
-function hostLooksInternal(host: string): boolean {
+export function hostLooksInternal(host: string): boolean {
   const h = host.toLowerCase().replace(/\.$/, '');
   return (
     h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')

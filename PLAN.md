@@ -281,7 +281,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] `create-nodepress` CLI + web installer — first slice of the CLI done (N33: writes a site that runs a built checkout); the real `npx` install waits for the distribution decision (`docs/adr/0002-distribution.md`); web installer is N34
 - [ ] Docker image + one-click deploy templates — Dockerfile, compose with PostgreSQL and Railway, Render and Fly.io templates done (N35, `deploy/`); one-click buttons and publishing the image are N63
 - [ ] Built-in updater
-- [ ] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, author matching and saving the redirect map as redirects done (N55); media download (N59) and the admin screen (N60) remain
+- [ ] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, author matching and saving the redirect map as redirects done (N55); media download done (N59); the admin screen (N60) remains
 - [ ] Backup/export (JSON + media zip) — JSON export and import of content, fields, terms and settings done (N37); media zip, menus, widgets, redirects and the admin screen are N61
 
 ### Phase 6: Beta → 1.0 (weeks 22–26)

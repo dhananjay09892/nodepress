@@ -1,6 +1,7 @@
 import type { ContentBlock, ContentService } from './content.js';
 import { htmlToBlocks, mapBlockUrls, type ImportedBlock } from './html-blocks.js';
 import { silentLogger, type Logger } from './logger.js';
+import { runPool } from './media-download.js';
 import type { PermalinkService } from './permalinks.js';
 import { slugify } from './content.js';
 import type { TaxonomyService } from './taxonomies.js';
@@ -26,8 +27,59 @@ export interface WordPressImportOptions {
    */
   resolveAuthor?: (author: ImportAuthor) => number | null | Promise<number | null>;
   defaultAuthorId?: number | null;
+  /**
+   * Stores one file of the export in the media library and returns its id and public URL; throw
+   * to report the file as failed. Without it, files are only listed in `attachments`.
+   */
+  importMedia?: (file: ImportMediaFile) => Promise<{ id: number; url: string }>;
+  /** Files fetched at the same time. Default 3. */
+  mediaConcurrency?: number;
+  /** Most files fetched in one import; the rest are reported as not downloaded. Default 500. */
+  maxMediaFiles?: number;
   logger?: Logger;
   now?: () => Date;
+}
+
+export interface ImportMediaFile {
+  /** The address the file has on the old site. */
+  url: string;
+  title: string;
+  alt: string;
+  /** WordPress id of the attachment, when the export has one. */
+  wpId?: number;
+}
+
+export const DEFAULT_MAX_MEDIA_FILES = 500;
+const DEFAULT_MEDIA_CONCURRENCY = 3;
+
+/** What happened to the files when `importMedia` is used. */
+export interface MediaImportReport {
+  imported: Array<{ url: string; mediaId: number; newUrl: string; wpId?: number }>;
+  /** Files that were not downloaded, with the reason, so the import can be repeated for them. */
+  failed: Array<{ url: string; reason: string }>;
+  /** Image addresses in imported content that now point at the media library. */
+  imagesRewritten: number;
+  /** Items whose featured image (`_thumbnail_id`) was set. */
+  featuredImages: number;
+}
+
+/**
+ * A key that matches a resized copy (`photo-300x200.jpg`, `photo-scaled.jpg`) and the original
+ * (`photo.jpg`) of a WordPress upload, ignoring the scheme (old sites move from http to https).
+ */
+export function mediaKey(value: string): string | undefined {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return undefined;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
+  const path = decodeURIComponent(url.pathname).replace(
+    /-(?:scaled|\d{1,5}x\d{1,5})(?=\.[A-Za-z0-9]{2,5}$)/,
+    '',
+  );
+  return `${url.host.toLowerCase()}${path}`;
 }
 
 export interface ImportRedirect {
@@ -65,6 +117,8 @@ export interface ImportReport {
   attachments: ImportedAttachment[];
   /** Number of internal links changed to the new URLs. */
   linksRewritten: number;
+  /** Present when `importMedia` was given: what was downloaded and what was not. */
+  media?: MediaImportReport;
   skipped: ImportSkipped[];
   warnings: string[];
 }
@@ -190,7 +244,8 @@ async function termIdFor(
  *
  * Creates categories, tags, posts and pages (HTML converted to blocks), keeps WordPress ids and
  * comments as meta, rewrites links between imported items to their new URLs, and reports the
- * redirects needed to keep old URLs working. Files are listed in `attachments`, not downloaded.
+ * redirects needed to keep old URLs working. Files are listed in `attachments`; with
+ * `importMedia` they are also downloaded, used in the content and set as featured images.
  * One bad item is reported in `skipped` and never stops the rest.
  */
 export async function importWordPress(
@@ -425,6 +480,79 @@ export async function importWordPress(
     if (parentId !== undefined) attachment.contentId = parentId;
   }
 
+  // Files: download them into the media library, then use them in the content.
+  const mediaByKey = new Map<string, { id: number; url: string }>();
+  const mediaByWpId = new Map<number, number>();
+  if (options.importMedia) {
+    const media: MediaImportReport = { imported: [], failed: [], imagesRewritten: 0, featuredImages: 0 };
+    report.media = media;
+    const limit = options.maxMediaFiles ?? DEFAULT_MAX_MEDIA_FILES;
+    const seen = new Set<string>();
+    const todo = report.attachments.filter((a) => {
+      if (seen.has(a.url)) return false;
+      seen.add(a.url);
+      return true;
+    });
+    for (const skipped of todo.slice(limit)) {
+      media.failed.push({
+        url: skipped.url,
+        reason: `Not downloaded: an import takes at most ${limit} files.`,
+      });
+    }
+    await runPool(
+      todo.slice(0, limit),
+      Math.max(1, options.mediaConcurrency ?? DEFAULT_MEDIA_CONCURRENCY),
+      async (attachment) => {
+        try {
+          const stored = await options.importMedia!({
+            url: attachment.url,
+            title: attachment.title,
+            alt: attachment.alt,
+            ...(attachment.id !== undefined ? { wpId: attachment.id } : {}),
+          });
+          media.imported.push({
+            url: attachment.url,
+            mediaId: stored.id,
+            newUrl: stored.url,
+            ...(attachment.id !== undefined ? { wpId: attachment.id } : {}),
+          });
+          const key = mediaKey(attachment.url);
+          if (key !== undefined) mediaByKey.set(key, stored);
+          if (attachment.id !== undefined) mediaByWpId.set(attachment.id, stored.id);
+        } catch (error) {
+          logger.warn(`Could not download ${attachment.url}: ${messageOf(error)}`);
+          media.failed.push({ url: attachment.url, reason: messageOf(error) });
+        }
+      },
+    );
+    // Results arrive in completion order; keep the report stable for the reader.
+    media.imported.sort((x, y) => x.url.localeCompare(y.url));
+    media.failed.sort((x, y) => x.url.localeCompare(y.url));
+    if (options.meta) {
+      for (const entry of created) {
+        const thumbnail = Number(entry.item.meta['_thumbnail_id']);
+        const mediaId = Number.isInteger(thumbnail) ? mediaByWpId.get(thumbnail) : undefined;
+        if (mediaId === undefined) continue;
+        try {
+          await options.meta.setMeta(entry.id, { featured_image: mediaId });
+          media.featuredImages++;
+        } catch (error) {
+          report.warnings.push(
+            `"${entry.item.title}": the featured image was not set: ${messageOf(error)}`,
+          );
+        }
+      }
+    }
+  }
+  const rewriteImage = (url: string): string => {
+    if (mediaByKey.size === 0) return url;
+    const key = mediaKey(url);
+    const found = key === undefined ? undefined : mediaByKey.get(key);
+    if (!found) return url;
+    report.media!.imagesRewritten++;
+    return found.url;
+  };
+
   // Links between imported items, and the redirect map.
   const hosts = new Set<string>();
   for (const url of [wxr.siteUrl, wxr.baseUrl]) {
@@ -463,10 +591,13 @@ export async function importWordPress(
   };
   for (const entry of created) {
     const before = report.linksRewritten;
+    const imagesBefore = report.media?.imagesRewritten ?? 0;
     const blocks = mapBlockUrls(entry.blocks, (url, kind) =>
-      kind === 'link' ? rewrite(url) : url,
+      kind === 'link' ? rewrite(url) : rewriteImage(url),
     );
-    if (report.linksRewritten === before) continue;
+    if (report.linksRewritten === before && (report.media?.imagesRewritten ?? 0) === imagesBefore) {
+      continue;
+    }
     try {
       await options.content.update(entry.id, { body: blocks as unknown as ContentBlock[] });
     } catch (error) {
