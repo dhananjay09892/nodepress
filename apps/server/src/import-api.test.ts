@@ -206,6 +206,19 @@ const WXR_MEDIA = WXR.replace(
 
 type Json = Record<string, unknown>;
 
+describe('GET /api/v1/import/wordpress', () => {
+  it('tells administrators the size limit and keeps everyone else out', async () => {
+    const url = `${BASE}/api/v1/import/wordpress`;
+    expect((await app.request(url)).status).toBe(401);
+    const editor = await signIn('editor@example.com');
+    expect((await app.request(url, { headers: editor })).status).toBe(403);
+    const admin = await signIn('admin@example.com');
+    const res = await app.request(url, { headers: admin });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ maxBytes: 64 * 1024 * 1024 });
+  });
+});
+
 describe('POST /api/v1/import/wordpress', () => {
   it('needs a signed-in administrator with the CSRF token', async () => {
     expect((await importWxr({})).status).toBe(401);
