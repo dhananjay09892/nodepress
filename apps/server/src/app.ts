@@ -24,7 +24,12 @@ import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createSettingsRoutes } from './settings-api.js';
-import { createThemeAssetsHandler, renderTemplate, themeAssetsUrl } from './themes.js';
+import {
+  createThemeAssetsHandler,
+  renderTemplate,
+  resolveThemeSettings,
+  themeAssetsUrl,
+} from './themes.js';
 import { createUserRoutes } from './users-api.js';
 import { createWebhookRoutes } from './webhooks.js';
 
@@ -99,6 +104,12 @@ export interface AppOptions {
   themes?: {
     service: ThemeService;
     renderBody?: (content: Content) => string | Promise<string>;
+    /** Overrides for the theme's settings (see `resolveThemeSettings`); defaults come from `theme.json`. */
+    settings?: () => Record<string, unknown> | Promise<Record<string, unknown>>;
+    /** Site tagline shown by themes. */
+    tagline?: () => string | Promise<string>;
+    /** Latest published posts for the front page (newest first). */
+    latestPosts?: () => Promise<Content[]>;
   };
   /** Serves the built admin app (`dir` = its `dist` folder) at `/admin`. */
   admin?: { dir: string };
@@ -208,9 +219,78 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     );
   });
 
-  // Temporary front page until the theme system lands in Phase 3.
+  const { permalinks, themes } = options;
+
+  /** The page drawn by the active theme, or undefined to use the built-in page. */
+  async function renderThemed(
+    route: { kind: 'content'; content: Content } | { kind: 'not_found' } | { kind: 'front' },
+    path: string,
+    siteName: string,
+    status: 200 | 404,
+  ): Promise<string | undefined> {
+    if (!themes?.service.active) return undefined;
+    const target: TemplateTarget =
+      route.kind === 'content'
+        ? { kind: 'single', type: route.content.type, slug: route.content.slug }
+        : route.kind === 'front'
+          ? { kind: 'front' }
+          : { kind: 'not_found' };
+    try {
+      const template = await themes.service.resolve(target);
+      const theme = themes.service.active;
+      if (!template || !theme) return undefined;
+      let html: string | undefined;
+      if (route.kind === 'content' && themes.renderBody) {
+        html = await themes.renderBody(route.content);
+      } else if (route.kind === 'front') {
+        html = String(
+          await np.hooks.applyFilters('post:content', '<p>Welcome to your new site.</p>'),
+        );
+      }
+      const posts =
+        route.kind === 'front' && themes.latestPosts
+          ? await Promise.all(
+              (await themes.latestPosts()).map(async (content) => ({
+                content,
+                url: permalinks ? await permalinks.pathFor(content) : '/',
+              })),
+            )
+          : undefined;
+      const tagline = themes.tagline ? await themes.tagline() : '';
+      const settings = resolveThemeSettings(
+        theme.manifest.settings,
+        themes.settings ? await themes.settings() : {},
+      );
+      return await renderTemplate(template.component, {
+        siteName,
+        path,
+        status,
+        ...(route.kind === 'content' ? { content: route.content } : {}),
+        ...(html !== undefined ? { html } : {}),
+        ...(posts ? { posts } : {}),
+        tagline,
+        settings,
+        theme: {
+          name: theme.manifest.name,
+          version: theme.manifest.version,
+          assetsUrl: themeAssetsUrl(theme.manifest.name),
+        },
+      });
+    } catch (error) {
+      // A broken template must not take the page down.
+      np.logger.warn(`Theme template failed for ${path}: ${String(error)}`);
+      return undefined;
+    }
+  }
+
+  // The front page: drawn by the theme's `front` (or `index`) template; the built-in page below
+  // is used when there is no active theme or its template fails.
   app.get('/', async (c) => {
     const siteName = String(np.config.siteName ?? 'NodePress');
+    const themed = await renderThemed({ kind: 'front' }, '/', siteName, 200);
+    if (themed !== undefined) {
+      return c.html(await np.hooks.applyFilters('render:html', themed, { path: c.req.path }));
+    }
     const post = await np.hooks.applyFilters('post:content', '<p>Welcome to your new site.</p>');
     const html = `<!doctype html>
 <html lang="en">
@@ -226,47 +306,6 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
 </html>`;
     return c.html(await np.hooks.applyFilters('render:html', html, { path: c.req.path }));
   });
-
-  const { permalinks, themes } = options;
-
-  /** The page drawn by the active theme, or undefined to use the built-in page. */
-  async function renderThemed(
-    route: { kind: 'content'; content: Content } | { kind: 'not_found' },
-    path: string,
-    siteName: string,
-    status: 200 | 404,
-  ): Promise<string | undefined> {
-    if (!themes?.service.active) return undefined;
-    const target: TemplateTarget =
-      route.kind === 'content'
-        ? { kind: 'single', type: route.content.type, slug: route.content.slug }
-        : { kind: 'not_found' };
-    try {
-      const template = await themes.service.resolve(target);
-      const theme = themes.service.active;
-      if (!template || !theme) return undefined;
-      const html =
-        route.kind === 'content' && themes.renderBody
-          ? await themes.renderBody(route.content)
-          : undefined;
-      return await renderTemplate(template.component, {
-        siteName,
-        path,
-        status,
-        ...(route.kind === 'content' ? { content: route.content } : {}),
-        ...(html !== undefined ? { html } : {}),
-        theme: {
-          name: theme.manifest.name,
-          version: theme.manifest.version,
-          assetsUrl: themeAssetsUrl(theme.manifest.name),
-        },
-      });
-    } catch (error) {
-      // A broken template must not take the page down.
-      np.logger.warn(`Theme template failed for ${path}: ${String(error)}`);
-      return undefined;
-    }
-  }
 
   if (permalinks) {
     // Registered last so every API and system route above wins.

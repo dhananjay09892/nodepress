@@ -78,3 +78,29 @@ export async function renderTemplate(
       : await (result as { toString(): string | Promise<string> }).toString();
   return /^\s*<!doctype/i.test(html) ? html : `<!doctype html>${html}`;
 }
+
+/**
+ * The settings a template receives: the `default` of every setting in `theme.json`, with
+ * `overrides` applied for known keys whose value fits the schema (`select` values must be one
+ * of `options`; `string`, `boolean` and `number` must have that type). Unknown keys and bad
+ * values are ignored, so a stale or hand-edited override can never break a template.
+ */
+export function resolveThemeSettings(
+  schema: Record<string, unknown>,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, spec] of Object.entries(schema)) {
+    if (typeof spec !== 'object' || spec === null || Array.isArray(spec)) continue;
+    const { type, default: fallback, options } = spec as Record<string, unknown>;
+    const fits = (value: unknown): boolean => {
+      if (type === 'select') return Array.isArray(options) && options.includes(value);
+      if (type === 'string' || type === 'boolean' || type === 'number')
+        return typeof value === type;
+      return false;
+    };
+    if (fits(overrides[key])) result[key] = overrides[key];
+    else if (fits(fallback)) result[key] = fallback;
+  }
+  return result;
+}

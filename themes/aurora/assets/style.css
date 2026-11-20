@@ -1,0 +1,210 @@
+/* Aurora: light by default, dark when the visitor's system asks for it.
+   Text colours meet WCAG 2.1 AA (4.5:1) on their backgrounds in both schemes. */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f3f5f8;
+  --text: #1b1f24;
+  --muted: #4b5563;
+  --link: #0b5cad;
+  --border: #d0d7de;
+  --focus: #0b5cad;
+  --wrap: 46rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1419;
+    --surface: #1a212b;
+    --text: #e6e9ed;
+    --muted: #a8b0bb;
+    --link: #8ab4f8;
+    --border: #35404d;
+    --focus: #8ab4f8;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    1.0625rem/1.65 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+a {
+  color: var(--link);
+  text-underline-offset: 0.15em;
+}
+a:focus-visible,
+main:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 1.5em 0 0.5em;
+}
+h1 {
+  font-size: clamp(1.75rem, 4vw + 1rem, 2.5rem);
+  margin-top: 0;
+}
+h2 {
+  font-size: 1.5rem;
+}
+h3 {
+  font-size: 1.2rem;
+  margin: 0 0 0.25rem;
+}
+
+.np-aurora-wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+.np-aurora-skip {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 10;
+  padding: 0.5rem 1rem;
+  background: var(--bg);
+  border: 2px solid var(--focus);
+}
+.np-aurora-skip:focus {
+  top: 0.5rem;
+}
+
+.np-aurora-header {
+  border-bottom: 1px solid var(--border);
+}
+.np-aurora-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+.np-aurora-brand {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.np-aurora-header nav a {
+  display: inline-block;
+  padding: 0.5rem 0.75rem; /* a comfortable touch target */
+}
+.np-aurora-header [aria-current='page'] {
+  font-weight: 700;
+}
+
+.np-aurora-main {
+  flex: 1;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+.np-aurora-lead {
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+.np-aurora-date {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.np-aurora-prose {
+  overflow-wrap: anywhere;
+}
+.np-aurora-prose pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: 0.5rem;
+}
+.np-aurora-prose blockquote {
+  margin-left: 0;
+  padding-left: 1rem;
+  border-left: 4px solid var(--border);
+  color: var(--muted);
+}
+
+.np-aurora-posts,
+.np-aurora-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.np-aurora-posts li {
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+}
+.np-aurora-cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+.np-aurora-cards li {
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.np-aurora-hero {
+  margin: 0 -1rem 2rem;
+  padding: 3rem 1rem;
+  background: var(--surface);
+  border-radius: 0.75rem;
+}
+.np-aurora-hero h1 {
+  margin-bottom: 0.5rem;
+}
+
+.np-aurora-footer {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.np-aurora-footer p {
+  margin: 0;
+}
+
+@media (min-width: 48rem) {
+  .np-aurora-wrap {
+    padding: 0 1.5rem;
+  }
+  .np-aurora-hero {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 4rem 2rem;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

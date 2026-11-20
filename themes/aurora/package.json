@@ -1,0 +1,19 @@
+{
+  "name": "@nodepress/theme-aurora",
+  "version": "0.0.0",
+  "description": "Aurora, the default NodePress theme: blog and business layouts, responsive, accessible, dark mode",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@nodepress/core": "workspace:*"
+  }
+}

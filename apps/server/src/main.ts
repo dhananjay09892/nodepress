@@ -195,18 +195,48 @@ const themesDir =
 const found = await discoverThemes(themesDir);
 for (const { dir, message } of found.errors) np.logger.warn(`Theme "${dir}" skipped: ${message}`);
 themes.register(found.themes);
-const themeName = process.env.THEME ?? 'starter';
+const themeName = process.env.THEME ?? 'aurora';
 if (themes.activate(themeName)) {
   np.logger.info(`Active theme: ${themeName}`);
 } else {
   np.logger.warn(`Theme "${themeName}" is not installed; using the built-in pages.`);
 }
 
+// Interim theme settings (the admin customizer comes later): THEME_SETTINGS='{"layout":"business"}'.
+// Each key is checked against the theme's `settings` schema, so a bad value falls back to its default.
+function readThemeSettings(): Record<string, unknown> {
+  const raw = process.env.THEME_SETTINGS;
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // fall through to the warning
+  }
+  np.logger.warn('THEME_SETTINGS is not a JSON object; using the theme defaults.');
+  return {};
+}
+const themeSettings = readThemeSettings();
+
 const capabilities = createCapabilities(np.hooks);
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
   permalinks,
-  themes: { service: themes },
+  themes: {
+    service: themes,
+    settings: () => themeSettings,
+    tagline: () => options.get('tagline', ''),
+    latestPosts: () =>
+      content.list({
+        type: 'post',
+        status: 'published',
+        orderBy: 'publishedAt',
+        direction: 'desc',
+        limit: 10,
+      }),
+  },
   adminExtensions: { capabilities },
   content: {
     service: content,

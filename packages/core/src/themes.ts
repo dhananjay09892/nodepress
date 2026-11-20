@@ -262,6 +262,12 @@ export interface TemplateProps {
   content?: Content;
   /** Body of `content` as HTML, when the server could render it. */
   html?: string;
+  /** The site tagline (empty when not set). */
+  tagline?: string;
+  /** Latest published posts with their URLs; set on the front page. */
+  posts?: Array<{ content: Content; url: string }>;
+  /** The theme's settings: defaults from `theme.json` `settings`, with any overrides applied. */
+  settings?: Record<string, unknown>;
   theme: {
     name: string;
     version: string;
