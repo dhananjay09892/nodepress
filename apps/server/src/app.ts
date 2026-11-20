@@ -36,6 +36,7 @@ import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
 import { buildMeta, filterMeta } from './meta.js';
 import { cleanSiteUrl, createFeedRoutes, type FeedRoutesOptions } from './feeds.js';
+import { securityHeaders, type SecurityHeadersOptions } from './security-headers.js';
 import { createPageCacheMiddleware } from './page-cache.js';
 import { createThemeSettingsRoutes, type ThemeSettingsService } from './theme-settings.js';
 import { createSettingsRoutes } from './settings-api.js';
@@ -142,6 +143,11 @@ export interface AppOptions {
    */
   feeds?: Omit<FeedRoutesOptions, 'permalinks'>;
   /**
+   * Browser security headers sent on every response (Content-Security-Policy, nosniff, frame and
+   * referrer policies, HSTS over HTTPS). On by default; see `securityHeaders` for the options.
+   */
+  security?: SecurityHeadersOptions;
+  /**
    * A full-page cache for anonymous visitors (see `createPageCacheMiddleware`). The caller is
    * responsible for `cache.attach()`, which purges it when content or options change.
    */
@@ -211,6 +217,8 @@ export interface AppOptions {
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
   const app = new Hono();
+  // Outermost, so cached pages and error answers get the headers too.
+  app.use('*', securityHeaders(options.security));
   if (options.pageCache) app.use('*', createPageCacheMiddleware(options.pageCache));
 
   const sessionAuth = options.auth ? createAuth(options.auth) : undefined;

@@ -324,7 +324,15 @@ const contact = createContactForm({
   mail: createLogMailAdapter(np.logger.child('mail')),
   logger: np.logger.child('contact'),
 });
+// Security headers are on by default. CONTENT_SECURITY_POLICY replaces the default policy ("off"
+// sends none, for a reverse proxy that sets its own); HSTS=off never sends Strict-Transport-Security.
+const cspSetting = process.env.CONTENT_SECURITY_POLICY;
 const app = createApp(np, database, {
+  security: {
+    ...(cspSetting === 'off' ? { csp: false as const } : cspSetting ? { csp: cspSetting } : {}),
+    ...(process.env.HSTS === 'off' ? { hsts: false as const } : {}),
+    trustProxy: process.env.TRUST_PROXY === 'true',
+  },
   ...(admin ? { admin } : {}),
   ...(pageCache ? { pageCache } : {}),
   // SITE_URL (for example https://example.com) is used for absolute links in the sitemap and feed.
