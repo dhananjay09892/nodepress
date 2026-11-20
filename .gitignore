@@ -10,3 +10,4 @@ test-results/
 themes/*/templates/
 plugins-installed/
 apps/admin/e2e-plugins/
+apps/admin/e2e-install-plugins/
