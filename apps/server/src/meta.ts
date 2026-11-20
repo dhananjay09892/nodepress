@@ -73,6 +73,11 @@ export function isMetaTags(value: unknown): value is MetaTags {
   const og = meta.og as Record<string, unknown> | null | undefined;
   return (
     typeof meta.description === 'string' &&
+    isOptionalString(meta.title) &&
+    isOptionalString(meta.robots) &&
+    (meta.jsonLd === undefined ||
+      (Array.isArray(meta.jsonLd) &&
+        meta.jsonLd.every((o) => typeof o === 'object' && o !== null && !Array.isArray(o)))) &&
     isOptionalString(meta.canonical) &&
     isOptionalString(meta.feedUrl) &&
     typeof og === 'object' &&
@@ -93,12 +98,18 @@ export function isMetaTags(value: unknown): value is MetaTags {
 export async function filterMeta(
   hooks: HookRegistry,
   meta: MetaTags,
-  context: { path: string; status: 200 | 404; content?: Content | undefined },
+  context: {
+    path: string;
+    status: 200 | 404;
+    content?: Content | undefined;
+    fields?: Record<string, unknown> | undefined;
+  },
 ): Promise<MetaTags> {
   const result: unknown = await hooks.applyFilters('meta:tags', meta, {
     path: context.path,
     status: context.status,
     ...(context.content ? { content: context.content } : {}),
+    ...(context.fields ? { fields: context.fields } : {}),
   });
   return isMetaTags(result) ? result : meta;
 }

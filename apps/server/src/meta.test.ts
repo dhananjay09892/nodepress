@@ -109,6 +109,9 @@ describe('filterMeta', () => {
     registry.addFilter('meta:tags', () => ({ nope: true }) as unknown as MetaTags);
     expect(await filterMeta(registry, base, { path: '/', status: 200 })).toBe(base);
     expect(isMetaTags(null)).toBe(false);
+    expect(isMetaTags({ ...base, robots: 5 })).toBe(false);
+    expect(isMetaTags({ ...base, jsonLd: ['x'] })).toBe(false);
+    expect(isMetaTags({ ...base, title: 'T', robots: 'noindex', jsonLd: [{ a: 1 }] })).toBe(true);
     expect(isMetaTags({ ...base, og: { ...base.og, type: 'video' } })).toBe(false);
   });
 

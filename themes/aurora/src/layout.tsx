@@ -29,6 +29,16 @@ export function customCss(settings: Record<string, unknown> | undefined): string
   return css;
 }
 
+/** JSON for a `<script type="application/ld+json">`: `<`, `>`, `&` and line separators are escaped so nothing can close the tag. */
+export function jsonLdScript(data: Record<string, unknown>): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
 /** A menu as nested lists; the link to the current page is marked with `aria-current`. */
 function MenuList(props: { items: MenuItem[]; path: string; nested?: boolean }) {
   const { items, path, nested } = props;
@@ -74,7 +84,8 @@ export function Layout(props: {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light dark" />
         {description ? <meta name="description" content={description} /> : null}
-        <title>{documentTitle}</title>
+        {meta?.robots ? <meta name="robots" content={meta.robots} /> : null}
+        <title>{meta?.title ?? documentTitle}</title>
         {meta?.canonical ? <link rel="canonical" href={meta.canonical} /> : null}
         {meta?.feedUrl ? (
           <link
@@ -96,6 +107,9 @@ export function Layout(props: {
         ) : null}
         <link rel="stylesheet" href={`${page.theme.assetsUrl}/style.css`} />
         {css ? <style>{raw(css)}</style> : null}
+        {(meta?.jsonLd ?? []).map((data) => (
+          <script type="application/ld+json">{raw(jsonLdScript(data))}</script>
+        ))}
       </head>
       <body class="np-aurora">
         <a class="np-aurora-skip" href="#main">

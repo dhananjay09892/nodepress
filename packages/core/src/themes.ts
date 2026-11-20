@@ -285,6 +285,12 @@ export function templateHierarchy(target: TemplateTarget): string[] {
 
 /** The SEO tags a theme draws in `<head>`. Built by the server; plugins change it with the `meta:tags` filter. */
 export interface MetaTags {
+  /** Replaces the page's `<title>` when set (for example by an SEO plugin). */
+  title?: string;
+  /** Value for `<meta name="robots">` (for example `noindex, follow`). Nothing is drawn when unset. */
+  robots?: string;
+  /** schema.org JSON-LD objects, each drawn as its own `<script type="application/ld+json">`. */
+  jsonLd?: Array<Record<string, unknown>>;
   /** Text for `<meta name="description">`: the excerpt, else the tagline, else the site name. */
   description: string;
   /** Absolute URL of the page. Not set on the 404 page. */
@@ -310,6 +316,8 @@ export interface MetaTagsContext {
   status: 200 | 404;
   /** The item being shown (not set on the front page or the 404 page). */
   content?: Content;
+  /** The item's custom field values (what the content API returns as `meta`), when it has any. */
+  fields?: Record<string, unknown>;
 }
 
 declare module './hooks.js' {
