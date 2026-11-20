@@ -185,10 +185,7 @@ describe('contact form block', () => {
   it('validates its attributes', () => {
     const registry = createBlockRegistry();
     const issues = (attrs: Record<string, unknown>) =>
-      validateDocument(
-        { version: 1, blocks: [{ type: 'core/contact-form', attrs }] },
-        registry,
-      );
+      validateDocument({ version: 1, blocks: [{ type: 'core/contact-form', attrs }] }, registry);
     expect(issues({ form: 'sales' })).toEqual([]);
     expect(issues({ form: 'Bad Id' })).toHaveLength(1);
     expect(issues({ submitLabel: 'x'.repeat(201) })).toHaveLength(1);

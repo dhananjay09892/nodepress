@@ -74,7 +74,9 @@ describe('createSmtpMailAdapter', () => {
         text: 't',
       }),
     ).rejects.toThrow('connection refused');
-    expect(() => createSmtpMailAdapter({ transport: t.transport, from: 'nope' })).toThrow(RangeError);
+    expect(() => createSmtpMailAdapter({ transport: t.transport, from: 'nope' })).toThrow(
+      RangeError,
+    );
   });
 });
 

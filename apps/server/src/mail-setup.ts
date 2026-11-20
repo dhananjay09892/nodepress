@@ -48,7 +48,9 @@ export async function createMailFromEnv(
   }
   const from = env.MAIL_FROM ?? '';
   if (!isEmailAddress(from)) {
-    logger.warn('MAIL_FROM must be the sender address (for example site@example.com); mail will only be logged.');
+    logger.warn(
+      'MAIL_FROM must be the sender address (for example site@example.com); mail will only be logged.',
+    );
     return fallback;
   }
   try {

@@ -31,7 +31,8 @@ function fakeDom() {
   const form = {
     elements: inputs,
     reset: vi.fn(),
-    getAttribute: (k: string) => (k === 'data-form' ? 'sales' : k === 'data-success' ? 'Thanks!' : null),
+    getAttribute: (k: string) =>
+      k === 'data-form' ? 'sales' : k === 'data-success' ? 'Thanks!' : null,
     querySelector: (selector: string) => (selector === '.np-contact-status' ? status : button),
     addEventListener: (type: string, fn: (event: { preventDefault(): void }) => void) => {
       listeners[type] = fn;
@@ -44,7 +45,10 @@ function fakeDom() {
   return { document, form, status, button, errors, inputs, listeners };
 }
 
-async function run(dom: ReturnType<typeof fakeDom>, responses: Array<{ status: number; body: unknown }>) {
+async function run(
+  dom: ReturnType<typeof fakeDom>,
+  responses: Array<{ status: number; body: unknown }>,
+) {
   const calls: Array<{ url: string; init?: { body?: string } }> = [];
   const queue = [{ status: 200, body: { token: 'tok' } }, ...responses];
   const fetchFn = async (url: string, init?: { body?: string }) => {

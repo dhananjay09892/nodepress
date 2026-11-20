@@ -133,7 +133,10 @@ export function blockToTiptap(block: Block): TiptapNode {
     case 'core/button':
       return withAttrs({ type: 'npButton' }, pick(attrs, ['text', 'href', 'style']));
     case 'core/contact-form':
-      return withAttrs({ type: 'npContactForm' }, pick(attrs, ['form', 'submitLabel', 'successMessage']));
+      return withAttrs(
+        { type: 'npContactForm' },
+        pick(attrs, ['form', 'submitLabel', 'successMessage']),
+      );
     case 'core/columns':
       return {
         type: 'npColumns',
