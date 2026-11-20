@@ -180,6 +180,7 @@ export function outdentItem(items: readonly MenuItem[], path: ItemPath): MenuIte
   });
 }
 
+// eslint-disable-next-line no-control-regex
 const CONTROL = /[\u0000-\u001f\u007f]/;
 
 /** The same rule the server applies: a site path, an http(s) URL, `mailto:` or `tel:`. */
