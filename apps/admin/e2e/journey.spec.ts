@@ -69,7 +69,12 @@ test('install, write and publish a post, add a plugin and change the theme', asy
   const html = await live.text();
   expect(html).toContain(title);
   expect(html).toContain('Written on the first day.');
-  expect(html).toContain('Journey Site');
+  // The site name chosen at setup (by install.spec.ts or, when it did not run, by this spec).
+  const settings = await page.request.get(`${SITE}/api/v1/settings`);
+  const siteTitle = ((await settings.json()) as { settings: { site_title: string } }).settings
+    .site_title;
+  expect(siteTitle).toMatch(/Wizard Site|Journey Site/);
+  expect(html).toContain(siteTitle);
 
   // 4. Add a plugin: upload, review the permissions, enable.
   const zip = createTestZip([
