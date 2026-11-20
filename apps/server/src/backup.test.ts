@@ -67,7 +67,11 @@ async function makeSite() {
     role: 'administrator',
     displayName: 'Admin',
   });
-  const editor = await users.create({ email: 'editor@example.com', password: PASSWORD, role: 'editor' });
+  const editor = await users.create({
+    email: 'editor@example.com',
+    password: PASSWORD,
+    role: 'editor',
+  });
   const options = createOptionsService({ store: createOptionsStore(database), hooks: np.hooks });
   const content = createContentService({ store: createContentStore(database), hooks: np.hooks });
   const taxonomies = createTaxonomyService({
@@ -128,8 +132,14 @@ async function seed(site: Site) {
     },
     {},
   );
-  await content.create({ type: 'post', title: 'Draft idea', slug: 'draft-idea', status: 'draft' }, {});
-  const trashed = await content.create({ type: 'post', title: 'Old', slug: 'old', status: 'draft' }, {});
+  await content.create(
+    { type: 'post', title: 'Draft idea', slug: 'draft-idea', status: 'draft' },
+    {},
+  );
+  const trashed = await content.create(
+    { type: 'post', title: 'Old', slug: 'old', status: 'draft' },
+    {},
+  );
   await content.update(trashed.id, { status: 'trash' }, {});
   await deps.meta!.setMeta(post.id, { subtitle: 'A trip', featured_image: 5 });
   await taxonomies.setContentTerms(post.id, 'category', [italy.id]);
@@ -148,16 +158,34 @@ describe('exportSite', () => {
     const site = await makeSite();
     await seed(site);
     const data = await exportSite({ ...site.deps, now: () => new Date('2026-11-20T10:00:00Z') });
-    expect(data).toMatchObject({ format: 'nodepress-export', version: 1, exportedAt: '2026-11-20T10:00:00.000Z' });
-    expect(data.content.map((c) => c.slug)).toEqual(['about', 'team', 'hello-rome', 'draft-idea', 'old']);
-    expect(data.content.map((c) => c.status)).toEqual(['published', 'published', 'published', 'draft', 'trash']);
+    expect(data).toMatchObject({
+      format: 'nodepress-export',
+      version: 1,
+      exportedAt: '2026-11-20T10:00:00.000Z',
+    });
+    expect(data.content.map((c) => c.slug)).toEqual([
+      'about',
+      'team',
+      'hello-rome',
+      'draft-idea',
+      'old',
+    ]);
+    expect(data.content.map((c) => c.status)).toEqual([
+      'published',
+      'published',
+      'published',
+      'draft',
+      'trash',
+    ]);
     const post = data.content.find((c) => c.slug === 'hello-rome')!;
     expect(post.meta).toEqual({ subtitle: 'A trip', featured_image: 5 });
     expect(post.terms).toEqual({ category: ['italy'], tag: ['rome'] });
     expect(post.publishedAt).toBe('2024-05-01T10:00:00.000Z');
     expect(data.terms.map((t) => t.slug).sort()).toEqual(['italy', 'rome', 'travel']);
     expect(data.settings).toMatchObject({ site_title: 'Old & Gold', tagline: 'Since 1999' });
-    expect(data.authors).toEqual([{ id: site.editor.id, email: 'editor@example.com', displayName: expect.any(String) }]);
+    expect(data.authors).toEqual([
+      { id: site.editor.id, email: 'editor@example.com', displayName: expect.any(String) },
+    ]);
     const json = JSON.stringify(data);
     expect(json).not.toMatch(/passwordHash|fake\$|token/i);
   });
@@ -173,8 +201,7 @@ describe('importSite (round trip)', () => {
     const summary = await importSite(exported, target.deps, {
       defaultAuthorId: target.admin.id,
       skipMeta: ['featured_image'],
-      resolveAuthor: async (author) =>
-        (await target.users.findByEmail(author.email))?.id ?? null,
+      resolveAuthor: async (author) => (await target.users.findByEmail(author.email))?.id ?? null,
     });
     expect(summary).toMatchObject({ terms: 3, content: 5, skipped: [], warnings: [] });
 
@@ -204,13 +231,20 @@ describe('importSite (round trip)', () => {
     expect(metas.get(post!.id)).toEqual({ subtitle: 'A trip' });
 
     const terms = await target.taxonomies.getContentTerms(post!.id);
-    expect(terms.map((t) => `${t.taxonomy}:${t.slug}`).sort()).toEqual(['category:italy', 'tag:rome']);
+    expect(terms.map((t) => `${t.taxonomy}:${t.slug}`).sort()).toEqual([
+      'category:italy',
+      'tag:rome',
+    ]);
     const italy = await target.taxonomies.getTermBySlug('category', 'italy');
     const travel = await target.taxonomies.getTermBySlug('category', 'travel');
     expect(italy!.parentId).toBe(travel!.id);
 
     const settings = await target.settings.getAll();
-    expect(settings).toMatchObject({ site_title: 'Old & Gold', tagline: 'Since 1999', posts_per_page: 5 });
+    expect(settings).toMatchObject({
+      site_title: 'Old & Gold',
+      tagline: 'Since 1999',
+      posts_per_page: 5,
+    });
     expect(settings.front_page_id).toBe(newAbout!.id);
     expect(summary.idMap[String(about.id)]).toBe(newAbout!.id);
   });
@@ -225,16 +259,32 @@ describe('importSite (round trip)', () => {
     expect(summary.terms).toBe(0);
     const after = await site.content.list({ status: ['draft', 'published', 'trash'], limit: 100 });
     expect(after).toHaveLength(before.length + 5);
-    const slugs = after.filter((i) => i.type === 'post' && i.title === 'Hello Rome').map((i) => i.slug);
+    const slugs = after
+      .filter((i) => i.type === 'post' && i.title === 'Hello Rome')
+      .map((i) => i.slug);
     expect(new Set(slugs).size).toBe(2);
   });
 
   it('refuses a file that is not an export, and changes nothing', async () => {
     const site = await makeSite();
-    for (const bad of [null, [], {}, { format: 'other' }, { format: 'nodepress-export', version: 2 }]) {
+    for (const bad of [
+      null,
+      [],
+      {},
+      { format: 'other' },
+      { format: 'nodepress-export', version: 2 },
+    ]) {
       await expect(importSite(bad, site.deps)).rejects.toThrow(/not a NodePress export/);
     }
-    const broken = { format: 'nodepress-export', version: 1, exportedAt: 'x', settings: {}, terms: [], authors: [], content: [{ id: 1 }] };
+    const broken = {
+      format: 'nodepress-export',
+      version: 1,
+      exportedAt: 'x',
+      settings: {},
+      terms: [],
+      authors: [],
+      content: [{ id: 1 }],
+    };
     await expect(importSite(broken, site.deps)).rejects.toThrow(/not a NodePress export/);
     expect(await site.content.list({ status: ['draft', 'published', 'trash'] })).toHaveLength(0);
   });
@@ -260,14 +310,19 @@ describe('/api/v1/backup', () => {
       body: JSON.stringify({ email, password: PASSWORD }),
     });
     const { csrfToken } = (await res.json()) as { csrfToken: string };
-    return { cookie: (res.headers.get('set-cookie') ?? '').split(';')[0]!, 'x-csrf-token': csrfToken };
+    return {
+      cookie: (res.headers.get('set-cookie') ?? '').split(';')[0]!,
+      'x-csrf-token': csrfToken,
+    };
   }
 
   it('needs a signed-in administrator', async () => {
     const site = await makeSite();
     expect((await site.app.request(`${BASE}/api/v1/backup/export`)).status).toBe(401);
     const editor = await signIn(site, 'editor@example.com');
-    expect((await site.app.request(`${BASE}/api/v1/backup/export`, { headers: editor })).status).toBe(403);
+    expect(
+      (await site.app.request(`${BASE}/api/v1/backup/export`, { headers: editor })).status,
+    ).toBe(403);
     const post = await site.app.request(`${BASE}/api/v1/backup/import`, {
       method: 'POST',
       headers: { ...editor, 'content-type': 'application/json' },
@@ -282,7 +337,9 @@ describe('/api/v1/backup', () => {
     const admin = await signIn(source, 'admin@example.com');
     const res = await source.app.request(`${BASE}/api/v1/backup/export`, { headers: admin });
     expect(res.status).toBe(200);
-    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="nodepress-export-\d{4}-\d{2}-\d{2}\.json"$/);
+    expect(res.headers.get('content-disposition')).toMatch(
+      /^attachment; filename="nodepress-export-\d{4}-\d{2}-\d{2}\.json"$/,
+    );
     const file = await res.text();
 
     const target = await makeSite();

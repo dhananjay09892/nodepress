@@ -55,7 +55,12 @@ export interface BackupDeps {
   content: Pick<ContentService, 'list' | 'create' | 'update'>;
   taxonomies: Pick<
     TaxonomyService,
-    'listTaxonomies' | 'listTerms' | 'createTerm' | 'getTermBySlug' | 'getContentTerms' | 'setContentTerms'
+    | 'listTaxonomies'
+    | 'listTerms'
+    | 'createTerm'
+    | 'getTermBySlug'
+    | 'getContentTerms'
+    | 'setContentTerms'
   >;
   settings: Pick<SettingsService, 'getAll' | 'update'>;
   meta?: {
@@ -181,9 +186,7 @@ const exportSchema = z.object({
       }),
     )
     .max(MAX_EXPORT_ITEMS),
-  authors: z.array(
-    z.object({ id: z.number().int(), email: text(254), displayName: text(200) }),
-  ),
+  authors: z.array(z.object({ id: z.number().int(), email: text(254), displayName: text(200) })),
 });
 
 export class BackupError extends Error {
@@ -259,7 +262,9 @@ export async function importSite(
     const next: typeof pending = [];
     for (const term of pending) {
       if (!taxonomyNames.has(term.taxonomy)) {
-        summary.warnings.push(`Taxonomy "${term.taxonomy}" does not exist here; term "${term.name}" skipped.`);
+        summary.warnings.push(
+          `Taxonomy "${term.taxonomy}" does not exist here; term "${term.name}" skipped.`,
+        );
         continue;
       }
       if (term.parentId !== null && !termIds.has(term.parentId)) {
@@ -300,12 +305,18 @@ export async function importSite(
           const author = authorEmails.get(item.authorId);
           authorCache.set(
             item.authorId,
-            author ? await options.resolveAuthor({ email: author.email, displayName: author.displayName }) : null,
+            author
+              ? await options.resolveAuthor({
+                  email: author.email,
+                  displayName: author.displayName,
+                })
+              : null,
           );
         }
         authorId = authorCache.get(item.authorId) ?? authorId;
       }
-      const parentId = item.parentId === null ? null : (summary.idMap[String(item.parentId)] ?? null);
+      const parentId =
+        item.parentId === null ? null : (summary.idMap[String(item.parentId)] ?? null);
       const created = await deps.content.create(
         {
           type: item.type,
@@ -323,7 +334,9 @@ export async function importSite(
       summary.idMap[String(item.id)] = created.id;
       summary.content++;
 
-      const values = Object.fromEntries(Object.entries(item.meta).filter(([key]) => !skipMeta.has(key)));
+      const values = Object.fromEntries(
+        Object.entries(item.meta).filter(([key]) => !skipMeta.has(key)),
+      );
       if (deps.meta && Object.keys(values).length > 0) await deps.meta.setMeta(created.id, values);
       for (const [taxonomy, slugs] of Object.entries(item.terms)) {
         const ids: number[] = [];
