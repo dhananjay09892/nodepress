@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import NotFound from './404.js';
 import Front from './front.js';
 import Index from './index.js';
+import { customCss } from './layout.js';
 import Page from './page.js';
 import Single from './single.js';
 
@@ -176,5 +177,39 @@ describe('Aurora sidebar widgets', () => {
       expect(html).not.toContain('<aside');
       expect(html).toContain('<main id="main" class="np-aurora-wrap np-aurora-main"');
     }
+  });
+});
+
+describe('Aurora customizer settings', () => {
+  it('adds no CSS for the defaults', () => {
+    expect(customCss(undefined)).toBe('');
+    expect(customCss({ accent: '#0b5cad', font: 'system' })).toBe('');
+  });
+
+  it('turns a hex accent and a known font into CSS, keeping dark mode links readable', () => {
+    const css = customCss({ accent: '#aa0000', font: 'serif' });
+    expect(css).toContain(':root{--link:#aa0000;--focus:#aa0000}');
+    expect(css).toContain('prefers-color-scheme: dark');
+    expect(css).toContain('body.np-aurora{font-family:Georgia');
+  });
+
+  it('never lets anything but a hex colour or a known font into the stylesheet', () => {
+    expect(customCss({ accent: 'red;}</style><script>', font: 'x;}body{' })).toBe('');
+    expect(customCss({ accent: 5, font: 5 })).toBe('');
+  });
+
+  it('puts the CSS and the logo in the page', async () => {
+    const html = await render(
+      Single({
+        ...base,
+        content: post('Hello'),
+        settings: { accent: '#aa0000', font: 'mono', logo: '/media/logo.png' },
+      }),
+    );
+    expect(html).toContain('<style>:root{--link:#aa0000');
+    expect(html).toContain('<img class="np-aurora-logo" src="/media/logo.png" alt=""');
+    const plain = await render(Single({ ...base, content: post('Hello'), settings: { logo: '' } }));
+    expect(plain).not.toContain('<style>');
+    expect(plain).not.toContain('np-aurora-logo');
   });
 });

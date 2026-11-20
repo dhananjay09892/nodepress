@@ -16,6 +16,7 @@ import { Users } from './screens/Users.js';
 import { Settings } from './screens/Settings.js';
 import { Menus } from './screens/Menus.js';
 import { Widgets } from './screens/Widgets.js';
+import { Customize } from './screens/Customize.js';
 import { ExtensionPage } from './screens/ExtensionPage.js';
 import { EditorPreview } from './screens/EditorPreview.js';
 import { PostEdit } from './screens/PostEdit.js';
@@ -124,6 +125,12 @@ const widgetsRoute = createRoute({
   component: Widgets,
 });
 
+const customizeRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/customize',
+  component: Customize,
+});
+
 // Pages added by plugins; the sidebar links to them from the menu items plugins declare.
 const extensionPageRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -151,6 +158,7 @@ const routeTree = rootRoute.addChildren([
     settingsPermalinksRoute,
     menusRoute,
     widgetsRoute,
+    customizeRoute,
     extensionPageRoute,
     editorPreviewRoute,
   ]),

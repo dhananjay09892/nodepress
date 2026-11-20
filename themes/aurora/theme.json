@@ -10,6 +10,22 @@
       "label": "Front page layout",
       "options": ["blog", "business"],
       "default": "blog"
+    },
+    "accent": {
+      "type": "color",
+      "label": "Accent color (links and focus ring)",
+      "default": "#0b5cad"
+    },
+    "font": {
+      "type": "select",
+      "label": "Font",
+      "options": ["system", "serif", "mono"],
+      "default": "system"
+    },
+    "logo": {
+      "type": "image",
+      "label": "Logo (address of an image)",
+      "default": ""
     }
   },
   "templates": "templates",

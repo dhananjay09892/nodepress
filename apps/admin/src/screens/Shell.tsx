@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from '@tanstack/react-router';
 import { logout } from '../api.js';
 import { fetchExtensions } from '../extensions.js';
 import { fetchMenus } from '../menus.js';
+import { fetchThemeSettings } from '../customizer.js';
 import { fetchWidgets } from '../widgets.js';
 import { NAV_ITEMS } from '../nav.js';
 import { sessionQuery } from '../session.js';
@@ -35,6 +36,14 @@ export function Shell() {
     queryKey: ['widgets'],
     queryFn: fetchWidgets,
     staleTime: 60_000,
+  });
+
+  // And the customizer; it also needs an active theme, so any failure keeps the entry hidden.
+  const customizer = useQuery({
+    queryKey: ['theme-settings'],
+    queryFn: fetchThemeSettings,
+    staleTime: 60_000,
+    retry: false,
   });
 
   const signOut = useMutation({
@@ -74,6 +83,11 @@ export function Shell() {
           {widgets.data ? (
             <Link to="/widgets" className={linkClass} activeProps={activeClass}>
               Widgets
+            </Link>
+          ) : null}
+          {customizer.data ? (
+            <Link to="/customize" className={linkClass} activeProps={activeClass}>
+              Customize
             </Link>
           ) : null}
           {extensions.data?.menu.map((item) => (

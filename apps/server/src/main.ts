@@ -41,6 +41,7 @@ import {
 import helloPlugin from '@nodepress/plugin-hello';
 import { createApp } from './app.js';
 import { createBodyRenderer } from './body.js';
+import { ThemeSettingsService } from './theme-settings.js';
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -222,6 +223,7 @@ function readThemeSettings(): Record<string, unknown> {
   return {};
 }
 const themeSettings = readThemeSettings();
+const themeSettingsService = new ThemeSettingsService(options);
 
 const capabilities = createCapabilities(np.hooks);
 const menuService = createMenuService({ options });
@@ -250,7 +252,16 @@ const app = createApp(np, database, {
   permalinks,
   themes: {
     service: themes,
-    settings: () => themeSettings,
+    // Saved customizer values win over THEME_SETTINGS, which only sets starting values.
+    settings: async () => ({
+      ...themeSettings,
+      ...(themes.active
+        ? await themeSettingsService.saved(
+            themes.active.manifest.name,
+            themes.active.manifest.settings,
+          )
+        : {}),
+    }),
     renderBody: createBodyRenderer({ hooks: np.hooks, logger: np.logger.child('render') }),
     tagline: () => options.get('tagline', ''),
     latestPosts: () =>
@@ -290,6 +301,7 @@ const app = createApp(np, database, {
   },
   menus: { service: menuService, capabilities },
   widgets: { service: widgetService, capabilities },
+  themeSettings: { service: themeSettingsService, capabilities },
   ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
   auth: {
     users,

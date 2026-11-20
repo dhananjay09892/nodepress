@@ -18,15 +18,16 @@ import type {
   WebhookService,
 } from '@nodepress/core';
 import type { ContentMetaTableStore, DatabaseHandle } from '@nodepress/db';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { createAdminExtensionsRoutes } from './admin-extensions-api.js';
 import { createAdminHandler } from './admin.js';
-import { createAuth, type AuthOptions } from './auth.js';
+import { createAuth, type AuthEnv, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
+import { createThemeSettingsRoutes, type ThemeSettingsService } from './theme-settings.js';
 import { createSettingsRoutes } from './settings-api.js';
 import {
   createThemeAssetsHandler,
@@ -119,6 +120,12 @@ export interface AppOptions {
     service: Pick<WidgetService, 'types' | 'getAreas' | 'setAreas' | 'forAreas'>;
     capabilities: Capabilities;
   };
+  /**
+   * Enables `/api/v1/theme-settings` (needs `auth` and `themes`): the theme customizer's saved
+   * values, `edit_theme_options` only. Signed-in users with that capability can also preview
+   * unsaved values on any themed page with `?np_preview=<JSON of setting values>`.
+   */
+  themeSettings?: { service: ThemeSettingsService; capabilities: Capabilities };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
   /**
@@ -150,8 +157,9 @@ export interface AppOptions {
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
   const app = new Hono();
 
-  if (options.auth) {
-    const auth = createAuth(options.auth);
+  const sessionAuth = options.auth ? createAuth(options.auth) : undefined;
+  if (options.auth && sessionAuth) {
+    const auth = sessionAuth;
     app.route('/api/v1/auth', auth.routes);
     if (options.auth.apiTokens) app.route('/api/v1/tokens', auth.tokenRoutes);
     if (options.content) {
@@ -207,6 +215,16 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       };
       app.route('/api/v1/menus', createMenusRoutes(auth, menuRoutes));
       app.route('/api/v1/menu-locations', createMenuLocationsRoutes(auth, menuRoutes));
+    }
+    if (options.themeSettings && options.themes) {
+      app.route(
+        '/api/v1/theme-settings',
+        createThemeSettingsRoutes(auth, {
+          themes: options.themes.service,
+          settings: options.themeSettings.service,
+          capabilities: options.themeSettings.capabilities,
+        }),
+      );
     }
     if (options.widgets) {
       app.route(
@@ -273,11 +291,38 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
   const { permalinks, themes } = options;
 
   /** The page drawn by the active theme, or undefined to use the built-in page. */
+  /**
+   * Unsaved customizer values from `?np_preview=<JSON>`, only for a signed-in user who may edit
+   * theme options; everyone else gets `undefined` and the normal page. Such pages are never cached.
+   */
+  async function previewOverrides(c: Context): Promise<Record<string, unknown> | undefined> {
+    const raw = c.req.query('np_preview');
+    if (raw === undefined || !sessionAuth || !options.themeSettings) return undefined;
+    c.header('Cache-Control', 'no-store');
+    c.header('X-Robots-Tag', 'noindex');
+    if (raw.length > 4096) return undefined;
+    const authContext = c as unknown as Context<AuthEnv>;
+    await sessionAuth.loadSession(authContext, async () => {});
+    const user = authContext.get('auth')?.user;
+    if (!user || !(await options.themeSettings.capabilities.can(user, 'edit_theme_options'))) {
+      return undefined;
+    }
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async function renderThemed(
     route: { kind: 'content'; content: Content } | { kind: 'not_found' } | { kind: 'front' },
     path: string,
     siteName: string,
     status: 200 | 404,
+    preview?: Record<string, unknown>,
   ): Promise<string | undefined> {
     if (!themes?.service.active) return undefined;
     const target: TemplateTarget =
@@ -308,10 +353,10 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
             )
           : undefined;
       const tagline = themes.tagline ? await themes.tagline() : '';
-      const settings = resolveThemeSettings(
-        theme.manifest.settings,
-        themes.settings ? await themes.settings() : {},
-      );
+      const settings = resolveThemeSettings(theme.manifest.settings, {
+        ...(themes.settings ? await themes.settings() : {}),
+        ...preview,
+      });
       // Menus are optional: a failure here shows the page without them.
       const menus = options.menus
         ? await options.menus.service
@@ -361,7 +406,13 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
   // is used when there is no active theme or its template fails.
   app.get('/', async (c) => {
     const siteName = String(np.config.siteName ?? 'NodePress');
-    const themed = await renderThemed({ kind: 'front' }, '/', siteName, 200);
+    const themed = await renderThemed(
+      { kind: 'front' },
+      '/',
+      siteName,
+      200,
+      await previewOverrides(c),
+    );
     if (themed !== undefined) {
       return c.html(await np.hooks.applyFilters('render:html', themed, { path: c.req.path }));
     }
@@ -394,7 +445,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       const siteName = String(np.config.siteName ?? 'NodePress');
       const status = route.kind === 'content' ? (200 as const) : (404 as const);
 
-      const themed = await renderThemed(route, path, siteName, status);
+      const themed = await renderThemed(route, path, siteName, status, await previewOverrides(c));
       if (themed !== undefined) {
         return c.html(await np.hooks.applyFilters('render:html', themed, { path }), status);
       }

@@ -79,11 +79,35 @@ export async function renderTemplate(
   return /^\s*<!doctype/i.test(html) ? html : `<!doctype html>${html}`;
 }
 
+const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u001f\u007f]/;
+
+/** Whether `value` is a link to an image: empty (none), a site path or an http(s) address. */
+function isImageUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  if (value === '') return true;
+  if (value.length > 2000 || CONTROL.test(value) || /\s/.test(value)) return false;
+  if (value.startsWith('/')) return !value.startsWith('//') && !value.includes('\\');
+  return /^https?:\/\/[^\s/?#]+/i.test(value);
+}
+
+/** Whether `value` fits the setting `spec` (one entry of a theme's `settings` schema). */
+export function settingFits(spec: Record<string, unknown>, value: unknown): boolean {
+  const { type, options } = spec;
+  if (type === 'select') return Array.isArray(options) && options.includes(value);
+  if (type === 'color') return typeof value === 'string' && HEX_COLOR.test(value);
+  if (type === 'image') return isImageUrl(value);
+  if (type === 'string' || type === 'boolean' || type === 'number') return typeof value === type;
+  return false;
+}
+
 /**
  * The settings a template receives: the `default` of every setting in `theme.json`, with
  * `overrides` applied for known keys whose value fits the schema (`select` values must be one
- * of `options`; `string`, `boolean` and `number` must have that type). Unknown keys and bad
- * values are ignored, so a stale or hand-edited override can never break a template.
+ * of `options`; `color` a `#rgb` or `#rrggbb` value; `image` empty, a site path or an http(s)
+ * address; `string`, `boolean` and `number` must have that type). Unknown keys and bad values
+ * are ignored, so a stale or hand-edited override can never break a template.
  */
 export function resolveThemeSettings(
   schema: Record<string, unknown>,
@@ -92,15 +116,9 @@ export function resolveThemeSettings(
   const result: Record<string, unknown> = {};
   for (const [key, spec] of Object.entries(schema)) {
     if (typeof spec !== 'object' || spec === null || Array.isArray(spec)) continue;
-    const { type, default: fallback, options } = spec as Record<string, unknown>;
-    const fits = (value: unknown): boolean => {
-      if (type === 'select') return Array.isArray(options) && options.includes(value);
-      if (type === 'string' || type === 'boolean' || type === 'number')
-        return typeof value === type;
-      return false;
-    };
-    if (fits(overrides[key])) result[key] = overrides[key];
-    else if (fits(fallback)) result[key] = fallback;
+    const fields = spec as Record<string, unknown>;
+    if (settingFits(fields, overrides[key])) result[key] = overrides[key];
+    else if (settingFits(fields, fields.default)) result[key] = fields.default;
   }
   return result;
 }
