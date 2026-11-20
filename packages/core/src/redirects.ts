@@ -81,7 +81,10 @@ export function normalizeFrom(value: unknown): string {
   }
   const base = from.endsWith('*') ? from.slice(0, -1) : from;
   if (RESERVED.some((r) => base === r || base.startsWith(`${r}/`))) {
-    throw new RedirectValidationError('from', 'Paths under /api, /admin and /uploads cannot be redirected.');
+    throw new RedirectValidationError(
+      'from',
+      'Paths under /api, /admin and /uploads cannot be redirected.',
+    );
   }
   return from;
 }
@@ -115,7 +118,10 @@ export function normalizeTo(value: unknown): string {
 function normalizeStatus(value: unknown): RedirectStatus {
   const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
   if (n === 301 || n === 302) return n;
-  throw new RedirectValidationError('status', 'The status must be 301 (permanent) or 302 (temporary).');
+  throw new RedirectValidationError(
+    'status',
+    'The status must be 301 (permanent) or 302 (temporary).',
+  );
 }
 
 /** The path part of a target that stays on this site, or `undefined` for another site. */
@@ -312,7 +318,10 @@ export class RedirectsService {
             report.updated++;
           } else {
             if (rules.length >= MAX_REDIRECTS) {
-              throw new RedirectValidationError('csv', `At most ${MAX_REDIRECTS} redirects are allowed.`);
+              throw new RedirectValidationError(
+                'csv',
+                `At most ${MAX_REDIRECTS} redirects are allowed.`,
+              );
             }
             rules = [...rules, { id: nextId++, ...rule }];
             report.created++;
@@ -349,7 +358,10 @@ export class RedirectsService {
       throw new RedirectValidationError('from', `At most ${MAX_REDIRECTS} redirects are allowed.`);
     }
     if (to.includes('*') && !from.endsWith('*')) {
-      throw new RedirectValidationError('to', 'A "*" in the new address needs a "*" at the end of the old path.');
+      throw new RedirectValidationError(
+        'to',
+        'A "*" in the new address needs a "*" at the end of the old path.',
+      );
     }
     const target = localPath(to);
     const rule: Redirect = { id: ignoreId ?? -1, from, to, status };

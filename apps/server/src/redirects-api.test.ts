@@ -93,10 +93,19 @@ async function signIn(email: string) {
     body: JSON.stringify({ email, password: PASSWORD }),
   });
   const { csrfToken } = (await res.json()) as { csrfToken: string };
-  return { cookie: (res.headers.get('set-cookie') ?? '').split(';')[0]!, 'x-csrf-token': csrfToken };
+  return {
+    cookie: (res.headers.get('set-cookie') ?? '').split(';')[0]!,
+    'x-csrf-token': csrfToken,
+  };
 }
 
-function call(method: string, path: string, headers: Record<string, string>, body?: unknown, type = 'application/json') {
+function call(
+  method: string,
+  path: string,
+  headers: Record<string, string>,
+  body?: unknown,
+  type = 'application/json',
+) {
   return app.request(`${BASE}/api/v1/redirects${path}`, {
     method,
     headers: { ...(body === undefined ? {} : { 'content-type': type }), ...headers },
@@ -155,7 +164,13 @@ describe('managing rules', () => {
 describe('CSV import', () => {
   it('imports good rows and reports bad lines', async () => {
     const admin = await signIn('admin@example.com');
-    const res = await call('POST', '/import', admin, 'from,to,status\n/a,/b\n/c,/d,302\nbad,/x\n', 'text/csv');
+    const res = await call(
+      'POST',
+      '/import',
+      admin,
+      'from,to,status\n/a,/b\n/c,/d,302\nbad,/x\n',
+      'text/csv',
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       created: 2,
@@ -169,7 +184,9 @@ describe('CSV import', () => {
   it('refuses other content types, oversized files and broken CSV', async () => {
     const admin = await signIn('admin@example.com');
     expect((await call('POST', '/import', admin, '{}', 'application/json')).status).toBe(415);
-    expect((await call('POST', '/import', admin, 'x'.repeat(1024 * 1024 + 1), 'text/csv')).status).toBe(413);
+    expect(
+      (await call('POST', '/import', admin, 'x'.repeat(1024 * 1024 + 1), 'text/csv')).status,
+    ).toBe(413);
     const broken = await call('POST', '/import', admin, '"open', 'text/csv');
     expect(broken.status).toBe(400);
     expect(await broken.json()).toMatchObject({ field: 'csv' });

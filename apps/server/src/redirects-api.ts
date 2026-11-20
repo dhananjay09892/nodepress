@@ -71,7 +71,10 @@ export function createRedirectsRoutes(auth: Auth, options: RedirectsRoutesOption
     const body = await readBody(c);
     if (body instanceof Response) return body;
     try {
-      return c.json({ redirect: await redirects.create(body as { from: unknown; to: unknown }) }, 201);
+      return c.json(
+        { redirect: await redirects.create(body as { from: unknown; to: unknown }) },
+        201,
+      );
     } catch (error) {
       return fail(c, error);
     }

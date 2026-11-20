@@ -35,7 +35,21 @@ describe('normalizeFrom / normalizeTo', () => {
   });
 
   it('refuses unusable old paths', () => {
-    for (const bad of ['old', '//evil.example', '/', '/a?b=1', '/a#x', '/a b', '/a*/b', '/api/v1', '/admin', '/admin/x*', '/uploads/a.png', 5, '']) {
+    for (const bad of [
+      'old',
+      '//evil.example',
+      '/',
+      '/a?b=1',
+      '/a#x',
+      '/a b',
+      '/a*/b',
+      '/api/v1',
+      '/admin',
+      '/admin/x*',
+      '/uploads/a.png',
+      5,
+      '',
+    ]) {
       expect(() => normalizeFrom(bad), String(bad)).toThrow(RedirectValidationError);
     }
     expect(() => normalizeFrom('/x'.repeat(300))).toThrow(RedirectValidationError);
@@ -45,7 +59,17 @@ describe('normalizeFrom / normalizeTo', () => {
   it('accepts site paths and http(s) URLs only', () => {
     expect(normalizeTo('/new?x=1#y')).toBe('/new?x=1#y');
     expect(normalizeTo('https://example.com/a')).toBe('https://example.com/a');
-    for (const bad of ['', 'new', '//evil.example', '/\\evil', 'javascript:alert(1)', 'ftp://x.y', '/a b', '/a\nb', 7]) {
+    for (const bad of [
+      '',
+      'new',
+      '//evil.example',
+      '/\\evil',
+      'javascript:alert(1)',
+      'ftp://x.y',
+      '/a b',
+      '/a\nb',
+      7,
+    ]) {
       expect(() => normalizeTo(bad), String(bad)).toThrow(RedirectValidationError);
     }
   });
@@ -131,7 +155,9 @@ describe('RedirectsService', () => {
 
   it('a "*" in the target needs a wildcard rule', async () => {
     const { redirects } = setup();
-    await expect(redirects.create({ from: '/a', to: '/b/*' })).rejects.toMatchObject({ field: 'to' });
+    await expect(redirects.create({ from: '/a', to: '/b/*' })).rejects.toMatchObject({
+      field: 'to',
+    });
   });
 
   it('imports CSV: header skipped, status optional, existing rules replaced, bad rows reported', async () => {
@@ -173,13 +199,17 @@ describe('RedirectsService', () => {
   it('rejects a malformed or oversized file and limits the number of rules', async () => {
     const { redirects } = setup();
     await expect(redirects.importCsv('"unclosed')).rejects.toBeInstanceOf(RedirectValidationError);
-    await expect(redirects.importCsv('x'.repeat(1024 * 1024 + 1))).rejects.toMatchObject({ field: 'csv' });
+    await expect(redirects.importCsv('x'.repeat(1024 * 1024 + 1))).rejects.toMatchObject({
+      field: 'csv',
+    });
     expect(MAX_REDIRECTS).toBe(5000);
   });
 
   it('serialises concurrent writes', async () => {
     const { redirects } = setup();
-    await Promise.all(Array.from({ length: 10 }, (_, i) => redirects.create({ from: `/p${i}`, to: `/q${i}` })));
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) => redirects.create({ from: `/p${i}`, to: `/q${i}` })),
+    );
     const list = await redirects.list();
     expect(list).toHaveLength(10);
     expect(new Set(list.map((r) => r.id)).size).toBe(10);
