@@ -288,7 +288,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 - [ ] Private beta with 10–20 real sites (bloggers, small businesses, 2–3 agencies)
 - [ ] Security review (auth, uploads, XSS/CSRF/SQLi, plugin permissions) — security headers, `SECURITY.md`, audit job and a first review done (N39, `docs/security-review.md`); second pass is N62
-- [ ] Performance budget: <100 ms TTFB cached, Lighthouse 95+ on default theme
+- [x] Performance budget: <100 ms TTFB cached, Lighthouse 95+ on default theme — enforced in CI (N41): the smoke job times cached pages, the Lighthouse job also scores performance
 - [ ] Accessibility audit of admin + default theme (WCAG 2.1 AA)
 - [ ] Docs site, landing page, launch posts
 - [ ] **v1.0 public release**

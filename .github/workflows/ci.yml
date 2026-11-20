@@ -143,6 +143,9 @@ jobs:
           echo "$BODY" | grep -q '<p>Smoke paragraph</p>'
           echo "$BODY" | grep -q '<li>Smoke item</li>'
 
+          echo "--- performance budget (cached pages: median and p95 under 100 ms) ---"
+          node dist/perf-cli.js http://localhost:3000 / /smoke-page /sitemap.xml /feed.xml
+
           echo "Smoke test passed ✅"
       - name: Show server log
         if: always()
@@ -276,13 +279,13 @@ jobs:
               sleep 1
             done
             npx --yes lighthouse@12.3.0 "http://localhost:3000$path" \
-              --only-categories=accessibility --output=json \
+              --only-categories=accessibility,performance --output=json \
               --output-path="lh-$layout-$scheme.json" --quiet \
               --chrome-flags="$flags"
             kill "$pid" || true
             wait "$pid" 2>/dev/null || true
-            echo "$layout / $scheme / $path: accessibility $(jq '.categories.accessibility.score * 100' "lh-$layout-$scheme.json")"
-            jq -e '.categories.accessibility.score >= 0.95' "lh-$layout-$scheme.json" > /dev/null
+            echo "$layout / $scheme / $path: accessibility $(jq '.categories.accessibility.score * 100' "lh-$layout-$scheme.json"), performance $(jq '.categories.performance.score * 100' "lh-$layout-$scheme.json")"
+            jq -e '.categories.accessibility.score >= 0.95 and .categories.performance.score >= 0.95' "lh-$layout-$scheme.json" > /dev/null
           }
           audit blog light /
           audit business light /
