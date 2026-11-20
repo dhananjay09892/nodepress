@@ -13,6 +13,7 @@ Scope of this pass: browser-facing headers, the upload serving path, and a check
 | 5   | The CSP allows inline styles (`style-src 'unsafe-inline'`) because themes and the editor use them.                                  | Accepted for now; script injection is still blocked. Follow-up N62 removes it where possible.                                                                      |
 | 6   | Rate limits (login, contact form) are in memory per process.                                                                        | Documented in `SECURITY.md`. A shared store is future work for multi-instance deployments.                                                                         |
 | 7   | Plugins are trusted code; permissions are declared, not enforced, except `database`.                                                | Documented in `SECURITY.md` and the plugin screen text; sandboxing is out of scope for 1.0 (see PLAN.md).                                                          |
+| 8 | The first audit run found advisories in `zod` (memory exhaustion on oversized collections, high) and `drizzle-orm` (SQL injection through improperly escaped identifiers, high; fixed in 0.45.2), plus one moderate. | `zod` fixed (4.6.6). `drizzle-orm` and the moderate one are open: they need their own upgrade PR (drizzle-orm 0.38 to 0.45 and drizzle-kit, with the migrations regenerated). |
 
 ## Checked and found as claimed
 
