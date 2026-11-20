@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { FunctionComponent } from 'react';
 
 /**
  * A sidebar screen that lives in its own file. Files named `screens/<Name>.screen.tsx` that
@@ -13,7 +13,7 @@ export interface AdminScreen {
   label: string;
   /** Sidebar position among registered screens: lower comes first; ties sort by label. */
   order?: number;
-  component: ComponentType;
+  component: FunctionComponent;
   /**
    * Resolves to a truthy value when the signed-in user may use the screen. A falsy value or an
    * error keeps the sidebar entry hidden (the usual check is the screen's API answering 403).
