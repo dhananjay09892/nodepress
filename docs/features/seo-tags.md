@@ -1,0 +1,3 @@
+# SEO tags
+
+SEO tags: themes receive a `meta` prop (`description` from the excerpt, else the tagline, else the site name; `canonical`; `feedUrl` when the site serves `/feed.xml`; and `og` with `title`, `description`, `type` (`article` for posts, `website` otherwise), `url`, `siteName` and `image` from the item's `featured_image` custom field). Absolute URLs use `SITE_URL`, else the request's origin; the 404 page has no canonical or `og:url`. Plugins change the tags with the `meta:tags` filter (value: the meta object, context: `{ path, status, content? }`); a result that is not valid meta tags is ignored. Aurora draws the description, canonical link, RSS `<link rel="alternate">` and the Open Graph tags in `<head>`, all escaped.

@@ -30,3 +30,14 @@ pnpm format
   `gh api -X POST repos/dhananjay09892/nodepress/actions/workflows/refresh-lockfile.yml/dispatches -f ref=BRANCH`
   then `git pull` its commit. Rely on the PR's CI for lint, types, tests and the server smoke test.
 - `gh pr ...` does not work here (GraphQL blocked); use `gh api` REST endpoints.
+
+## Avoiding merge conflicts
+
+Parallel branches conflict when they edit the same line or insert at the same spot. Keep shared files stable:
+
+- **Feature docs go in `docs/features/<feature>.md`**, one file per feature. Do not add feature paragraphs to `README.md` (it only links to that folder) and do not list features in an index.
+- **`PLAN.md` and `docs/QUEUE.md`**: change only the line or block of your own task. One roadmap line per feature, never several features on one line. Put follow-up tasks right after their parent task, never at the end of a phase or at a shared insertion marker.
+- **Barrel files** (`packages/core/src/index.ts` and similar): add your export block right after the block of the module most related to yours, not at the end of the file.
+- **Option lists** (`createApp`, `main.ts`): add your option next to the related ones, in its own lines.
+- **Before every push** run `git fetch origin && git merge origin/main`, resolve, re-run tests, then push. A pull request that conflicts runs no CI.
+- Keep pull requests small and merge them in order; a stacked branch names its base in the PR description.
