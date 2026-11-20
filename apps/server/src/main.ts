@@ -296,6 +296,7 @@ const pageCache =
       });
 pageCache?.attach();
 const contentMeta = createContentMetaStore(database);
+const redirects = createRedirects({ options });
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
   ...(pageCache ? { pageCache } : {}),
