@@ -23,6 +23,7 @@ import {
   createUsersService,
   discoverThemes,
   createWebhookService,
+  createWidgetService,
 } from '@nodepress/core';
 import {
   createApiTokensStore,
@@ -223,6 +224,27 @@ function readThemeSettings(): Record<string, unknown> {
 const themeSettings = readThemeSettings();
 
 const capabilities = createCapabilities(np.hooks);
+const menuService = createMenuService({ options });
+// Widgets: built-in text, menu and recent-posts types plus whatever plugins registered.
+const widgetService = createWidgetService({
+  options,
+  hooks: np.hooks,
+  logger: np.logger.child('widgets'),
+  getMenu: (id) => menuService.get(id),
+  recentPosts: async (limit) =>
+    Promise.all(
+      (
+        await content.list({
+          type: 'post',
+          status: 'published',
+          orderBy: 'publishedAt',
+          direction: 'desc',
+          limit,
+        })
+      ).map(async (post) => ({ title: post.title, url: await permalinks.pathFor(post) })),
+    ),
+});
+await widgetService.refresh();
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
   permalinks,
@@ -266,7 +288,8 @@ const app = createApp(np, database, {
     }),
     capabilities,
   },
-  menus: { service: createMenuService({ options }), capabilities },
+  menus: { service: menuService, capabilities },
+  widgets: { service: widgetService, capabilities },
   ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
   auth: {
     users,

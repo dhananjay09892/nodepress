@@ -1,4 +1,5 @@
 import type { MenuItem, TemplateProps } from '@nodepress/core';
+import { raw } from 'hono/html';
 import type { Child } from 'hono/jsx';
 
 /** A menu as nested lists; the link to the current page is marked with `aria-current`. */
@@ -33,6 +34,7 @@ export function Layout(props: {
   const { page, title, isFront, children } = props;
   const primary = page.menus?.primary;
   const footer = page.menus?.footer;
+  const sidebar = page.widgets?.sidebar;
   const documentTitle = isFront ? page.siteName : `${title} | ${page.siteName}`;
   return (
     <html lang="en">
@@ -68,9 +70,27 @@ export function Layout(props: {
             </nav>
           </div>
         </header>
-        <main id="main" class="np-aurora-wrap np-aurora-main" tabindex={-1}>
-          {children}
-        </main>
+        {sidebar && sidebar.length > 0 ? (
+          <div class="np-aurora-wrap np-aurora-has-sidebar">
+            <main id="main" class="np-aurora-main" tabindex={-1}>
+              {children}
+            </main>
+            <aside class="np-aurora-sidebar" aria-label="Sidebar">
+              {sidebar.map((widget) => (
+                <section
+                  class={`np-aurora-widget np-aurora-widget-${widget.type.replace(/[^a-z0-9-]/g, '-')}`}
+                >
+                  {widget.title ? <h2 class="np-aurora-widget-title">{widget.title}</h2> : null}
+                  {raw(widget.html)}
+                </section>
+              ))}
+            </aside>
+          </div>
+        ) : (
+          <main id="main" class="np-aurora-wrap np-aurora-main" tabindex={-1}>
+            {children}
+          </main>
+        )}
         <footer class="np-aurora-footer">
           <div class="np-aurora-wrap">
             {footer && footer.length > 0 ? (

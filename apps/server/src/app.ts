@@ -5,6 +5,7 @@ import type {
   ContentTypeRegistry,
   MediaService,
   MenuService,
+  WidgetService,
   NodePress,
   OptionsService,
   PermalinkService,
@@ -25,6 +26,7 @@ import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
+import { createWidgetsRoutes } from './widgets-api.js';
 import { createSettingsRoutes } from './settings-api.js';
 import {
   createThemeAssetsHandler,
@@ -106,6 +108,15 @@ export interface AppOptions {
       | 'setLocations'
       | 'forLocations'
     >;
+    capabilities: Capabilities;
+  };
+  /**
+   * Enables `/api/v1/widgets` (needs `auth`): place widgets in the active theme's widget areas,
+   * `edit_theme_options` only. With `themes`, templates also receive the rendered widgets as
+   * `widgets`.
+   */
+  widgets?: {
+    service: Pick<WidgetService, 'types' | 'getAreas' | 'setAreas' | 'forAreas'>;
     capabilities: Capabilities;
   };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
@@ -196,6 +207,16 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       };
       app.route('/api/v1/menus', createMenusRoutes(auth, menuRoutes));
       app.route('/api/v1/menu-locations', createMenuLocationsRoutes(auth, menuRoutes));
+    }
+    if (options.widgets) {
+      app.route(
+        '/api/v1/widgets',
+        createWidgetsRoutes(auth, {
+          widgets: options.widgets.service,
+          capabilities: options.widgets.capabilities,
+          areas: () => options.themes?.service.active?.manifest.widgetAreas ?? {},
+        }),
+      );
     }
     if (options.adminExtensions) {
       app.route(
@@ -300,6 +321,18 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
               return {};
             })
         : {};
+      // Widgets are optional too: a failure here shows the page without them.
+      const widgets = options.widgets
+        ? await options.widgets.service
+            .forAreas(Object.keys(theme.manifest.widgetAreas))
+            .then((areas) =>
+              Object.fromEntries(Object.entries(areas).filter(([, list]) => list.length > 0)),
+            )
+            .catch((error: unknown) => {
+              np.logger.warn(`Widgets could not be loaded for ${path}: ${String(error)}`);
+              return {};
+            })
+        : {};
       return await renderTemplate(template.component, {
         siteName,
         path,
@@ -310,6 +343,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         tagline,
         settings,
         menus,
+        widgets,
         theme: {
           name: theme.manifest.name,
           version: theme.manifest.version,

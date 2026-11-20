@@ -214,7 +214,43 @@ h3 {
   margin: 0;
 }
 
+/* With a sidebar the page is main content plus a column of widgets; it stacks on small screens. */
+.np-aurora-has-sidebar {
+  flex: 1;
+  display: grid;
+  gap: 2rem;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+.np-aurora-has-sidebar > .np-aurora-main {
+  min-width: 0;
+  padding: 0;
+}
+.np-aurora-widget {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.np-aurora-widget-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+.np-aurora-widget p {
+  margin: 0 0 0.5rem;
+}
+.np-aurora-widget ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 @media (min-width: 48rem) {
+  .np-aurora-has-sidebar {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    max-width: 66rem;
+  }
   .np-aurora-wrap {
     padding: 0 1.5rem;
   }

@@ -257,7 +257,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 - [x] Theme loader + template hierarchy
 - [x] Default theme **Aurora** (blog + business layouts, responsive, accessible)
-- [ ] Menus & widgets/sidebar areas — menu service, API, theme menu locations and Aurora menus done (N24); admin Menus screen done (N51); widget areas (N52) to do
+- [ ] Menus & widgets/sidebar areas — menu service, API, theme menu locations and Aurora menus done (N24); admin Menus screen done (N51); widget service, API, plugin `registerWidget()` and Aurora sidebar done (N52); admin Widgets screen (N53) to do
 - [ ] Customizer with live preview
 - [ ] Page cache + SEO basics (meta, sitemap, RSS, Open Graph)
 
