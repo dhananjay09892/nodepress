@@ -6,7 +6,7 @@ import type {
   MediaService,
   MenuService,
   WidgetService,
-  type PageCache,
+  PageCache,
   NodePress,
   OptionsService,
   PermalinkService,
