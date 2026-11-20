@@ -93,6 +93,7 @@ try {
     runner: createSqlRunner(database),
     logger: np.logger.child('plugins'),
   });
+  loadedPackages = loaded.registered;
 } catch (error) {
   np.logger.error(
     `Plugin packages were not loaded: ${error instanceof Error ? error.message : String(error)}`,
