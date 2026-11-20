@@ -56,7 +56,8 @@ export function validateEmail(value: string): string {
   const email = value.trim();
   if (
     email.length > 254 ||
-    /[\s<>(),;:\\"\u0000-\u001f\u007f]/.test(email) ||
+    /[\s<>(),;:\\"]/.test(email) ||
+    CONTROL.test(email) ||
     !/^[^@]+@[^@.][^@]*\.[^@.]+$/.test(email)
   ) {
     throw new InstallError('adminEmail', 'Enter a valid email address.');
