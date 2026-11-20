@@ -201,7 +201,8 @@ export default definePlugin({
               name: 'noindex_site',
               type: 'boolean',
               label: 'Ask search engines not to index this site',
-              description: 'Adds a noindex, nofollow robots tag to every page. Use it while building.',
+              description:
+                'Adds a noindex, nofollow robots tag to every page. Use it while building.',
               default: false,
             },
             {

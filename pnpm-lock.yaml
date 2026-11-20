@@ -92,6 +92,9 @@ importers:
       '@nodepress/plugin-hello':
         specifier: workspace:*
         version: link:../../plugins/hello-nodepress
+      '@nodepress/plugin-seo':
+        specifier: workspace:*
+        version: link:../../plugins/seo
       hono:
         specifier: ^4.6.0
         version: 4.13.17
@@ -172,6 +175,12 @@ importers:
         version: link:../core
 
   plugins/hello-nodepress:
+    dependencies:
+      '@nodepress/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
+  plugins/seo:
     dependencies:
       '@nodepress/sdk':
         specifier: workspace:*

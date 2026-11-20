@@ -104,7 +104,11 @@ describe('applySeo', () => {
   });
 
   it('keeps the original tags when nothing is customised', () => {
-    const out = applySeo(meta(), { status: 200, content: post }, settings({ schemaEnabled: false }));
+    const out = applySeo(
+      meta(),
+      { status: 200, content: post },
+      settings({ schemaEnabled: false }),
+    );
     expect(out).toEqual(meta());
   });
 
@@ -122,14 +126,12 @@ describe('applySeo', () => {
     expect(applySeo(meta(), base, settings({ noindexSite: true })).robots).toBe(
       'noindex, nofollow',
     );
-    expect(
-      applySeo(meta(), { ...base, fields: { seo_noindex: true } }, settings()).robots,
-    ).toBe('noindex, follow');
+    expect(applySeo(meta(), { ...base, fields: { seo_noindex: true } }, settings()).robots).toBe(
+      'noindex, follow',
+    );
     expect(applySeo(meta(), { status: 404 }, settings()).robots).toBe('noindex');
     expect(applySeo(meta(), base, settings()).robots).toBeUndefined();
-    expect(
-      applySeo(meta({ robots: 'noarchive' }), base, settings()).robots,
-    ).toBe('noarchive');
+    expect(applySeo(meta({ robots: 'noarchive' }), base, settings()).robots).toBe('noarchive');
   });
 
   it('JSON-LD: Article for posts with the publisher, WebPage for pages', () => {
