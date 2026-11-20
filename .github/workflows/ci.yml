@@ -98,6 +98,15 @@ jobs:
           echo "$PAGE" | grep -q "CI Site"
           echo "$PAGE" | grep -q "Thanks for reading!"
 
+          echo "--- theme (404 page and assets) ---"
+          STATUS=$(curl -s -o notfound.html -w '%{http_code}' http://localhost:3000/nothing-here)
+          test "$STATUS" = "404"
+          grep -q 'class="np-starter"' notfound.html
+          grep -q '/themes/starter/assets/style.css' notfound.html
+          curl -fsSI http://localhost:3000/themes/starter/assets/style.css | tee style.headers
+          grep -qi '^cache-control: public, max-age=86400' style.headers
+          grep -qi '^etag:' style.headers
+
           echo "--- /admin/ ---"
           ADMIN=$(curl -fsS http://localhost:3000/admin/)
           echo "$ADMIN" | grep -q '<div id="root">'

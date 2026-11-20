@@ -1,0 +1,10 @@
+{
+  "name": "starter",
+  "version": "0.1.0",
+  "title": "Starter",
+  "description": "A minimal theme: header, content and a 404 page. Copy it to start your own.",
+  "supports": [],
+  "settings": {},
+  "templates": "templates",
+  "assets": "assets"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@nodepress/theme-starter",
+  "version": "0.0.0",
+  "description": "A minimal NodePress theme in TSX: copy this folder to start your own",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@nodepress/core": "workspace:*"
+  }
+}

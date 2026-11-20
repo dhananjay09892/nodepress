@@ -255,7 +255,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 3: Themes & front end (weeks 12–14)
 
-- [ ] Theme loader + template hierarchy
+- [x] Theme loader + template hierarchy
 - [ ] Default theme **Aurora** (blog + business layouts, responsive, accessible)
 - [ ] Menus & widgets/sidebar areas
 - [ ] Customizer with live preview

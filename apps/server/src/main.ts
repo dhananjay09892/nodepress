@@ -18,7 +18,9 @@ import {
   createSharpProcessor,
   createSessionsService,
   createTaxonomyService,
+  createThemeService,
   createUsersService,
+  discoverThemes,
   createWebhookService,
 } from '@nodepress/core';
 import {
@@ -185,10 +187,26 @@ const adminDir =
 const admin = existsSync(adminDir) ? { dir: adminDir } : undefined;
 if (!admin) np.logger.info('Admin app not built (run `pnpm build`); /admin is disabled.');
 
+// Themes live in ./themes (THEMES_DIR moves them); THEME picks the active one. A missing or broken
+// theme is logged and the built-in pages are used, so the site stays up.
+const themes = createThemeService({ hooks: np.hooks, logger: np.logger.child('themes') });
+const themesDir =
+  process.env.THEMES_DIR ?? fileURLToPath(new URL('../../../themes', import.meta.url));
+const found = await discoverThemes(themesDir);
+for (const { dir, message } of found.errors) np.logger.warn(`Theme "${dir}" skipped: ${message}`);
+themes.register(found.themes);
+const themeName = process.env.THEME ?? 'starter';
+if (themes.activate(themeName)) {
+  np.logger.info(`Active theme: ${themeName}`);
+} else {
+  np.logger.warn(`Theme "${themeName}" is not installed; using the built-in pages.`);
+}
+
 const capabilities = createCapabilities(np.hooks);
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
   permalinks,
+  themes: { service: themes },
   adminExtensions: { capabilities },
   content: {
     service: content,

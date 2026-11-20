@@ -7,3 +7,4 @@ uploads/
 /media/
 playwright-report/
 test-results/
+themes/*/templates/
