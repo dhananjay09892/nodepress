@@ -320,6 +320,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: import a WordPress WXR file (posts, pages, categories, tags, authors, media, comments as meta), rewrite internal links, keep URLs with a redirect map.
 - Done when: tests import a fixture WXR export and check content and redirects.
 
+### N55 · WordPress import: endpoint, admin screen, media and redirects
+
+- Depends on: N36
+- Scope: finish N36's first slice. `POST /api/v1/import/wordpress` (admin only, size limit) that runs `importWordPress` and returns its report; an admin Import screen with author matching (by email, or choose a user); download the files listed in `attachments` into the media library and rewrite image URLs and `_thumbnail_id`; serve the redirect map (store old path → new path and answer 301 before the 404).
+- Done when: an API test imports the fixture export, a Playwright test uploads it, and an old URL answers 301 to the new one.
+
 ### N37 · Backup and export
 
 - Depends on: N36
