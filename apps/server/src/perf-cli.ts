@@ -13,7 +13,9 @@ import {
 async function main(argv: string[]): Promise<number> {
   const [baseUrl, ...rest] = argv;
   if (!baseUrl || !/^https?:\/\//.test(baseUrl)) {
-    console.error('Usage: perf-cli <base-url> [path ...]   e.g. perf-cli http://localhost:3000 / /feed.xml');
+    console.error(
+      'Usage: perf-cli <base-url> [path ...]   e.g. perf-cli http://localhost:3000 / /feed.xml',
+    );
     return 2;
   }
   const number = (name: string, fallback: number): number => {

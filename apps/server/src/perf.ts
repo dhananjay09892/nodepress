@@ -83,9 +83,12 @@ export async function checkBudget(options: MeasureOptions): Promise<BudgetResult
     };
     reports.push(report);
     if (status !== 200) failures.push(`${path}: answered ${status}, expected 200`);
-    else if (cache !== 'hit') failures.push(`${path}: not served from the page cache (${cache ?? 'no header'})`);
+    else if (cache !== 'hit')
+      failures.push(`${path}: not served from the page cache (${cache ?? 'no header'})`);
     if (report.medianMs > budget) {
-      failures.push(`${path}: median ${report.medianMs.toFixed(1)} ms is over the ${budget} ms budget`);
+      failures.push(
+        `${path}: median ${report.medianMs.toFixed(1)} ms is over the ${budget} ms budget`,
+      );
     }
     if (report.p95Ms > budget) {
       failures.push(`${path}: p95 ${report.p95Ms.toFixed(1)} ms is over the ${budget} ms budget`);
@@ -100,6 +103,8 @@ export function formatReport(result: BudgetResult): string {
     (r) =>
       `${r.path}  status ${r.status}  cache ${r.cache ?? '-'}  median ${r.medianMs.toFixed(1)} ms  p95 ${r.p95Ms.toFixed(1)} ms  max ${r.maxMs.toFixed(1)} ms`,
   );
-  lines.push(result.failures.length ? `FAILED:\n${result.failures.join('\n')}` : 'Performance budget met');
+  lines.push(
+    result.failures.length ? `FAILED:\n${result.failures.join('\n')}` : 'Performance budget met',
+  );
   return lines.join('\n');
 }
