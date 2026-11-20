@@ -398,6 +398,15 @@ const app = createApp(np, database, {
     loaded: () => loadedPackages,
   },
   redirects: { redirects, capabilities },
+  wordpressImport: {
+    content,
+    taxonomies,
+    permalinks,
+    meta: contentMeta,
+    users,
+    capabilities,
+    logger: np.logger.child('import'),
+  },
   contact: { contact, capabilities, trustProxy: process.env.TRUST_PROXY === 'true' },
   auth: {
     users,

@@ -29,6 +29,7 @@ import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
+import { createImportRoutes, type ImportRoutesOptions } from './import-api.js';
 import { createRedirectsRoutes, type RedirectsRoutesOptions } from './redirects-api.js';
 import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
@@ -144,6 +145,11 @@ export interface AppOptions {
    * responsible for `cache.attach()`, which purges it when content or options change.
    */
   pageCache?: PageCache;
+  /**
+   * Enables `/api/v1/import/wordpress` (needs `auth`): import a WordPress export (WXR),
+   * `manage_options` only. Saves the old-URL map as redirects when `redirects` is also enabled.
+   */
+  wordpressImport?: Omit<ImportRoutesOptions, 'redirects'>;
   /**
    * Enables `/api/v1/redirects` (needs `auth`): manage redirect rules and import them from CSV,
    * `manage_options` only. With `permalinks`, a request for a path that has a rule is redirected
@@ -295,6 +301,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         createWebhookRoutes(auth, {
           webhooks: options.webhooks.service,
           capabilities: options.webhooks.capabilities,
+        }),
+      );
+    }
+    if (options.wordpressImport) {
+      app.route(
+        '/api/v1/import',
+        createImportRoutes(auth, {
+          ...options.wordpressImport,
+          ...(options.redirects ? { redirects: options.redirects.redirects } : {}),
         }),
       );
     }

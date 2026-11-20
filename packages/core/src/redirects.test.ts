@@ -205,6 +205,22 @@ describe('RedirectsService', () => {
     expect(MAX_REDIRECTS).toBe(5000);
   });
 
+  it('addMany keeps new rules, leaves existing ones alone and reports the rest', async () => {
+    const { redirects } = setup();
+    await redirects.create({ from: '/mine', to: '/owner-choice' });
+    const result = await redirects.addMany([
+      { from: '/a', to: '/b' },
+      { from: '/mine', to: '/imported' },
+      { from: 'bad', to: '/x' },
+      { from: '/b', to: '/a' },
+    ]);
+    expect(result.created).toBe(1);
+    expect(result.skipped.map((s) => s.from)).toEqual(['/mine', 'bad', '/b']);
+    expect(await redirects.match('/mine')).toEqual({ to: '/owner-choice', status: 301 });
+    expect(await redirects.match('/a')).toEqual({ to: '/b', status: 301 });
+    expect(await redirects.addMany([])).toEqual({ created: 0, skipped: [] });
+  });
+
   it('serialises concurrent writes', async () => {
     const { redirects } = setup();
     await Promise.all(
