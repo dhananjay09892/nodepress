@@ -175,7 +175,7 @@ export class MenuService {
     return (await this.#read()).menus.find((menu) => menu.id === id);
   }
 
-  async create(input: { name: unknown; items?: unknown }): Promise<Menu> {
+  async create(input: { name?: unknown; items?: unknown }): Promise<Menu> {
     const name = parseName(input.name);
     const items = parseMenuItems(input.items ?? []);
     return this.#serial(async () => {
