@@ -147,6 +147,34 @@ describe('front page', () => {
   });
 });
 
+describe('resolveThemeSettings color and image settings', () => {
+  const schema = {
+    accent: { type: 'color', default: '#0b5cad' },
+    logo: { type: 'image', default: '' },
+  };
+
+  it('accepts hex colours and image addresses', () => {
+    expect(resolveThemeSettings(schema, { accent: '#A00', logo: '/media/x.png' })).toEqual({
+      accent: '#A00',
+      logo: '/media/x.png',
+    });
+    expect(resolveThemeSettings(schema, { logo: 'https://cdn.example.com/l.svg' }).logo).toBe(
+      'https://cdn.example.com/l.svg',
+    );
+  });
+
+  it('falls back to the default for anything else', () => {
+    const bad = { accent: 'red', logo: 'javascript:alert(1)' };
+    expect(resolveThemeSettings(schema, bad)).toEqual({ accent: '#0b5cad', logo: '' });
+    for (const accent of ['#12', '#12345g', 'rgb(0,0,0)', '#0b5cad;x', 5]) {
+      expect(resolveThemeSettings(schema, { accent }).accent).toBe('#0b5cad');
+    }
+    for (const logo of ['//evil.test/x.png', '/a b.png', 'data:image/png;base64,AA', 5]) {
+      expect(resolveThemeSettings(schema, { logo }).logo).toBe('');
+    }
+  });
+});
+
 describe('resolveThemeSettings', () => {
   const schema = {
     layout: { type: 'select', options: ['blog', 'business'], default: 'blog' },

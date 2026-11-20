@@ -2,6 +2,33 @@ import type { MenuItem, TemplateProps } from '@nodepress/core';
 import { raw } from 'hono/html';
 import type { Child } from 'hono/jsx';
 
+const FONTS: Record<string, string> = {
+  system: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  serif: "Georgia, 'Times New Roman', serif",
+  mono: "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace",
+};
+const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/**
+ * CSS for the customizer's settings. Values are checked here as well as by the server, so only
+ * a hex colour and a known font ever reach the stylesheet. The accent replaces the light-scheme
+ * link and focus colours; dark mode keeps its own (a light accent on a dark page is not safe).
+ */
+export function customCss(settings: Record<string, unknown> | undefined): string {
+  const accent = settings?.accent;
+  const font = settings?.font;
+  let css = '';
+  if (typeof accent === 'string' && HEX.test(accent) && accent.toLowerCase() !== '#0b5cad') {
+    css +=
+      `:root{--link:${accent};--focus:${accent}}` +
+      '@media (prefers-color-scheme: dark){:root{--link:#8ab4f8;--focus:#8ab4f8}}';
+  }
+  if (typeof font === 'string' && font !== 'system' && FONTS[font]) {
+    css += `body.np-aurora{font-family:${FONTS[font]}}`;
+  }
+  return css;
+}
+
 /** A menu as nested lists; the link to the current page is marked with `aria-current`. */
 function MenuList(props: { items: MenuItem[]; path: string; nested?: boolean }) {
   const { items, path, nested } = props;
@@ -35,6 +62,8 @@ export function Layout(props: {
   const primary = page.menus?.primary;
   const footer = page.menus?.footer;
   const sidebar = page.widgets?.sidebar;
+  const css = customCss(page.settings);
+  const logo = typeof page.settings?.logo === 'string' ? page.settings.logo : '';
   const documentTitle = isFront ? page.siteName : `${title} | ${page.siteName}`;
   return (
     <html lang="en">
@@ -45,6 +74,7 @@ export function Layout(props: {
         {page.tagline ? <meta name="description" content={page.tagline} /> : null}
         <title>{documentTitle}</title>
         <link rel="stylesheet" href={`${page.theme.assetsUrl}/style.css`} />
+        {css ? <style>{raw(css)}</style> : null}
       </head>
       <body class="np-aurora">
         <a class="np-aurora-skip" href="#main">
@@ -57,6 +87,7 @@ export function Layout(props: {
               href="/"
               aria-current={page.path === '/' ? 'page' : undefined}
             >
+              {logo ? <img class="np-aurora-logo" src={logo} alt="" height="32" /> : null}
               {page.siteName}
             </a>
             <nav aria-label="Primary">

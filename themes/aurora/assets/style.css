@@ -108,10 +108,19 @@ h3 {
   padding-bottom: 1rem;
 }
 .np-aurora-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--text);
   font-size: 1.25rem;
   font-weight: 700;
   text-decoration: none;
+}
+.np-aurora-logo {
+  height: 2rem;
+  width: auto;
+  max-width: 8rem;
+  object-fit: contain;
 }
 .np-aurora-header nav a {
   display: inline-block;
