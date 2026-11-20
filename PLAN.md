@@ -265,7 +265,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 4: Plugin system (weeks 15–18)
 
-- [ ] Plugin manifest, loader, lifecycle, plugin migrations
+- [ ] Plugin manifest, loader, lifecycle, plugin migrations — packages with `plugin.json`, discovery, enabled state in the `plugins` table and SQL migrations done (N27); activation from the admin comes with N28
 - [ ] Install/activate/deactivate from admin (upload .zip or from registry)
 - [ ] `nodepress plugin create` scaffolder
 - [ ] First-party plugins: SEO, Contact Form, Redirects, Analytics (privacy-friendly)

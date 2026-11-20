@@ -27,6 +27,8 @@ import {
   createMemoryPageCache,
   createPageCache,
   createWidgetService,
+  loadPluginPackages,
+  PluginStateService,
 } from '@nodepress/core';
 import {
   createApiTokensStore,
@@ -36,8 +38,10 @@ import {
   createJobsStore,
   createMediaStore,
   createOptionsStore,
+  createPluginsStore,
   createSessionsStore,
   createSlugRedirectsStore,
+  createSqlRunner,
   createTaxonomyStore,
   createUsersStore,
 } from '@nodepress/db';
@@ -73,6 +77,28 @@ const jobs = createJobQueue({
 });
 np.plugins.useJobs(jobs);
 
+// Installed plugin packages (PLUGINS_DIR, default ./plugins-installed) that the site owner turned
+// on are registered before boot, so they activate together with the built-in plugins. The options
+// service is created here because migrations record what they applied in it.
+const options = createOptionsService({ store: createOptionsStore(database), hooks: np.hooks });
+const pluginsDir =
+  process.env.PLUGINS_DIR ?? fileURLToPath(new URL('../../../plugins-installed', import.meta.url));
+const pluginState = new PluginStateService(createPluginsStore(database));
+try {
+  await loadPluginPackages({
+    dir: pluginsDir,
+    state: pluginState,
+    plugins: np.plugins,
+    options,
+    runner: createSqlRunner(database),
+    logger: np.logger.child('plugins'),
+  });
+} catch (error) {
+  np.logger.error(
+    `Plugin packages were not loaded: ${error instanceof Error ? error.message : String(error)}`,
+  );
+}
+
 await np.boot();
 
 const users = createUsersService({
@@ -92,7 +118,6 @@ const apiTokens = createApiTokensService({
   hooks: np.hooks,
 });
 
-const options = createOptionsService({ store: createOptionsStore(database), hooks: np.hooks });
 // Plugin settings pages save their values through the options service.
 np.admin.useOptions(options);
 const contentStore = createContentStore(database);

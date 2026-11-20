@@ -8,3 +8,4 @@ uploads/
 playwright-report/
 test-results/
 themes/*/templates/
+plugins-installed/

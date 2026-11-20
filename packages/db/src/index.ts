@@ -138,6 +138,27 @@ function createPostgresDatabase(url: string, options: DatabaseOptions): Postgres
 }
 
 export { createOptionsStore, type OptionRecord, type OptionsTableStore } from './options-store.js';
+export { createPluginsStore, type PluginRecord, type PluginsTableStore } from './plugins-store.js';
+
+/** Runs one SQL statement as written (no parameters). Used for plugin-owned migrations. */
+export interface SqlStatementRunner {
+  readonly dialect: Dialect;
+  run(statement: string): Promise<void>;
+}
+
+/**
+ * A runner for raw SQL statements on whichever dialect the handle uses. Only for text that
+ * the site owner installed (plugin migration files); never pass user input to it.
+ */
+export function createSqlRunner(handle: DatabaseHandle): SqlStatementRunner {
+  return {
+    dialect: handle.dialect,
+    async run(statement) {
+      if (handle.dialect === 'postgres') await handle.db.execute(sql.raw(statement));
+      else await handle.db.run(sql.raw(statement));
+    },
+  };
+}
 export {
   createUsersStore,
   type UserRow,
