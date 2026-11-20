@@ -47,7 +47,8 @@ export async function fetchImportLimit(): Promise<{ maxBytes: number } | null> {
 /** The query string for the import call; empty when the defaults apply. */
 export function importQuery(options: WpImportOptions): string {
   const params = new URLSearchParams();
-  if (options.defaultAuthor !== undefined) params.set('default_author', String(options.defaultAuthor));
+  if (options.defaultAuthor !== undefined)
+    params.set('default_author', String(options.defaultAuthor));
   if (!options.matchAuthors) params.set('match_authors', 'false');
   const text = params.toString();
   return text ? `?${text}` : '';
@@ -123,7 +124,9 @@ export function summarizeReport(report: WpImportReport): string[] {
       `${saved.created} ${saved.created === 1 ? 'redirect was' : 'redirects were'} saved so old links keep working${saved.skipped.length ? ` (${saved.skipped.length} could not be saved)` : ''}.`,
     );
   } else if (report.redirects.length > 0) {
-    lines.push(`${report.redirects.length} old addresses differ from the new ones, but redirects are turned off on this site.`);
+    lines.push(
+      `${report.redirects.length} old addresses differ from the new ones, but redirects are turned off on this site.`,
+    );
   }
   if (report.attachments.length > 0) {
     lines.push(

@@ -61,9 +61,9 @@ describe('checkExportFile', () => {
 
 describe('describeImportError', () => {
   it('uses the server message for a bad file and plain sentences otherwise', () => {
-    expect(describeImportError(new ImportApiError(400, 'invalid_wxr', 'Not a WordPress export.'))).toBe(
-      'Not a WordPress export.',
-    );
+    expect(
+      describeImportError(new ImportApiError(400, 'invalid_wxr', 'Not a WordPress export.')),
+    ).toBe('Not a WordPress export.');
     expect(describeImportError(new ImportApiError(400, 'invalid_wxr'))).toMatch(/could not use/);
     expect(describeImportError(new ImportApiError(403, 'forbidden'))).toMatch(/permission/);
     expect(describeImportError(new ImportApiError(409, 'import_running'))).toMatch(/still running/);
@@ -91,9 +91,18 @@ describe('summarizeReport', () => {
         attachments: [{ url: 'https://x/y.png', title: 'y' }],
       }),
     );
-    expect(saved).toContain('1 redirect was saved so old links keep working (1 could not be saved).');
+    expect(saved).toContain(
+      '1 redirect was saved so old links keep working (1 could not be saved).',
+    );
     expect(saved).toContain('1 file is listed in the export but not downloaded yet.');
-    const off = summarizeReport(report({ redirects: [{ from: '/a', to: '/b' }, { from: '/c', to: '/d' }] }));
+    const off = summarizeReport(
+      report({
+        redirects: [
+          { from: '/a', to: '/b' },
+          { from: '/c', to: '/d' },
+        ],
+      }),
+    );
     expect(off.some((l) => l.includes('2 old addresses') && l.includes('turned off'))).toBe(true);
   });
 });
@@ -112,7 +121,11 @@ describe('API calls', () => {
 
   it('importWordPress posts the XML with the CSRF token and the chosen options', async () => {
     const fn = stubFetch(200, report());
-    const result = await importWordPress('<rss/>', { matchAuthors: false, defaultAuthor: 3 }, 'tok');
+    const result = await importWordPress(
+      '<rss/>',
+      { matchAuthors: false, defaultAuthor: 3 },
+      'tok',
+    );
     expect(result.created.posts).toBe(1);
     const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/v1/import/wordpress?default_author=3&match_authors=false');

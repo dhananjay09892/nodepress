@@ -45,7 +45,10 @@ test('import a WordPress export, read the report and follow the old address', as
   const title = `Imported ${tag}`;
 
   await signIn(page);
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Import' }).click();
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .getByRole('link', { name: 'Import' })
+    .click();
   await expect(page.getByRole('heading', { name: 'Import', level: 1 })).toBeVisible();
 
   const form = page.getByRole('form', { name: 'WordPress import' });

@@ -29,7 +29,9 @@ function Report({ report }: { report: WpImportReport }) {
       </div>
       {report.skipped.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">Skipped items ({report.skipped.length})</h3>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Skipped items ({report.skipped.length})
+          </h3>
           <ul className="list-disc pl-5 text-sm text-slate-900">
             {report.skipped.map((item, index) => (
               <li key={`${index}-${item.title}`}>
@@ -55,7 +57,9 @@ function Report({ report }: { report: WpImportReport }) {
       )}
       {report.warnings.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">Warnings ({report.warnings.length})</h3>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Warnings ({report.warnings.length})
+          </h3>
           <ul className="list-disc pl-5 text-sm text-slate-900">
             {report.warnings.map((warning, index) => (
               <li key={`${index}-${warning}`}>{warning}</li>
@@ -107,15 +111,20 @@ function Import() {
     <div className="space-y-6 p-6">
       <h1 className="text-2xl font-semibold text-slate-900">Import</h1>
       <p className="max-w-2xl text-sm text-slate-700">
-        Bring posts, pages, categories and tags over from WordPress. In WordPress, open Tools, Export, choose
-        All content and download the <code>.xml</code> file. Nothing existing is changed: imported items are
-        added next to what you already have, and the old addresses are saved as redirects.
+        Bring posts, pages, categories and tags over from WordPress. In WordPress, open Tools,
+        Export, choose All content and download the <code>.xml</code> file. Nothing existing is
+        changed: imported items are added next to what you already have, and the old addresses are
+        saved as redirects.
       </p>
       {limit.isPending && <p>Loading…</p>}
       {limit.isError && <p role="alert">Could not check the importer.</p>}
       {limit.data === null && <p role="alert">You do not have permission to import.</p>}
       {limit.data && (
-        <form aria-label="WordPress import" onSubmit={onSubmit} className="space-y-4 rounded bg-white p-4 shadow">
+        <form
+          aria-label="WordPress import"
+          onSubmit={onSubmit}
+          className="space-y-4 rounded bg-white p-4 shadow"
+        >
           <div>
             <label htmlFor="import-file" className="block text-sm font-medium text-slate-700">
               WordPress export file
@@ -171,7 +180,11 @@ function Import() {
               </select>
             </div>
           )}
-          <button type="submit" className={buttonClass} disabled={!file || !!fileProblem || run.isPending}>
+          <button
+            type="submit"
+            className={buttonClass}
+            disabled={!file || !!fileProblem || run.isPending}
+          >
             {run.isPending ? 'Importing…' : 'Run import'}
           </button>
           {run.isError && (
