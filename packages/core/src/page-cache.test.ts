@@ -142,7 +142,11 @@ describe('PageCache', () => {
     const cache = createPageCache({ adapter: createMemoryPageCache(), hooks });
     cache.attach();
     await cache.set('/a', page('A'));
-    await hooks.doAction(action, ...(args as unknown as never[]));
+    const fire = hooks.doAction.bind(hooks) as unknown as (
+      name: string,
+      ...args: unknown[]
+    ) => Promise<void>;
+    await fire(action, ...args);
     expect(await cache.get('/a')).toBeUndefined();
   });
 
