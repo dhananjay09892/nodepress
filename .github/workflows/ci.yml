@@ -97,13 +97,14 @@ jobs:
           echo "$PAGE"
           echo "$PAGE" | grep -q "CI Site"
           echo "$PAGE" | grep -q "Thanks for reading!"
+          echo "$PAGE" | grep -q 'class="np-aurora"'
 
           echo "--- theme (404 page and assets) ---"
           STATUS=$(curl -s -o notfound.html -w '%{http_code}' http://localhost:3000/nothing-here)
           test "$STATUS" = "404"
-          grep -q 'class="np-starter"' notfound.html
-          grep -q '/themes/starter/assets/style.css' notfound.html
-          curl -fsSI http://localhost:3000/themes/starter/assets/style.css | tee style.headers
+          grep -q 'class="np-aurora"' notfound.html
+          grep -q '/themes/aurora/assets/style.css' notfound.html
+          curl -fsSI http://localhost:3000/themes/aurora/assets/style.css | tee style.headers
           grep -qi '^cache-control: public, max-age=86400' style.headers
           grep -qi '^etag:' style.headers
 
@@ -149,3 +150,56 @@ jobs:
           name: playwright-report
           path: apps/admin/playwright-report
           retention-days: 7
+
+  lighthouse:
+    name: Aurora accessibility (Lighthouse >= 95)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+      - run: pnpm install --no-frozen-lockfile
+      - if: hashFiles('packages/db/drizzle/sqlite/**') == '' || hashFiles('packages/db/drizzle/postgres/**') == ''
+        run: pnpm --filter @nodepress/db db:generate
+      - run: pnpm build
+      - name: Audit the blog and business layouts, light and dark
+        working-directory: apps/server
+        env:
+          PORT: 3000
+          DATABASE_URL: file:./lighthouse.db
+          SITE_NAME: Aurora Audit
+          THEME: aurora
+        run: |
+          set -e
+          # The audited page: the front page, in both layouts. (Lighthouse refuses pages that answer 404.)
+          # Dark mode is audited by emulating prefers-color-scheme: dark in Chrome.
+          audit() {
+            layout="$1"; scheme="$2"; path="$3"
+            flags="--headless=new --no-sandbox"
+            if [ "$scheme" = dark ]; then flags="$flags --blink-settings=preferredColorScheme=1"; fi
+            THEME_SETTINGS="{\"layout\":\"$layout\"}" node dist/main.js > "server-$layout-$scheme.log" 2>&1 &
+            pid=$!
+            for i in $(seq 1 30); do
+              curl -fs http://localhost:3000/api/health > /dev/null && break
+              sleep 1
+            done
+            npx --yes lighthouse@12.3.0 "http://localhost:3000$path" \
+              --only-categories=accessibility --output=json \
+              --output-path="lh-$layout-$scheme.json" --quiet \
+              --chrome-flags="$flags"
+            kill "$pid" || true
+            wait "$pid" 2>/dev/null || true
+            echo "$layout / $scheme / $path: accessibility $(jq '.categories.accessibility.score * 100' "lh-$layout-$scheme.json")"
+            jq -e '.categories.accessibility.score >= 0.95' "lh-$layout-$scheme.json" > /dev/null
+          }
+          audit blog light /
+          audit business light /
+          audit blog dark /
+          audit business dark /
+      - name: Show server logs
+        if: always()
+        run: cat apps/server/server-*.log || true

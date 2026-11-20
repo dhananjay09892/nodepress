@@ -205,6 +205,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: blog and business layouts, responsive, accessible (WCAG 2.1 AA), dark mode; replaces the temporary front page.
 - Done when: Lighthouse accessibility ≥ 95 in CI.
 
+### N50 · Render post and page bodies on the front end
+
+- Depends on: N23
+- Scope: follow-up to N23. The server does not pass `renderBody` to the theme system yet, so Aurora (like the starter theme) shows a post's title and excerpt but not its body. Wire `themes.renderBody` in `apps/server/src/main.ts` to the block renderer in `@nodepress/editor` (`renderBlocks` with the core registry; add the workspace dependency to the server). The stored `ContentBlock` (`text`) and the editor `Block` (`content` text nodes) shapes differ: convert in one tested adapter and apply the `post:content` filter to the result. Skip unknown blocks without failing the page.
+- Done when: a server test publishes a post with paragraph, heading and list blocks and sees the HTML at its permalink, and the CI smoke test checks it.
+
 ### N24 · Menus and widget areas
 
 - Depends on: N22, N20
