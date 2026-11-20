@@ -1,0 +1,5 @@
+# Redirects screen
+
+The admin **Redirects** screen (`manage_options`; the sidebar entry is hidden when the redirects API answers 403) manages the rules behind `/api/v1/redirects`: a table of rules with add, edit (inline) and delete, field errors from the API shown next to the field they name, a CSV file picker that uploads to `/api/v1/redirects/import` and lists the refused lines (`Line 3: message`), and a **Download CSV** button that writes the current rules as `from,to,status` (quoted when a value holds a comma, quote or line break) so they can be imported elsewhere. Files over 1 MB are refused in the browser before upload.
+
+Screens that live in their own file register themselves: any `apps/admin/src/screens/<Name>.screen.tsx` that `export default defineScreen({ id, path, label, order?, component, available })` gets a route under `/admin` and a sidebar link that appears once `available()` resolves to a truthy value (an error or falsy value keeps it hidden). Nothing shared has to be edited, which keeps screen tasks from conflicting. `order` (default 100) sorts the links; this screen uses 40.
