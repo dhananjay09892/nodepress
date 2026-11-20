@@ -40,7 +40,9 @@ describe('extractHooks', () => {
   it('keeps the doc comment of an entry and not of its neighbours', () => {
     expect(hooks[0]?.description).toBe('');
     expect(hooks[1]?.description).toBe('A content type was registered.');
-    expect(hooks[2]?.description).toBe('Final say on a capability check. Return a boolean to override.');
+    expect(hooks[2]?.description).toBe(
+      'Final say on a capability check. Return a boolean to override.',
+    );
     expect(hooks[3]?.description).toBe('');
   });
 

@@ -106,7 +106,10 @@ function parseBody(body: string, kind: HookEntry['kind'], file: string): HookEnt
     out.push({
       kind,
       name: key[1] ?? key[2] ?? '',
-      signature: body.slice(i + key[0].length, end).replace(/\s+/g, ' ').trim(),
+      signature: body
+        .slice(i + key[0].length, end)
+        .replace(/\s+/g, ' ')
+        .trim(),
       description: doc,
       file,
     });
