@@ -193,7 +193,8 @@ export function isSafeUrl(url: string): boolean {
 /** A problem with a new link's fields, or `null` when they are fine. */
 export function linkProblem(label: string, url: string): string | null {
   const trimmed = label.trim();
-  if (trimmed === '' || trimmed.length > 100) return 'Give the link a label of up to 100 characters.';
+  if (trimmed === '' || trimmed.length > 100)
+    return 'Give the link a label of up to 100 characters.';
   if (!isSafeUrl(url.trim())) {
     return 'The address must be a site path such as /about, an http(s) address, mailto: or tel:.';
   }

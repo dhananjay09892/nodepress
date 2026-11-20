@@ -143,7 +143,14 @@ describe('validation', () => {
     for (const ok of ['/about', 'https://example.com/x?y=1', 'mailto:a@b.co', 'tel:+1 555-0100']) {
       expect(isSafeUrl(ok)).toBe(true);
     }
-    for (const bad of ['', 'javascript:alert(1)', '//evil.test', 'data:text/html,x', '/a b', 'about']) {
+    for (const bad of [
+      '',
+      'javascript:alert(1)',
+      '//evil.test',
+      'data:text/html,x',
+      '/a b',
+      'about',
+    ]) {
       expect(isSafeUrl(bad)).toBe(false);
     }
   });

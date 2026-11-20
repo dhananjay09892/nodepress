@@ -386,7 +386,10 @@ function LocationsPanel({ menus }: { menus: MenuRecord[] }) {
                 id={`loc-${name}`}
                 value={draft[name] ?? ''}
                 onChange={(e) =>
-                  setDraft({ ...draft, [name]: e.target.value === '' ? null : Number(e.target.value) })
+                  setDraft({
+                    ...draft,
+                    [name]: e.target.value === '' ? null : Number(e.target.value),
+                  })
                 }
                 className={`${fieldClass} w-full max-w-sm`}
               >
@@ -402,7 +405,9 @@ function LocationsPanel({ menus }: { menus: MenuRecord[] }) {
           {message && (
             <p
               role={message.kind === 'error' ? 'alert' : 'status'}
-              className={message.kind === 'error' ? 'text-sm text-red-800' : 'text-sm text-green-800'}
+              className={
+                message.kind === 'error' ? 'text-sm text-red-800' : 'text-sm text-green-800'
+              }
             >
               {message.text}
             </p>

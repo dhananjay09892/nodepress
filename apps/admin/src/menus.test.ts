@@ -32,7 +32,9 @@ describe('menus API calls', () => {
   });
 
   it('sends the CSRF token and the new name', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(json({ menu: { id: 1, name: 'Main', items: [] } }, 201));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(json({ menu: { id: 1, name: 'Main', items: [] } }, 201));
     vi.stubGlobal('fetch', fetchMock);
     const menu = await createMenu('Main', 'tok');
     expect(menu.id).toBe(1);
@@ -45,9 +47,14 @@ describe('menus API calls', () => {
   it('carries the server field and message of a refused menu', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        json({ error: 'invalid_request', field: 'items[0].url', message: 'url must be safe' }, 400),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          json(
+            { error: 'invalid_request', field: 'items[0].url', message: 'url must be safe' },
+            400,
+          ),
+        ),
     );
     const error = await updateMenu(1, { items: [] }, 'tok').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(MenuApiError);
