@@ -248,6 +248,13 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N23
 - Scope: full-page cache for anonymous visitors (memory and disk adapters) purged on publish; sitemap.xml, RSS, meta and Open Graph tags.
 - Done when: tests cover cache hit/purge and sitemap output.
+- Delivered in slices: the page cache, sitemap and RSS feed (N26); meta description and Open Graph tags (N54).
+
+### N54 · Meta and Open Graph tags
+
+- Depends on: N26
+- Scope: follow-up to N26, which delivered the page cache, `/sitemap.xml` and `/feed.xml`. Give themes what they need for SEO tags: a `meta` template prop (`description` from the excerpt or tagline, canonical URL, `og:title`, `og:description`, `og:type` `article` or `website`, `og:url`, `og:site_name`, and `og:image` from a post's `featured_image` custom field when it has one) built in the server from the public site address (`SITE_URL`, else the request origin), a `meta:tags` filter so plugins (the SEO plugin, N30) can change it, and `<link rel="canonical">`, the description, Open Graph tags and an RSS `<link rel="alternate">` in Aurora's `<head>` (every value escaped; Aurora's Lighthouse accessibility score must stay at or above 95).
+- Done when: server tests cover the `meta` prop (post, page, front page, 404) and the filter, an Aurora test checks the tags and their escaping, and the CI smoke test finds the canonical link on the front page.
 
 ## Phase 4: Plugin system
 
