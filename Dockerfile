@@ -6,12 +6,13 @@ FROM node:22-slim AS build
 RUN corepack enable
 WORKDIR /app
 COPY . .
-RUN pnpm install --no-frozen-lockfile
+# The documentation site is not part of the image.
+RUN pnpm install --no-frozen-lockfile --filter '!@nodepress/docs'
 # The database migrations are committed; generate them only if a checkout lacks them.
 RUN if [ ! -d packages/db/drizzle/sqlite ] || [ ! -d packages/db/drizzle/postgres ]; then \
       pnpm --filter @nodepress/db db:generate; \
     fi
-RUN pnpm build
+RUN pnpm turbo run build --filter='!@nodepress/docs'
 
 FROM node:22-slim
 ENV NODE_ENV=production \

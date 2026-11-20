@@ -290,7 +290,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] Security review (auth, uploads, XSS/CSRF/SQLi, plugin permissions) — security headers, `SECURITY.md`, audit job and a first review done (N39, `docs/security-review.md`); second pass is N62
 - [x] Performance budget: <100 ms TTFB cached, Lighthouse 95+ on default theme — enforced in CI (N41): the smoke job times cached pages, the Lighthouse job also scores performance
 - [ ] Accessibility audit of admin + default theme (WCAG 2.1 AA)
-- [ ] Docs site, landing page, launch posts
+- [ ] Docs site (built: `apps/docs`), landing page, launch posts
 - [ ] **v1.0 public release**
 
 ### After 1.0
