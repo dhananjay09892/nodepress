@@ -301,6 +301,13 @@ const pageCache =
       });
 pageCache?.attach();
 const contentMeta = createContentMetaStore(database);
+const settingsService = createSettingsService({
+  options,
+  isPublishedPage: async (id) => {
+    const page = await content.get(id);
+    return page?.type === 'page' && page.status === 'published';
+  },
+});
 // Contact form: CONTACT_TO is where messages are emailed (until a real mail adapter is set up they
 // are only logged and kept). CONTACT_SECRET signs the form tokens; without it a random one is used,
 // which only means a form loaded before a restart must be loaded again.
@@ -374,15 +381,15 @@ const app = createApp(np, database, {
     sessions,
     reassignContent: (fromId, toId) => contentStore.reassignAuthor(fromId, toId),
   },
-  settings: {
-    service: createSettingsService({
-      options,
-      isPublishedPage: async (id) => {
-        const page = await content.get(id);
-        return page?.type === 'page' && page.status === 'published';
-      },
-    }),
+  settings: { service: settingsService, capabilities },
+  backup: {
+    content,
+    taxonomies,
+    settings: settingsService,
+    meta: contentMeta,
+    users,
     capabilities,
+    logger: np.logger.child('backup'),
   },
   menus: { service: menuService, capabilities },
   widgets: { service: widgetService, capabilities },

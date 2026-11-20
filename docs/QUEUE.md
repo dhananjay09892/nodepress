@@ -301,6 +301,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: manage 301/302 redirects in the admin, CSV import.
 - Done when: tests cover matching and import.
 
+### N61 · Backup: media zip, menus, widgets and redirects
+
+- Depends on: N37
+- Scope: follow-up to N37, whose export is the JSON of content (every status), custom fields, terms and site settings, and whose import adds that next to existing content. Add what it leaves out: a media zip (`GET /api/v1/backup/media`, the originals with a manifest of ids, alt text and MIME types; a strict reader on import that goes through the media service so type, size and variant rules apply, then rewrites `featured_image` and image blocks to the new ids), and menus, widgets, theme settings and redirect rules (validated by their services on import). Add the admin "Backup" screen (download export, upload a file, show the summary).
+- Done when: a round-trip test covers media (with a fake image processor), menus, widgets and redirects; a Playwright test downloads an export and imports it into a fresh site.
+
 ## Phase 5: Install, deploy, migrate
 
 ### N33 · `create-nodepress` installer
@@ -338,6 +344,7 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N36
 - Scope: export all content and settings as JSON plus a media zip; import it back.
 - Done when: round-trip test passes.
+- Delivered in slices: JSON export and import of content, custom fields, terms and site settings with the API (N37); the media zip, menus, widgets, redirects and the admin screen (N61).
 
 ### N38 · Built-in updater
 
