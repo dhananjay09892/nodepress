@@ -18,6 +18,7 @@ const POSTGRES_URL = process.env.TEST_POSTGRES_URL;
 
 const EXPECTED_TABLES = [
   'api_tokens',
+  'contact_submissions',
   'content',
   'content_meta',
   'jobs',

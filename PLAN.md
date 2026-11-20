@@ -268,7 +268,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] Plugin manifest, loader, lifecycle, plugin migrations — packages with `plugin.json`, discovery, enabled state in the `plugins` table and SQL migrations done (N27); activation from the admin comes with N28
 - [ ] Install/activate/deactivate from admin (upload .zip or from registry) — admin Plugins screen with .zip upload, permission review and enable/disable done (N28); installing from a registry is not built
 - [x] `nodepress` CLI and plugin scaffolder — `@nodepress/cli` has `migrate`, `dev`, `plugin create|check|pack` and `theme create` (N29)
-- [ ] First-party plugins: SEO (N30), Contact Form, Redirects (service, CSV and API N32; admin screen N57), Analytics (privacy-friendly)
+- [ ] First-party plugins: SEO (N30), Contact Form (service and API N31; block and SMTP N56), Redirects (service, CSV and API N32; admin screen N57), Analytics (privacy-friendly)
 - [ ] Plugin author docs + example repo
 
 **Exit:** a third-party developer can build and install a plugin in under an hour using the docs.

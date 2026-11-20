@@ -477,3 +477,25 @@ export {
   type StoredRedirects,
   type RedirectsServiceOptions,
 } from './redirects.js';
+export {
+  ContactFormService,
+  createContactForm,
+  MAX_NAME_LENGTH,
+  MAX_MESSAGE_LENGTH,
+  MIN_FILL_MS,
+  MAX_FORM_AGE_MS,
+  HONEYPOT_FIELD,
+  type ContactFormOptions,
+  type ContactInput,
+  type ContactResult,
+  type ContactSubmission,
+  type NewContactSubmission,
+  type ContactSubmissionStore,
+} from './contact-form.js';
+export {
+  createMemoryMailAdapter,
+  createLogMailAdapter,
+  isEmailAddress,
+  type MailAdapter,
+  type MailMessage,
+} from './mail.js';

@@ -189,6 +189,12 @@ export {
   type RevisionRow,
   type ContentTableStore,
 } from './content-store.js';
+export {
+  createContactSubmissionsStore,
+  type ContactSubmissionRow,
+  type NewContactSubmissionRow,
+  type ContactSubmissionsTableStore,
+} from './contact-store.js';
 export { createContentMetaStore, type ContentMetaTableStore } from './content-meta-store.js';
 export {
   createSlugRedirectsStore,
