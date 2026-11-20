@@ -9,7 +9,7 @@ export const EXPORT_FORMAT = 'nodepress-export';
 export const EXPORT_VERSION = 1;
 export const MAX_EXPORT_ITEMS = 100_000;
 export const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
-const PAGE = 200;
+const PAGE = 100;
 
 export interface ExportedTerm {
   id: number;
