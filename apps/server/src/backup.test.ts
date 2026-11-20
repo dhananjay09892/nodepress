@@ -293,7 +293,9 @@ describe('importSite (round trip)', () => {
     const site = await makeSite();
     await seed(site);
     const exported = JSON.parse(JSON.stringify(await exportSite(site.deps))) as SiteExport;
-    exported.content[2]!.type = 'no-such-type';
+    // A scheduled item needs a future date; this one is in the past, so the service refuses it.
+    exported.content[2]!.status = 'scheduled';
+    exported.content[2]!.publishedAt = '2000-01-01T00:00:00.000Z';
     const target = await makeSite();
     const summary = await importSite(exported, target.deps, { defaultAuthorId: target.admin.id });
     expect(summary.content).toBe(4);
