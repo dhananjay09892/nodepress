@@ -23,6 +23,9 @@ import {
   createUsersService,
   discoverThemes,
   createWebhookService,
+  createDiskPageCache,
+  createMemoryPageCache,
+  createPageCache,
   createWidgetService,
   cleanIncomingFolders,
   loadPluginPackages,
@@ -276,8 +279,31 @@ const widgetService = createWidgetService({
     ),
 });
 await widgetService.refresh();
+// Anonymous page views are cached. PAGE_CACHE=off turns it off, PAGE_CACHE_DIR keeps pages on disk
+// instead of in memory, PAGE_CACHE_TTL_SECONDS sets how long a page may be served (default 600).
+// Saving content or changing an option empties the cache.
+const pageCacheTtl = Number(process.env.PAGE_CACHE_TTL_SECONDS ?? 600) * 1000;
+const pageCache =
+  process.env.PAGE_CACHE === 'off'
+    ? undefined
+    : createPageCache({
+        adapter: process.env.PAGE_CACHE_DIR
+          ? createDiskPageCache({ dir: process.env.PAGE_CACHE_DIR, ttlMs: pageCacheTtl })
+          : createMemoryPageCache({ ttlMs: pageCacheTtl }),
+        hooks: np.hooks,
+        logger: np.logger.child('page-cache'),
+      });
+pageCache?.attach();
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
+  ...(pageCache ? { pageCache } : {}),
+  // SITE_URL (for example https://example.com) is used for absolute links in the sitemap and feed.
+  feeds: {
+    content,
+    siteName: () => String(np.config.siteName ?? 'NodePress'),
+    tagline: () => options.get('tagline', ''),
+    siteUrl: process.env.SITE_URL,
+  },
   permalinks,
   themes: {
     service: themes,

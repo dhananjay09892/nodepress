@@ -6,6 +6,7 @@ import type {
   MediaService,
   MenuService,
   WidgetService,
+  PageCache,
   NodePress,
   OptionsService,
   PermalinkService,
@@ -28,6 +29,8 @@ import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
 import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
+import { createFeedRoutes, type FeedRoutesOptions } from './feeds.js';
+import { createPageCacheMiddleware } from './page-cache.js';
 import { createThemeSettingsRoutes, type ThemeSettingsService } from './theme-settings.js';
 import { createSettingsRoutes } from './settings-api.js';
 import {
@@ -127,6 +130,16 @@ export interface AppOptions {
    * unsaved values on any themed page with `?np_preview=<JSON of setting values>`.
    */
   themeSettings?: { service: ThemeSettingsService; capabilities: Capabilities };
+  /**
+   * Serves `/sitemap.xml` and `/feed.xml`. Needs `permalinks`. `siteUrl` is the public address
+   * used in absolute links; without it the request's own origin is used.
+   */
+  feeds?: Omit<FeedRoutesOptions, 'permalinks'>;
+  /**
+   * A full-page cache for anonymous visitors (see `createPageCacheMiddleware`). The caller is
+   * responsible for `cache.attach()`, which purges it when content or options change.
+   */
+  pageCache?: PageCache;
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
   /**
@@ -162,6 +175,7 @@ export interface AppOptions {
 
 export function createApp(np: NodePress, database: DatabaseHandle, options: AppOptions = {}): Hono {
   const app = new Hono();
+  if (options.pageCache) app.use('*', createPageCacheMiddleware(options.pageCache));
 
   const sessionAuth = options.auth ? createAuth(options.auth) : undefined;
   if (options.auth && sessionAuth) {
@@ -407,6 +421,10 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       np.logger.warn(`Theme template failed for ${path}: ${String(error)}`);
       return undefined;
     }
+  }
+
+  if (options.feeds && permalinks) {
+    app.route('/', createFeedRoutes({ ...options.feeds, permalinks }));
   }
 
   // The front page: drawn by the theme's `front` (or `index`) template; the built-in page below
