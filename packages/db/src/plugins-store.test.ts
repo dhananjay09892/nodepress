@@ -1,6 +1,11 @@
 import { sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createDatabase, createPluginsStore, createSqlRunner, type DatabaseHandle } from './index.js';
+import {
+  createDatabase,
+  createPluginsStore,
+  createSqlRunner,
+  type DatabaseHandle,
+} from './index.js';
 
 const POSTGRES_URL = process.env.TEST_POSTGRES_URL;
 

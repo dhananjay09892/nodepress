@@ -167,7 +167,9 @@ export async function discoverPlugins(root: string): Promise<PluginDiscovery> {
       }
       const manifest = parsePluginManifest(json);
       if (manifest.name !== entry.name) {
-        throw new PluginPackageError(`"name" is "${manifest.name}" but the folder is "${entry.name}"`);
+        throw new PluginPackageError(
+          `"name" is "${manifest.name}" but the folder is "${entry.name}"`,
+        );
       }
       const entryFile = resolve(dir, manifest.entry);
       const realDir = await realpath(dir);
@@ -279,7 +281,8 @@ export class PluginStateService {
    */
   async setEnabled(name: string, on: boolean, version: string): Promise<string[]> {
     if (!NAME_PATTERN.test(name)) throw new PluginPackageError(`"${name}" is not a plugin name`);
-    if (!VERSION_PATTERN.test(version)) throw new PluginPackageError('"version" must look like 1.2.3');
+    if (!VERSION_PATTERN.test(version))
+      throw new PluginPackageError('"version" must look like 1.2.3');
     const run = this.#queue.then(async () => {
       await this.#store.upsert({ name, version, enabled: on });
       return this.enabled();
@@ -357,7 +360,10 @@ export async function runPluginMigrations(options: {
     const current: Record<string, string[]> = isRecord(latest)
       ? (latest as Record<string, string[]>)
       : {};
-    await options.options.set('plugin_migrations', { ...current, [plugin.manifest.name]: [...done] });
+    await options.options.set('plugin_migrations', {
+      ...current,
+      [plugin.manifest.name]: [...done],
+    });
   }
   return applied;
 }

@@ -91,7 +91,9 @@ try {
     logger: np.logger.child('plugins'),
   });
 } catch (error) {
-  np.logger.error(`Plugin packages were not loaded: ${error instanceof Error ? error.message : String(error)}`);
+  np.logger.error(
+    `Plugin packages were not loaded: ${error instanceof Error ? error.message : String(error)}`,
+  );
 }
 
 await np.boot();

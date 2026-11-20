@@ -75,7 +75,10 @@ async function writePlugin(
 ): Promise<string> {
   const dir = join(root, name);
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, 'plugin.json'), JSON.stringify({ name, version: '1.0.0', ...manifest }));
+  await writeFile(
+    join(dir, 'plugin.json'),
+    JSON.stringify({ name, version: '1.0.0', ...manifest }),
+  );
   for (const [file, content] of Object.entries(files)) {
     await mkdir(join(dir, file, '..'), { recursive: true });
     await writeFile(join(dir, file), content);
@@ -164,7 +167,11 @@ describe('discoverPlugins', () => {
   });
 
   it('requires the database permission for a migrations folder', async () => {
-    await writePlugin('needs-db', {}, { 'index.js': '', 'migrations/sqlite/0001_a.sql': 'select 1' });
+    await writePlugin(
+      'needs-db',
+      {},
+      { 'index.js': '', 'migrations/sqlite/0001_a.sql': 'select 1' },
+    );
     await writePlugin(
       'has-db',
       { permissions: ['database'] },
@@ -186,12 +193,18 @@ describe('loadPluginDefinition', () => {
   const definition = { name: 'demo', setup: () => undefined };
 
   it('accepts a default export or a named plugin export', async () => {
-    expect(await loadPluginDefinition(plugin(), async () => ({ default: definition }))).toBe(definition);
-    expect(await loadPluginDefinition(plugin(), async () => ({ plugin: definition }))).toBe(definition);
+    expect(await loadPluginDefinition(plugin(), async () => ({ default: definition }))).toBe(
+      definition,
+    );
+    expect(await loadPluginDefinition(plugin(), async () => ({ plugin: definition }))).toBe(
+      definition,
+    );
   });
 
   it('rejects modules that are not plugins', async () => {
-    await expect(loadPluginDefinition(plugin(), async () => ({}))).rejects.toThrow(PluginPackageError);
+    await expect(loadPluginDefinition(plugin(), async () => ({}))).rejects.toThrow(
+      PluginPackageError,
+    );
     await expect(
       loadPluginDefinition(plugin(), async () => ({ default: { name: 'demo' } })),
     ).rejects.toThrow(/default export/);
@@ -245,7 +258,9 @@ describe('PluginStateService', () => {
 describe('splitStatements', () => {
   it('splits on statement-breakpoint lines and drops empties', () => {
     expect(
-      splitStatements('create table a (id int);\n-- statement-breakpoint\n\ncreate table b (id int);\n--statement-breakpoint\n'),
+      splitStatements(
+        'create table a (id int);\n-- statement-breakpoint\n\ncreate table b (id int);\n--statement-breakpoint\n',
+      ),
     ).toEqual(['create table a (id int);', 'create table b (id int);']);
   });
 });
@@ -264,7 +279,8 @@ describe('runPluginMigrations', () => {
   it('runs pending files in order, once, per dialect', async () => {
     const plugin = await migratingPlugin({
       'sqlite/0002_b.sql': 'create table b (id integer)',
-      'sqlite/0001_a.sql': 'create table a (id integer);\n-- statement-breakpoint\ncreate index a_i on a (id)',
+      'sqlite/0001_a.sql':
+        'create table a (id integer);\n-- statement-breakpoint\ncreate index a_i on a (id)',
       'postgres/0001_a.sql': 'create table pg_a (id int)',
       'sqlite/README.md': 'ignored',
     });
@@ -288,9 +304,9 @@ describe('runPluginMigrations', () => {
     expect(again.statements).toEqual([]);
 
     const pg = fakeRunner('postgres');
-    expect(await runPluginMigrations({ plugin, runner: pg.runner, options: memoryOptions() })).toEqual([
-      '0001_a.sql',
-    ]);
+    expect(
+      await runPluginMigrations({ plugin, runner: pg.runner, options: memoryOptions() }),
+    ).toEqual(['0001_a.sql']);
     expect(pg.statements).toEqual(['create table pg_a (id int)']);
   });
 
@@ -302,9 +318,9 @@ describe('runPluginMigrations', () => {
     });
     const options = memoryOptions();
     const failing = fakeRunner('sqlite', 'bad');
-    await expect(
-      runPluginMigrations({ plugin, runner: failing.runner, options }),
-    ).rejects.toThrow(/0002_bad.sql failed: boom/);
+    await expect(runPluginMigrations({ plugin, runner: failing.runner, options })).rejects.toThrow(
+      /0002_bad.sql failed: boom/,
+    );
     expect(options.values.get('plugin_migrations')).toEqual({ notes: ['0001_a.sql'] });
     expect(failing.statements).toEqual(['create table a (id integer)']);
 
@@ -319,7 +335,9 @@ describe('runPluginMigrations', () => {
     await writePlugin('plain');
     const plain = (await discoverPlugins(root)).plugins[0]!;
     const { runner } = fakeRunner();
-    expect(await runPluginMigrations({ plugin: plain, runner, options: memoryOptions() })).toEqual([]);
+    expect(await runPluginMigrations({ plugin: plain, runner, options: memoryOptions() })).toEqual(
+      [],
+    );
     const plugin = await migratingPlugin({ 'postgres/0001_a.sql': 'select 1' });
     expect(await runPluginMigrations({ plugin, runner, options: memoryOptions() })).toEqual([]);
   });
@@ -331,7 +349,11 @@ describe('runPluginMigrations', () => {
       manifest: { ...plugin.manifest, permissions: [] },
     };
     await expect(
-      runPluginMigrations({ plugin: noPermission, runner: fakeRunner().runner, options: memoryOptions() }),
+      runPluginMigrations({
+        plugin: noPermission,
+        runner: fakeRunner().runner,
+        options: memoryOptions(),
+      }),
     ).rejects.toThrow(/database/);
   });
 });
@@ -393,7 +415,8 @@ describe('loadPluginPackages', () => {
     await writePlugin('fine');
     await writePlugin('wrong-folder', { name: 'other' });
     const state = new PluginStateService(memoryStore());
-    for (const name of ['with-db', 'broken-db', 'fine']) await state.setEnabled(name, true, '1.0.0');
+    for (const name of ['with-db', 'broken-db', 'fine'])
+      await state.setEnabled(name, true, '1.0.0');
     const s = setup();
     const { runner, statements } = fakeRunner('sqlite', 'explode');
     const result = await loadPluginPackages({
@@ -434,11 +457,7 @@ describe('loadPluginPackages', () => {
   });
 
   it('imports a real module from disk with the default importer', async () => {
-    await writePlugin(
-      'real',
-      {},
-      { 'index.js': "export default { name: 'real', setup() {} };\n" },
-    );
+    await writePlugin('real', {}, { 'index.js': "export default { name: 'real', setup() {} };\n" });
     const state = new PluginStateService(memoryStore());
     await state.setEnabled('real', true, '1.0.0');
     const s = setup();
