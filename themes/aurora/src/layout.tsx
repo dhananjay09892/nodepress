@@ -64,6 +64,8 @@ export function Layout(props: {
   const sidebar = page.widgets?.sidebar;
   const css = customCss(page.settings);
   const logo = typeof page.settings?.logo === 'string' ? page.settings.logo : '';
+  const meta = page.meta;
+  const description = meta?.description ?? page.tagline;
   const documentTitle = isFront ? page.siteName : `${title} | ${page.siteName}`;
   return (
     <html lang="en">
@@ -71,8 +73,27 @@ export function Layout(props: {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light dark" />
-        {page.tagline ? <meta name="description" content={page.tagline} /> : null}
+        {description ? <meta name="description" content={description} /> : null}
         <title>{documentTitle}</title>
+        {meta?.canonical ? <link rel="canonical" href={meta.canonical} /> : null}
+        {meta?.feedUrl ? (
+          <link
+            rel="alternate"
+            type="application/rss+xml"
+            title={page.siteName}
+            href={meta.feedUrl}
+          />
+        ) : null}
+        {meta ? (
+          <>
+            <meta property="og:title" content={meta.og.title} />
+            <meta property="og:description" content={meta.og.description} />
+            <meta property="og:type" content={meta.og.type} />
+            {meta.og.url ? <meta property="og:url" content={meta.og.url} /> : null}
+            <meta property="og:site_name" content={meta.og.siteName} />
+            {meta.og.image ? <meta property="og:image" content={meta.og.image} /> : null}
+          </>
+        ) : null}
         <link rel="stylesheet" href={`${page.theme.assetsUrl}/style.css`} />
         {css ? <style>{raw(css)}</style> : null}
       </head>

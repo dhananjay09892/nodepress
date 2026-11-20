@@ -283,6 +283,42 @@ export function templateHierarchy(target: TemplateTarget): string[] {
 // Rendering contract
 // ---------------------------------------------------------------------------------------------
 
+/** The SEO tags a theme draws in `<head>`. Built by the server; plugins change it with the `meta:tags` filter. */
+export interface MetaTags {
+  /** Text for `<meta name="description">`: the excerpt, else the tagline, else the site name. */
+  description: string;
+  /** Absolute URL of the page. Not set on the 404 page. */
+  canonical?: string;
+  /** Absolute URL of the RSS feed, when the site serves one. */
+  feedUrl?: string;
+  /** Open Graph properties (`og:title` and so on). */
+  og: {
+    title: string;
+    description: string;
+    type: 'article' | 'website';
+    /** Not set on the 404 page. */
+    url?: string;
+    siteName: string;
+    /** Absolute URL of the featured image, when the item has one. */
+    image?: string;
+  };
+}
+
+/** What the `meta:tags` filter is told about the page. */
+export interface MetaTagsContext {
+  path: string;
+  status: 200 | 404;
+  /** The item being shown (not set on the front page or the 404 page). */
+  content?: Content;
+}
+
+declare module './hooks.js' {
+  interface FilterMap {
+    /** Change the SEO tags of a themed page. A result that is not valid meta tags is ignored. */
+    'meta:tags': { value: MetaTags; context: MetaTagsContext };
+  }
+}
+
 /** What every template receives as props. */
 export interface TemplateProps {
   siteName: string;
@@ -295,6 +331,8 @@ export interface TemplateProps {
   html?: string;
   /** The site tagline (empty when not set). */
   tagline?: string;
+  /** SEO tags for `<head>` (description, canonical URL, Open Graph, feed link). */
+  meta?: MetaTags;
   /** Latest published posts with their URLs; set on the front page. */
   posts?: Array<{ content: Content; url: string }>;
   /**

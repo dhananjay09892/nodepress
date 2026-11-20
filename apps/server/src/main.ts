@@ -294,6 +294,7 @@ const pageCache =
         logger: np.logger.child('page-cache'),
       });
 pageCache?.attach();
+const contentMeta = createContentMetaStore(database);
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
   ...(pageCache ? { pageCache } : {}),
@@ -319,6 +320,14 @@ const app = createApp(np, database, {
     }),
     renderBody: createBodyRenderer({ hooks: np.hooks, logger: np.logger.child('render') }),
     tagline: () => options.get('tagline', ''),
+    siteUrl: process.env.SITE_URL,
+    // The featured image (the id of a media item, kept as a custom field) becomes `og:image`.
+    featuredImage: async (item) => {
+      const id = (await contentMeta.getMeta(item.id)).featured_image;
+      if (typeof id !== 'number') return undefined;
+      const image = await media.get(id);
+      return image ? `/${image.path}` : undefined;
+    },
     latestPosts: () =>
       content.list({
         type: 'post',
@@ -333,7 +342,7 @@ const app = createApp(np, database, {
     service: content,
     types: contentTypes,
     capabilities,
-    meta: createContentMetaStore(database),
+    meta: contentMeta,
     taxonomies,
     options,
   },

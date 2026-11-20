@@ -5,6 +5,7 @@ import type {
   ContentTypeRegistry,
   MediaService,
   MenuService,
+  MetaTags,
   WidgetService,
   PageCache,
   NodePress,
@@ -29,7 +30,8 @@ import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
 import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
-import { createFeedRoutes, type FeedRoutesOptions } from './feeds.js';
+import { buildMeta, filterMeta } from './meta.js';
+import { cleanSiteUrl, createFeedRoutes, type FeedRoutesOptions } from './feeds.js';
 import { createPageCacheMiddleware } from './page-cache.js';
 import { createThemeSettingsRoutes, type ThemeSettingsService } from './theme-settings.js';
 import { createSettingsRoutes } from './settings-api.js';
@@ -168,6 +170,13 @@ export interface AppOptions {
     tagline?: () => string | Promise<string>;
     /** Latest published posts for the front page (newest first). */
     latestPosts?: () => Promise<Content[]>;
+    /** Path or URL of an item's featured image (for `og:image`), if it has one. */
+    featuredImage?: (content: Content) => Promise<string | undefined>;
+    /**
+     * The public address of the site (for example `https://example.com`) used in canonical and
+     * Open Graph URLs; without it, or one set in `feeds`, the request's own origin is used.
+     */
+    siteUrl?: string | undefined;
   };
   /** Serves the built admin app (`dir` = its `dist` folder) at `/admin`. */
   admin?: { dir: string };
@@ -338,11 +347,40 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     }
   }
 
+  async function buildPageMeta(
+    route: { kind: 'content'; content: Content } | { kind: 'not_found' } | { kind: 'front' },
+    path: string,
+    siteName: string,
+    status: 200 | 404,
+    requestUrl: string,
+    tagline: string,
+  ): Promise<MetaTags> {
+    const base =
+      cleanSiteUrl(options.themes?.siteUrl ?? options.feeds?.siteUrl) ?? new URL(requestUrl).origin;
+    const content = route.kind === 'content' ? route.content : undefined;
+    const image =
+      content && options.themes?.featuredImage
+        ? await options.themes.featuredImage(content).catch(() => undefined)
+        : undefined;
+    const built = buildMeta({
+      base,
+      path,
+      status,
+      siteName,
+      tagline,
+      content,
+      image,
+      hasFeed: Boolean(options.feeds && permalinks),
+    });
+    return filterMeta(np.hooks, built, { path, status, content });
+  }
+
   async function renderThemed(
     route: { kind: 'content'; content: Content } | { kind: 'not_found' } | { kind: 'front' },
     path: string,
     siteName: string,
     status: 200 | 404,
+    requestUrl: string,
     preview?: Record<string, unknown>,
   ): Promise<string | undefined> {
     if (!themes?.service.active) return undefined;
@@ -399,10 +437,18 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
               return {};
             })
         : {};
+      // The SEO tags are optional too: a failure here shows the page without them.
+      const meta = await buildPageMeta(route, path, siteName, status, requestUrl, tagline).catch(
+        (error: unknown) => {
+          np.logger.warn(`Meta tags could not be built for ${path}: ${String(error)}`);
+          return undefined;
+        },
+      );
       return await renderTemplate(template.component, {
         siteName,
         path,
         status,
+        ...(meta ? { meta } : {}),
         ...(route.kind === 'content' ? { content: route.content } : {}),
         ...(html !== undefined ? { html } : {}),
         ...(posts ? { posts } : {}),
@@ -436,6 +482,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       '/',
       siteName,
       200,
+      c.req.url,
       await previewOverrides(c),
     );
     if (themed !== undefined) {
@@ -470,7 +517,14 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       const siteName = String(np.config.siteName ?? 'NodePress');
       const status = route.kind === 'content' ? (200 as const) : (404 as const);
 
-      const themed = await renderThemed(route, path, siteName, status, await previewOverrides(c));
+      const themed = await renderThemed(
+        route,
+        path,
+        siteName,
+        status,
+        c.req.url,
+        await previewOverrides(c),
+      );
       if (themed !== undefined) {
         return c.html(await np.hooks.applyFilters('render:html', themed, { path }), status);
       }

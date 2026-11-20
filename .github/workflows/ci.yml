@@ -112,6 +112,8 @@ jobs:
           echo "$PAGE" | grep -q "CI Site"
           echo "$PAGE" | grep -q "Thanks for reading!"
           echo "$PAGE" | grep -q 'class="np-aurora"'
+          echo "$PAGE" | grep -q '<link rel="canonical" href="http://localhost:3000/"'
+          echo "$PAGE" | grep -q 'property="og:site_name" content="CI Site"'
 
           echo "--- theme (404 page and assets) ---"
           STATUS=$(curl -s -o notfound.html -w '%{http_code}' http://localhost:3000/nothing-here)
