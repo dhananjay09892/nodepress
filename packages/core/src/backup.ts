@@ -253,7 +253,9 @@ const exportSchema = z.object({
   authors: z.array(z.object({ id: z.number().int(), email: text(254), displayName: text(200) })),
   // Absent in files from before these were backed up. Each service checks the details on import.
   menus: z
-    .array(z.object({ id: z.number().int(), name: text(200), items: z.array(z.unknown()).max(1000) }))
+    .array(
+      z.object({ id: z.number().int(), name: text(200), items: z.array(z.unknown()).max(1000) }),
+    )
     .max(200)
     .optional(),
   menuLocations: z.record(text(100), z.number().int()).optional(),
@@ -475,7 +477,10 @@ export async function importSite(
  * theme gets its menu only when it has none yet, so the look of the site is not changed.
  */
 async function importMenus(
-  file: { menus?: Array<{ id: number; name: string; items: unknown[] }>; menuLocations?: Record<string, number> },
+  file: {
+    menus?: Array<{ id: number; name: string; items: unknown[] }>;
+    menuLocations?: Record<string, number>;
+  },
   deps: BackupDeps,
   summary: ImportSummary,
 ): Promise<Map<number, number>> {
@@ -500,7 +505,9 @@ async function importMenus(
     const newId = menuIds.get(oldId);
     if (newId === undefined) continue;
     if (!known.includes(location)) {
-      summary.warnings.push(`Menu location "${location}" does not exist in this theme; not assigned.`);
+      summary.warnings.push(
+        `Menu location "${location}" does not exist in this theme; not assigned.`,
+      );
     } else if (current[location] !== undefined) {
       summary.warnings.push(`Menu location "${location}" already has a menu; left as it is.`);
     } else {
@@ -514,14 +521,20 @@ async function importMenus(
   return menuIds;
 }
 
-
 /**
  * Widgets go into the areas of the active theme that have none yet; a menu widget is pointed at
  * the new id of its menu (and left out when the menu was not restored).
  */
 async function importWidgets(
   file: {
-    widgets?: Record<string, Array<{ id?: string | undefined; type: string; settings?: Record<string, unknown> | undefined }>>;
+    widgets?: Record<
+      string,
+      Array<{
+        id?: string | undefined;
+        type: string;
+        settings?: Record<string, unknown> | undefined;
+      }>
+    >;
   },
   deps: BackupDeps,
   summary: ImportSummary,
@@ -530,14 +543,18 @@ async function importWidgets(
   const areas = Object.entries(file.widgets ?? {});
   if (areas.length === 0) return;
   if (!deps.widgets) {
-    summary.warnings.push('Widgets in the file were not restored: this site cannot manage widgets.');
+    summary.warnings.push(
+      'Widgets in the file were not restored: this site cannot manage widgets.',
+    );
     return;
   }
   const known = deps.widgetAreas?.() ?? [];
   const current = await deps.widgets.getAreas(known);
   for (const [area, list] of areas) {
     if (!known.includes(area)) {
-      summary.warnings.push(`Widget area "${area}" does not exist in this theme; its widgets were skipped.`);
+      summary.warnings.push(
+        `Widget area "${area}" does not exist in this theme; its widgets were skipped.`,
+      );
       continue;
     }
     if ((current[area] ?? []).length > 0) {
@@ -548,9 +565,12 @@ async function importWidgets(
     for (const widget of list) {
       const settings = { ...(widget.settings ?? {}) };
       if (widget.type === 'menu') {
-        const mapped = typeof settings['menuId'] === 'number' ? menuIds.get(settings['menuId']) : undefined;
+        const mapped =
+          typeof settings['menuId'] === 'number' ? menuIds.get(settings['menuId']) : undefined;
         if (mapped === undefined) {
-          summary.warnings.push(`A menu widget in "${area}" was skipped: its menu was not restored.`);
+          summary.warnings.push(
+            `A menu widget in "${area}" was skipped: its menu was not restored.`,
+          );
           continue;
         }
         settings['menuId'] = mapped;
@@ -574,7 +594,9 @@ async function importRedirects(
 ): Promise<void> {
   if (!file.redirects || file.redirects.length === 0) return;
   if (!deps.redirects) {
-    summary.warnings.push('Redirects in the file were not restored: this site cannot manage redirects.');
+    summary.warnings.push(
+      'Redirects in the file were not restored: this site cannot manage redirects.',
+    );
     return;
   }
   const result = await deps.redirects.addMany(file.redirects);

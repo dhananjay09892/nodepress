@@ -91,14 +91,17 @@ function Backup() {
       {limit.data === null && <p role="alert">You do not have permission to use backups.</p>}
       {limit.data && (
         <>
-          <section aria-labelledby="backup-export" className="space-y-3 rounded bg-white p-4 shadow">
+          <section
+            aria-labelledby="backup-export"
+            className="space-y-3 rounded bg-white p-4 shadow"
+          >
             <h2 id="backup-export" className="text-lg font-semibold text-slate-900">
               Download a backup
             </h2>
             <p className="max-w-2xl text-sm text-slate-700">
               One file with all posts and pages (drafts and trash too), their custom fields,
-              categories and tags, the site settings, menus, widgets and redirects. It has no
-              users, passwords or secrets, and no uploaded media files yet.
+              categories and tags, the site settings, menus, widgets and redirects. It has no users,
+              passwords or secrets, and no uploaded media files yet.
             </p>
             <a href="/api/v1/backup/export" download className={buttonClass}>
               Download backup

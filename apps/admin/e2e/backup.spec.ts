@@ -30,7 +30,10 @@ test('download a backup, refuse a wrong file and restore the backup', async ({ p
   });
   expect(rule.status()).toBe(201);
 
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Backup' }).click();
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .getByRole('link', { name: 'Backup' })
+    .click();
   await expect(page.getByRole('heading', { name: 'Backup', level: 1 })).toBeVisible();
   const [download] = await Promise.all([
     page.waitForEvent('download'),

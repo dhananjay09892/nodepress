@@ -332,7 +332,11 @@ describe('menus, widgets and redirects in a backup', () => {
       name: 'Main',
       items: [
         { label: 'Home', url: '/', children: [] },
-        { label: 'About', url: '/about', children: [{ label: 'Team', url: '/team', children: [] }] },
+        {
+          label: 'About',
+          url: '/about',
+          children: [{ label: 'Team', url: '/team', children: [] }],
+        },
       ],
     });
     await deps.menus!.setLocations({ primary: menu.id }, ['primary']);
@@ -356,9 +360,7 @@ describe('menus, widgets and redirects in a backup', () => {
     const site = await makeSite();
     const { deps, menu } = await seedExtras(site);
     const data = await exportSite(deps);
-    expect(data.menus).toEqual([
-      { id: menu.id, name: 'Main', items: expect.any(Array) },
-    ]);
+    expect(data.menus).toEqual([{ id: menu.id, name: 'Main', items: expect.any(Array) }]);
     expect(data.menuLocations).toEqual({ primary: menu.id });
     expect(Object.keys(data.widgets!)).toEqual(['sidebar']);
     expect(data.widgets!.sidebar!.map((w) => w.type)).toEqual(['text', 'menu']);
@@ -410,7 +412,9 @@ describe('menus, widgets and redirects in a backup', () => {
     const deps = withExtras(target);
     const other = await deps.menus!.create({ name: 'Other', items: [] });
     await deps.menus!.setLocations({ primary: other.id }, ['primary']);
-    await deps.widgets!.setAreas({ sidebar: [{ type: 'text', settings: { text: 'mine' } }] }, ['sidebar']);
+    await deps.widgets!.setAreas({ sidebar: [{ type: 'text', settings: { text: 'mine' } }] }, [
+      'sidebar',
+    ]);
     const summary = await importSite(exported, deps);
 
     expect(await deps.menus!.getLocations()).toEqual({ primary: other.id });
