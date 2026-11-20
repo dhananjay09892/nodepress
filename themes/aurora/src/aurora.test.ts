@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import NotFound from './404.js';
 import Front from './front.js';
 import Index from './index.js';
-import { customCss } from './layout.js';
+import { customCss, jsonLdScript } from './layout.js';
 import Page from './page.js';
 import Single from './single.js';
 
@@ -262,5 +262,38 @@ describe('Aurora SEO tags', () => {
     const html = await render(Single({ ...base, content: post('Hi'), tagline: 'Tag' }));
     expect(html).not.toContain('og:title');
     expect(html).toContain('name="description" content="Tag"');
+  });
+});
+
+describe('Aurora SEO plugin output', () => {
+  const meta: NonNullable<TemplateProps['meta']> = {
+    title: 'Better <title> | My Site',
+    robots: 'noindex, follow',
+    jsonLd: [{ '@type': 'Article', headline: '</script><script>alert(1)</script>' }],
+    description: 'd',
+    og: { title: 't', description: 'd', type: 'article', siteName: 'My Site' },
+  };
+
+  it('uses the title and robots from meta, and draws JSON-LD that cannot close the tag', async () => {
+    const html = await render(Single({ ...base, content: post('Hi'), meta }));
+    expect(html).toContain('<title>Better &lt;title&gt; | My Site</title>');
+    expect(html).not.toContain('<title>Hi |');
+    expect(html).toContain('name="robots" content="noindex, follow"');
+    const scripts = html.match(/<script type="application\/ld\+json">.*?<\/script>/g) ?? [];
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0]).toContain('\\u003c/script\\u003e');
+    expect(html.match(/<script/g)).toHaveLength(1);
+  });
+
+  it('draws no robots tag or JSON-LD by default', async () => {
+    const html = await render(Single({ ...base, content: post('Hi') }));
+    expect(html).not.toContain('name="robots"');
+    expect(html).not.toContain('ld+json');
+  });
+
+  it('jsonLdScript escapes characters that could break out of a script', () => {
+    const out = jsonLdScript({ a: '<>&\u2028' });
+    expect(out).not.toMatch(/[<>&\u2028]/);
+    expect(JSON.parse(out)).toEqual({ a: '<>&\u2028' });
   });
 });

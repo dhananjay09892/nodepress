@@ -172,6 +172,8 @@ export interface AppOptions {
     latestPosts?: () => Promise<Content[]>;
     /** Path or URL of an item's featured image (for `og:image`), if it has one. */
     featuredImage?: (content: Content) => Promise<string | undefined>;
+    /** An item's custom field values, handed to `meta:tags` filters as `context.fields`. */
+    customFields?: (content: Content) => Promise<Record<string, unknown>>;
     /**
      * The public address of the site (for example `https://example.com`) used in canonical and
      * Open Graph URLs; without it, or one set in `feeds`, the request's own origin is used.
@@ -372,7 +374,11 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       image,
       hasFeed: Boolean(options.feeds && permalinks),
     });
-    return filterMeta(np.hooks, built, { path, status, content });
+    const fields =
+      content && options.themes?.customFields
+        ? await options.themes.customFields(content).catch(() => undefined)
+        : undefined;
+    return filterMeta(np.hooks, built, { path, status, content, fields });
   }
 
   async function renderThemed(

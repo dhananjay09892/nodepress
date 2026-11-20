@@ -43,3 +43,4 @@ export type {
   MediaField,
   RelationField,
 } from '@nodepress/core';
+export type { Content, MetaTags, MetaTagsContext } from '@nodepress/core';

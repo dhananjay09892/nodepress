@@ -17,6 +17,7 @@
     "@nodepress/db": "workspace:*",
     "@nodepress/editor": "workspace:*",
     "@nodepress/plugin-hello": "workspace:*",
+    "@nodepress/plugin-seo": "workspace:*",
     "hono": "^4.6.0"
   }
 }

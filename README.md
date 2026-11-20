@@ -75,6 +75,8 @@ The **`nodepress` command line** (`@nodepress/cli`, `packages/cli`; run it with 
 
 SEO tags: themes receive a `meta` prop (`description` from the excerpt, else the tagline, else the site name; `canonical`; `feedUrl` when the site serves `/feed.xml`; and `og` with `title`, `description`, `type` (`article` for posts, `website` otherwise), `url`, `siteName` and `image` from the item's `featured_image` custom field). Absolute URLs use `SITE_URL`, else the request's origin; the 404 page has no canonical or `og:url`. Plugins change the tags with the `meta:tags` filter (value: the meta object, context: `{ path, status, content? }`); a result that is not valid meta tags is ignored. Aurora draws the description, canonical link, RSS `<link rel="alternate">` and the Open Graph tags in `<head>`, all escaped.
 
+The **SEO plugin** (`plugins/seo`, on by default) adds an SEO page in the admin (`manage_options`): ask search engines not to index the site (`noindex, nofollow` on every page), a default social image (a path or `https` URL), the organization name used as publisher, and a switch for schema.org data. Posts and pages get four custom fields (SEO title, meta description, social image URL, hide from search engines), which replace the `<title>`, description and `og:*` values and add `noindex, follow` when hidden. It works through the `meta:tags` filter, which now also carries `title`, `robots` and `jsonLd` (drawn by Aurora as the page title, `<meta name="robots">` and `<script type="application/ld+json">`, escaped so nothing can close the tag) and gets the item's custom fields as `context.fields`. The 404 page always gets `noindex`; JSON-LD is `WebSite` (and `Organization`) on the front page, `Article` on posts and `WebPage` on pages. A `robots.txt` is not served yet.
+
 Menus: a theme declares where it draws navigation in `theme.json` (`"menus": { "primary": "Primary menu" }`; `widgetAreas` is accepted the same way and is used by N52). Menus are kept in the options table and managed through `/api/v1/menus` (`GET`/`POST`, `GET`/`PATCH`/`DELETE /:id`) and `/api/v1/menu-locations` (`GET`, and `PUT` with `{ "primary": 3 }` to assign or `null` to clear), all needing the `edit_theme_options` capability (administrators). A menu is a tree of links up to 3 levels deep and 200 items, each with a `label`, a `url` (a site path, `http(s)`, `mailto:` or `tel:`; `javascript:` and similar are refused) and an optional `target: "_blank"`. Templates receive the assigned menus as `menus` (location name to items; unassigned locations are absent), and Aurora draws `primary` in the header and `footer` below the content. The admin Menus screen is N51.
 
 ## Repository layout
@@ -90,6 +92,7 @@ Menus: a theme declares where it draws navigation in `theme.json` (`"menus": { "
 | `themes/aurora`           | Default theme: blog and business layouts, responsive, dark mode          |
 | `themes/starter`          | Minimal example theme in TSX — copy it to start your own                 |
 | `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
+| `plugins/seo`             | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
 
 ## Writing a plugin
 
