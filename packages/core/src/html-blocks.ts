@@ -87,9 +87,28 @@ type Token =
   | { kind: 'open'; tag: string; attrs: Record<string, string>; selfClosing: boolean }
   | { kind: 'close'; tag: string };
 
-function tokenize(html: string): Token[] {
+/** Remove `<!-- … -->` (an unclosed one runs to the end, as in browsers) in one pass. */
+function stripComments(html: string): string {
+  let start = html.indexOf('<!--');
+  if (start === -1) return html;
+  let out = '';
+  let from = 0;
+  while (start !== -1) {
+    out += html.slice(from, start);
+    const end = html.indexOf('-->', start + 4);
+    if (end === -1) return out;
+    from = end + 3;
+    start = html.indexOf('<!--', from);
+  }
+  return out + html.slice(from);
+}
+
+function tokenize(source: string): Token[] {
+  const html = stripComments(source);
   const tokens: Token[] = [];
-  const pattern = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
+  // The tag body cannot contain a bare `<`: a `<` that is never closed would otherwise be matched
+  // against the whole rest of the text, once per `<` (quadratic time on `<p<p<p…`).
+  const pattern = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^>"'<])*)>/g;
   let last = 0;
   let match: RegExpExecArray | null;
   const pushText = (text: string): void => {
@@ -98,7 +117,6 @@ function tokenize(html: string): Token[] {
   while ((match = pattern.exec(html)) !== null) {
     pushText(html.slice(last, match.index));
     last = pattern.lastIndex;
-    if (match[0].startsWith('<!--')) continue;
     const tag = (match[2] ?? '').toLowerCase();
     if (match[1] === '/') {
       tokens.push({ kind: 'close', tag });
@@ -137,6 +155,10 @@ function tokenize(html: string): Token[] {
 export function safeHref(href: string | undefined): string | undefined {
   if (!href) return undefined;
   const value = href.trim();
+  // Browsers ignore tabs and line breaks inside an address (`java\tscript:` is `javascript:`), so
+  // an address with control characters is refused instead of being taken for a relative one.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(value)) return undefined;
   if (/^(https?:|mailto:|tel:|\/|#|\?)/i.test(value)) return value;
   if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) return value; // relative
   return undefined;
