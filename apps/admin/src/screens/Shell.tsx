@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tansta
 import { Link, Outlet, useNavigate } from '@tanstack/react-router';
 import { logout } from '../api.js';
 import { fetchExtensions } from '../extensions.js';
+import { fetchMenus } from '../menus.js';
 import { NAV_ITEMS } from '../nav.js';
 import { sessionQuery } from '../session.js';
 
@@ -17,6 +18,14 @@ export function Shell() {
   const extensions = useQuery({
     queryKey: ['admin-extensions'],
     queryFn: fetchExtensions,
+    staleTime: 60_000,
+  });
+
+  // The Menus entry is only for users who may edit menus (`edit_theme_options`): the menus API
+  // answers 403 for everyone else. Any other failure keeps the entry hidden.
+  const menus = useQuery({
+    queryKey: ['menus'],
+    queryFn: fetchMenus,
     staleTime: 60_000,
   });
 
@@ -49,6 +58,11 @@ export function Shell() {
               {item.label}
             </Link>
           ))}
+          {menus.data ? (
+            <Link to="/menus" className={linkClass} activeProps={activeClass}>
+              Menus
+            </Link>
+          ) : null}
           {extensions.data?.menu.map((item) => (
             <Link
               key={`${item.plugin}/${item.id}`}
