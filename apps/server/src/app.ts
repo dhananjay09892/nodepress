@@ -26,6 +26,7 @@ import { createAdminHandler } from './admin.js';
 import { createAuth, type AuthEnv, type AuthOptions } from './auth.js';
 import { createBackupRoutes, type BackupRoutesOptions } from './backup-api.js';
 import { createContactRoutes, type ContactRoutesOptions } from './contact-api.js';
+import { CONTACT_FORM_SCRIPT } from './contact-form-script.js';
 import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
@@ -347,7 +348,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       app.route('/api/v1/redirects', createRedirectsRoutes(auth, options.redirects));
     }
     if (options.backup) app.route('/api/v1/backup', createBackupRoutes(auth, options.backup));
-    if (options.contact) app.route('/api/v1/contact', createContactRoutes(auth, options.contact));
+    if (options.contact) {
+      app.route('/api/v1/contact', createContactRoutes(auth, options.contact));
+      // The script of the contact form block (inline scripts are blocked by the default CSP).
+      app.get('/np/contact-form.js', (c) => {
+        c.header('Content-Type', 'text/javascript; charset=utf-8');
+        c.header('Cache-Control', 'public, max-age=3600');
+        return c.body(CONTACT_FORM_SCRIPT);
+      });
+    }
     if (options.plugins) app.route('/api/v1/plugins', createPluginRoutes(auth, options.plugins));
     if (options.media) {
       app.route(
