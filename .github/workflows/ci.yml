@@ -339,10 +339,18 @@ jobs:
               curl -fs http://localhost:3000/api/health > /dev/null && break
               sleep 1
             done
-            npx --yes lighthouse@12.3.0 "http://localhost:3000$path" \
-              --only-categories=accessibility,performance --output=json \
-              --output-path="lh-$layout-$scheme.json" --quiet \
-              --chrome-flags="$flags"
+            # Chrome sometimes fails to record the page load (NO_NAVSTART) on a busy runner. That is a
+            # run that produced no score, not a bad score, so it is tried again (up to 3 times); the
+            # score check below is never retried.
+            ran=0
+            for attempt in 1 2 3; do
+              if npx --yes lighthouse@12.3.0 "http://localhost:3000$path" \
+                --only-categories=accessibility,performance --output=json \
+                --output-path="lh-$layout-$scheme.json" --quiet \
+                --chrome-flags="$flags"; then ran=1; break; fi
+              echo "Lighthouse did not produce a result (attempt $attempt of 3)"
+            done
+            [ "$ran" = 1 ]
             kill "$pid" || true
             wait "$pid" 2>/dev/null || true
             echo "$layout / $scheme / $path: accessibility $(jq '.categories.accessibility.score * 100' "lh-$layout-$scheme.json"), performance $(jq '.categories.performance.score * 100' "lh-$layout-$scheme.json")"
