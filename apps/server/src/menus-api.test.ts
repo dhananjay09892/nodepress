@@ -243,9 +243,7 @@ describe('themes receive the assigned menus', () => {
     await call('menus', 'POST', admin, { name: 'Main', items: [item('Home', '/')] });
     await call('menu-locations', 'PUT', admin, { primary: 1 });
     const html = await (await app.request(`${BASE}/`)).text();
-    expect(html).toContain(
-      '<nav>{"primary":[{"label":"Home","url":"/","children":[]}]}</nav>',
-    );
+    expect(html).toContain('<nav>{"primary":[{"label":"Home","url":"/","children":[]}]}</nav>');
   });
 
   it('passes an empty object when nothing is assigned', async () => {

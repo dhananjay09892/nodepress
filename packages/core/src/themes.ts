@@ -72,7 +72,10 @@ function readSubDir(raw: Record<string, unknown>, key: 'templates' | 'assets'): 
 const MAX_SLOTS = 20;
 
 /** Read `menus` or `widgetAreas`: an object of slot name → label. */
-function readSlots(raw: Record<string, unknown>, key: 'menus' | 'widgetAreas'): Record<string, string> {
+function readSlots(
+  raw: Record<string, unknown>,
+  key: 'menus' | 'widgetAreas',
+): Record<string, string> {
   const value = raw[key] ?? {};
   if (!isRecord(value) || Object.keys(value).length > MAX_SLOTS) {
     throw new ThemeError(`"${key}" must be an object of name to label (max ${MAX_SLOTS})`);

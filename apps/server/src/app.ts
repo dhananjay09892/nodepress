@@ -97,7 +97,14 @@ export interface AppOptions {
   menus?: {
     service: Pick<
       MenuService,
-      'list' | 'get' | 'create' | 'update' | 'delete' | 'getLocations' | 'setLocations' | 'forLocations'
+      | 'list'
+      | 'get'
+      | 'create'
+      | 'update'
+      | 'delete'
+      | 'getLocations'
+      | 'setLocations'
+      | 'forLocations'
     >;
     capabilities: Capabilities;
   };

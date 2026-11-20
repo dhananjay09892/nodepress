@@ -40,7 +40,9 @@ describe('Aurora page frame', () => {
       {
         label: 'Blog <b>',
         url: '/blog/hi',
-        children: [{ label: 'Docs', url: 'https://example.com', target: '_blank' as const, children: [] }],
+        children: [
+          { label: 'Docs', url: 'https://example.com', target: '_blank' as const, children: [] },
+        ],
       },
     ];
     const html = await render(

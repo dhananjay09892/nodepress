@@ -79,7 +79,10 @@ function parseName(value: unknown, field = 'name'): string {
   if (typeof value !== 'string') throw new MenuValidationError(field, `${field} must be a string`);
   const name = value.trim();
   if (name === '' || name.length > MAX_MENU_NAME_LENGTH || CONTROL_CHARACTERS.test(name)) {
-    throw new MenuValidationError(field, `${field} must be 1 to ${MAX_MENU_NAME_LENGTH} characters`);
+    throw new MenuValidationError(
+      field,
+      `${field} must be 1 to ${MAX_MENU_NAME_LENGTH} characters`,
+    );
   }
   return name;
 }
@@ -241,7 +244,10 @@ export class MenuService {
   ): Promise<Record<string, number>> {
     for (const [location, value] of Object.entries(assignments)) {
       if (!knownLocations.includes(location)) {
-        throw new MenuValidationError(location, `"${location}" is not a menu location of the theme`);
+        throw new MenuValidationError(
+          location,
+          `"${location}" is not a menu location of the theme`,
+        );
       }
       if (value !== null && (typeof value !== 'number' || !Number.isInteger(value))) {
         throw new MenuValidationError(location, `${location} must be a menu id or null`);

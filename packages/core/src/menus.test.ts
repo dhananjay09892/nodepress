@@ -26,10 +26,14 @@ function setup() {
 const link = (label: string, url = '/x', children: unknown[] = []) => ({ label, url, children });
 
 describe('isSafeMenuUrl', () => {
-  it.each(['/', '/about', 'https://example.com/a?b=1', 'http://example.com', 'mailto:a@b.co', 'tel:+1 555-0100'])(
-    'accepts %s',
-    (url) => expect(isSafeMenuUrl(url)).toBe(true),
-  );
+  it.each([
+    '/',
+    '/about',
+    'https://example.com/a?b=1',
+    'http://example.com',
+    'mailto:a@b.co',
+    'tel:+1 555-0100',
+  ])('accepts %s', (url) => expect(isSafeMenuUrl(url)).toBe(true));
   it.each([
     '',
     'javascript:alert(1)',
@@ -135,7 +139,9 @@ describe('MenuService', () => {
       footer: main.id,
     });
     expect(await menus.setLocations({ footer: null }, known)).toEqual({ primary: main.id });
-    await expect(menus.setLocations({ sidebar: main.id }, known)).rejects.toThrow(/not a menu location/);
+    await expect(menus.setLocations({ sidebar: main.id }, known)).rejects.toThrow(
+      /not a menu location/,
+    );
     await expect(menus.setLocations({ primary: 99 }, known)).rejects.toThrow(/does not exist/);
     await expect(menus.setLocations({ primary: '1' }, known)).rejects.toThrow(/menu id or null/);
     expect(await menus.getLocations()).toEqual({ primary: main.id });

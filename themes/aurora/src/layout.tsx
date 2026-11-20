@@ -15,9 +15,7 @@ function MenuList(props: { items: MenuItem[]; path: string; nested?: boolean }) 
           >
             {item.label}
           </a>
-          {item.children.length > 0 ? (
-            <MenuList items={item.children} path={path} nested />
-          ) : null}
+          {item.children.length > 0 ? <MenuList items={item.children} path={path} nested /> : null}
         </li>
       ))}
     </ul>
