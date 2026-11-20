@@ -125,7 +125,10 @@ describe('generated files', () => {
   });
 
   it('package.json runs the checkout server with the .env file', () => {
-    const pkg = JSON.parse(generatePackageJson(site)) as { name: string; scripts: Record<string, string> };
+    const pkg = JSON.parse(generatePackageJson(site)) as {
+      name: string;
+      scripts: Record<string, string>;
+    };
     expect(pkg.name).toBe('my-site');
     expect(pkg.scripts.start).toBe('node --env-file=.env /opt/nodepress/apps/server/dist/main.js');
     expect(pkg.scripts.dev).toContain('--watch');
@@ -140,7 +143,13 @@ describe('generated files', () => {
 
   it('the project lists .env in .gitignore', () => {
     const files = generateProject(site, fixedRandom);
-    expect([...files.keys()].sort()).toEqual(['.env', '.gitignore', 'README.md', 'package.json', 'plugins-installed/.gitkeep']);
+    expect([...files.keys()].sort()).toEqual([
+      '.env',
+      '.gitignore',
+      'README.md',
+      'package.json',
+      'plugins-installed/.gitkeep',
+    ]);
     expect(files.get('.gitignore')).toContain('.env');
     expect(files.get('README.md')).toContain('owner@example.com');
   });
@@ -164,7 +173,9 @@ describe('writeProject', () => {
   });
 
   it('refuses a file path that leaves the folder', async () => {
-    await expect(writeProject(join(dir, 'x'), new Map([['../escape.txt', 'x']]))).rejects.toThrow(/outside/);
+    await expect(writeProject(join(dir, 'x'), new Map([['../escape.txt', 'x']]))).rejects.toThrow(
+      /outside/,
+    );
     await expect(stat(join(dir, 'escape.txt'))).rejects.toThrow();
   });
 });
@@ -208,7 +219,9 @@ describe('runInstaller', () => {
     const io = makeIo();
     const argv = flags().filter((a) => !a.startsWith('--admin-password'));
     expect(await runInstaller(argv, io)).toBe(0);
-    expect(io.lines.join('\n')).toContain(`password (shown once, also in .env): ${'ab'.repeat(10)}`);
+    expect(io.lines.join('\n')).toContain(
+      `password (shown once, also in .env): ${'ab'.repeat(10)}`,
+    );
   });
 
   it('asks questions when interactive and re-asks after a bad answer', async () => {
@@ -234,7 +247,12 @@ describe('runInstaller', () => {
     expect(await runInstaller(['x1', '--yes', '--admin-email=a@b.co'], noFrom)).toBe(1);
     expect(noFrom.errors.join('\n')).toContain('not published to npm');
     const unbuilt = makeIo();
-    expect(await runInstaller(flags().map((a) => (a.startsWith('--from') ? `--from=${dir}` : a)), unbuilt)).toBe(1);
+    expect(
+      await runInstaller(
+        flags().map((a) => (a.startsWith('--from') ? `--from=${dir}` : a)),
+        unbuilt,
+      ),
+    ).toBe(1);
     expect(unbuilt.errors.join('\n')).toContain('pnpm build');
     const bad = makeIo();
     expect(await runInstaller(['Bad Name', ...flags().slice(1)], bad)).toBe(1);

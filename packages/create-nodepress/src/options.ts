@@ -107,5 +107,8 @@ export function validateSiteUrl(value: string): string | undefined {
   } catch {
     // falls through to the error below
   }
-  throw new InstallError('siteUrl', 'Enter an http(s) address like https://example.com, or leave it empty.');
+  throw new InstallError(
+    'siteUrl',
+    'Enter an http(s) address like https://example.com, or leave it empty.',
+  );
 }

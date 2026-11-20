@@ -83,19 +83,19 @@ Menus: a theme declares where it draws navigation in `theme.json` (`"menus": { "
 
 ## Repository layout
 
-| Path                      | What it is                                                               |
-| ------------------------- | ------------------------------------------------------------------------ |
-| `packages/core`           | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
-| `packages/sdk`            | Public API for plugin and theme authors (`definePlugin`, types)          |
-| `packages/db`             | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
-| `packages/editor`         | Block model, block registry, core blocks and server-side HTML renderer   |
-| `apps/server`             | Hono HTTP server that boots a NodePress site                             |
-| `apps/admin`              | React admin dashboard, served by the server at `/admin`                  |
-| `themes/aurora`           | Default theme: blog and business layouts, responsive, dark mode          |
-| `themes/starter`          | Minimal example theme in TSX — copy it to start your own                 |
+| Path                        | What it is                                                               |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `packages/core`             | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
+| `packages/sdk`              | Public API for plugin and theme authors (`definePlugin`, types)          |
+| `packages/db`               | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
+| `packages/editor`           | Block model, block registry, core blocks and server-side HTML renderer   |
+| `apps/server`               | Hono HTTP server that boots a NodePress site                             |
+| `apps/admin`                | React admin dashboard, served by the server at `/admin`                  |
+| `themes/aurora`             | Default theme: blog and business layouts, responsive, dark mode          |
+| `themes/starter`            | Minimal example theme in TSX — copy it to start your own                 |
 | `packages/create-nodepress` | Installer: `create-nodepress <folder>` writes a ready-to-run site folder |
-| `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
-| `plugins/seo`             | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
+| `plugins/hello-nodepress`   | Minimal example plugin — copy it to start your own                       |
+| `plugins/seo`               | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
 
 ## Writing a plugin
 

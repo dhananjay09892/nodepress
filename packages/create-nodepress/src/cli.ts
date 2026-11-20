@@ -53,7 +53,10 @@ built with "pnpm build". See docs/adr/0002-distribution.md.
 
 const BOOLEAN_FLAGS = new Set(['yes', 'help']);
 
-function parse(argv: readonly string[]): { positional: string[]; flags: Record<string, string | true> } {
+function parse(argv: readonly string[]): {
+  positional: string[];
+  flags: Record<string, string | true>;
+} {
   const positional: string[] = [];
   const flags: Record<string, string | true> = {};
   for (let i = 0; i < argv.length; i++) {
@@ -121,7 +124,8 @@ export async function runInstaller(argv: readonly string[], io: CliIo): Promise<
       return check(fallback);
     }
 
-    const folder = positional[0] ?? (interactive ? (await io.ask!('Folder for the new site: ')).trim() : '');
+    const folder =
+      positional[0] ?? (interactive ? (await io.ask!('Folder for the new site: ')).trim() : '');
     if (!folder) {
       io.err('Say where to create the site: create-nodepress <folder>\n');
       io.err(HELP);
@@ -136,16 +140,25 @@ export async function runInstaller(argv: readonly string[], io: CliIo): Promise<
     let adminPassword: string;
     if (givenPassword !== undefined) adminPassword = validatePassword(givenPassword);
     else if (interactive) {
-      adminPassword = await value('admin-password', 'Administrator password, 12+ characters (empty makes one)', '', (raw) =>
-        raw === '' ? '' : validatePassword(raw),
+      adminPassword = await value(
+        'admin-password',
+        'Administrator password, 12+ characters (empty makes one)',
+        '',
+        (raw) => (raw === '' ? '' : validatePassword(raw)),
       );
       if (adminPassword === '') adminPassword = generatedPassword = random(10);
     } else adminPassword = generatedPassword = random(10);
 
-    const database = await value('database', 'Database address', DEFAULT_DATABASE_URL, validateDatabaseUrl);
+    const database = await value(
+      'database',
+      'Database address',
+      DEFAULT_DATABASE_URL,
+      validateDatabaseUrl,
+    );
     const databaseAuthToken =
       database.kind === 'libsql'
-        ? (text('database-token') ?? (interactive ? (await io.ask!('Turso auth token: ')).trim() : undefined))
+        ? (text('database-token') ??
+          (interactive ? (await io.ask!('Turso auth token: ')).trim() : undefined))
         : undefined;
     const port = await value('port', 'Port', '3000', validatePort);
     const siteUrl = await value('site-url', 'Public address, optional', '', validateSiteUrl);
