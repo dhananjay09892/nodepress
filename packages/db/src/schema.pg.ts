@@ -139,6 +139,25 @@ export const slugRedirects = pgTable(
   ],
 );
 
+/** Messages sent through a contact form, newest last. The sender's address is stored hashed. */
+export const contactSubmissions = pgTable(
+  'contact_submissions',
+  {
+    id: id(),
+    /** Which form it came from (`contact` unless a site has several). */
+    form: text('form').notNull(),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    message: text('message').notNull(),
+    /** SHA-256 of the sender's IP address, never the address itself. */
+    ipHash: text('ip_hash').notNull(),
+    /** `sent`, `failed` or `skipped` (no recipient configured). */
+    mailStatus: text('mail_status').notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [index('contact_submissions_created_idx').on(t.createdAt)],
+);
+
 export const terms = pgTable(
   'terms',
   {

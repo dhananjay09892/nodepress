@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
@@ -23,6 +24,9 @@ import {
   createUsersService,
   discoverThemes,
   createWebhookService,
+  createContactForm,
+  createLogMailAdapter,
+  isEmailAddress,
   createDiskPageCache,
   createMemoryPageCache,
   createPageCache,
@@ -39,6 +43,7 @@ import {
   createJobsStore,
   createMediaStore,
   createOptionsStore,
+  createContactSubmissionsStore,
   createPluginsStore,
   createSessionsStore,
   createSlugRedirectsStore,
@@ -296,6 +301,20 @@ const pageCache =
       });
 pageCache?.attach();
 const contentMeta = createContentMetaStore(database);
+// Contact form: CONTACT_TO is where messages are emailed (until a real mail adapter is set up they
+// are only logged and kept). CONTACT_SECRET signs the form tokens; without it a random one is used,
+// which only means a form loaded before a restart must be loaded again.
+const contactTo = process.env.CONTACT_TO;
+if (contactTo && !isEmailAddress(contactTo)) {
+  np.logger.warn('CONTACT_TO is not a plain email address; contact messages will not be emailed.');
+}
+const contact = createContactForm({
+  store: createContactSubmissionsStore(database),
+  secret: process.env.CONTACT_SECRET ?? randomBytes(32).toString('hex'),
+  to: contactTo && isEmailAddress(contactTo) ? contactTo : undefined,
+  mail: createLogMailAdapter(np.logger.child('mail')),
+  logger: np.logger.child('contact'),
+});
 const app = createApp(np, database, {
   ...(admin ? { admin } : {}),
   ...(pageCache ? { pageCache } : {}),
@@ -376,6 +395,7 @@ const app = createApp(np, database, {
     running: () => np.plugins.list(),
     loaded: () => loadedPackages,
   },
+  contact: { contact, capabilities, trustProxy: process.env.TRUST_PROXY === 'true' },
   auth: {
     users,
     sessions,
