@@ -406,7 +406,7 @@ describe('menus, widgets and redirects in a backup', () => {
     await seedExtras(source);
     const exported = JSON.parse(JSON.stringify(await exportSite(withExtras(source)))) as SiteExport;
     exported.redirects!.push({ from: '/admin/x', to: '/y', status: 301 });
-    exported.widgets!.footer = [{ type: 'text', settings: { text: 'x' } }];
+    exported.widgets!.footer = [{ id: 'w-footer', type: 'text', settings: { text: 'x' } }];
 
     const target = await makeSite();
     const deps = withExtras(target);
