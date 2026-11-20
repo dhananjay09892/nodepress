@@ -278,7 +278,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] `create-nodepress` CLI + web installer
 - [ ] Docker image + one-click deploy templates
 - [ ] Built-in updater
-- [ ] WordPress importer
+- [ ] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, admin screen, media download and serving redirects are N55
 - [ ] Backup/export (JSON + media zip)
 
 ### Phase 6: Beta → 1.0 (weeks 22–26)
