@@ -122,7 +122,7 @@ function call(path: string, method: string, headers: Record<string, string>, bod
   });
 }
 
-type Json = Record<string, any>;
+type Json = Record<string, unknown>;
 const item = (label: string, url: string) => ({ label, url });
 
 describe('/api/v1/menus', () => {
