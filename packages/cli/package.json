@@ -1,0 +1,31 @@
+{
+  "name": "@nodepress/cli",
+  "version": "0.0.0",
+  "description": "The nodepress command line: run migrations, start a dev server, create, check and pack plugins and themes",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "nodepress": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nodepress/core": "workspace:*",
+    "@nodepress/db": "workspace:*"
+  }
+}
