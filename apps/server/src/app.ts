@@ -157,6 +157,7 @@ export interface AppOptions {
    * before the 404 page (a content page at the same path still wins).
    */
   redirects?: RedirectsRoutesOptions;
+  /**
    * Enables `/api/v1/backup` (needs `auth`): export the site as JSON and import such a file,
    * `manage_options` only.
    */
