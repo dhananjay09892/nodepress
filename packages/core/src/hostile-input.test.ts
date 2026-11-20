@@ -79,7 +79,7 @@ describe('HTML to blocks', () => {
       '<img src=' + "'".repeat(100_001),
       '<!--'.repeat(200_000),
       '<a "x'.repeat(100_000),
-      '<a href=\'x'.repeat(100_000),
+      "<a href='x".repeat(100_000),
     ]) {
       timed(() => htmlToBlocks(html));
     }
