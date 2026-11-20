@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from '@tanstack/react-router';
 import { logout } from '../api.js';
 import { fetchExtensions } from '../extensions.js';
 import { fetchMenus } from '../menus.js';
+import { fetchWidgets } from '../widgets.js';
 import { NAV_ITEMS } from '../nav.js';
 import { sessionQuery } from '../session.js';
 
@@ -26,6 +27,13 @@ export function Shell() {
   const menus = useQuery({
     queryKey: ['menus'],
     queryFn: fetchMenus,
+    staleTime: 60_000,
+  });
+
+  // Same idea for Widgets: the widgets API answers 403 without `edit_theme_options`.
+  const widgets = useQuery({
+    queryKey: ['widgets'],
+    queryFn: fetchWidgets,
     staleTime: 60_000,
   });
 
@@ -61,6 +69,11 @@ export function Shell() {
           {menus.data ? (
             <Link to="/menus" className={linkClass} activeProps={activeClass}>
               Menus
+            </Link>
+          ) : null}
+          {widgets.data ? (
+            <Link to="/widgets" className={linkClass} activeProps={activeClass}>
+              Widgets
             </Link>
           ) : null}
           {extensions.data?.menu.map((item) => (
