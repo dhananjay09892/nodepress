@@ -24,6 +24,7 @@ import {
   discoverThemes,
   createWebhookService,
   createWidgetService,
+  cleanIncomingFolders,
   loadPluginPackages,
   PluginStateService,
 } from '@nodepress/core';
@@ -81,8 +82,10 @@ const options = createOptionsService({ store: createOptionsStore(database), hook
 const pluginsDir =
   process.env.PLUGINS_DIR ?? fileURLToPath(new URL('../../../plugins-installed', import.meta.url));
 const pluginState = new PluginStateService(createPluginsStore(database));
+let loadedPackages: string[] = [];
 try {
-  await loadPluginPackages({
+  await cleanIncomingFolders(pluginsDir);
+  const loaded = await loadPluginPackages({
     dir: pluginsDir,
     state: pluginState,
     plugins: np.plugins,
@@ -328,6 +331,13 @@ const app = createApp(np, database, {
   widgets: { service: widgetService, capabilities },
   themeSettings: { service: themeSettingsService, capabilities },
   ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
+  plugins: {
+    dir: pluginsDir,
+    state: pluginState,
+    capabilities,
+    running: () => np.plugins.list(),
+    loaded: () => loadedPackages,
+  },
   auth: {
     users,
     sessions,

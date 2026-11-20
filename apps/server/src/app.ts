@@ -26,6 +26,7 @@ import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
+import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
 import { createThemeSettingsRoutes, type ThemeSettingsService } from './theme-settings.js';
 import { createSettingsRoutes } from './settings-api.js';
@@ -128,6 +129,11 @@ export interface AppOptions {
   themeSettings?: { service: ThemeSettingsService; capabilities: Capabilities };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
+  /**
+   * Enables `/api/v1/plugins` (needs `auth`): list, upload (.zip) and enable or disable plugin
+   * packages; `manage_plugins` only. See `createPluginRoutes`.
+   */
+  plugins?: PluginRoutesOptions;
   /**
    * Enables `/api/v1/admin-extensions` (needs `auth`): the menu items, pages and settings
    * panels plugins add to the admin (`np.admin`). Each page needs the capability its plugin
@@ -254,6 +260,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         }),
       );
     }
+    if (options.plugins) app.route('/api/v1/plugins', createPluginRoutes(auth, options.plugins));
     if (options.media) {
       app.route(
         '/api/v1/media',

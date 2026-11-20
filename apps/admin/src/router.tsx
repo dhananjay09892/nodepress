@@ -15,6 +15,7 @@ import { MediaLibrary } from './screens/MediaLibrary.js';
 import { Users } from './screens/Users.js';
 import { Settings } from './screens/Settings.js';
 import { Menus } from './screens/Menus.js';
+import { Plugins } from './screens/Plugins.js';
 import { Widgets } from './screens/Widgets.js';
 import { Customize } from './screens/Customize.js';
 import { ExtensionPage } from './screens/ExtensionPage.js';
@@ -119,6 +120,12 @@ const menusRoute = createRoute({
   component: Menus,
 });
 
+const pluginsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/plugins',
+  component: Plugins,
+});
+
 const widgetsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/widgets',
@@ -158,6 +165,7 @@ const routeTree = rootRoute.addChildren([
     settingsPermalinksRoute,
     menusRoute,
     widgetsRoute,
+    pluginsRoute,
     customizeRoute,
     extensionPageRoute,
     editorPreviewRoute,
