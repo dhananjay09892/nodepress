@@ -148,6 +148,19 @@ jobs:
         if: always()
         run: cat apps/server/server.log || true
 
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    # Reports high and critical advisories without blocking merges; N62 makes it blocking once clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: pnpm audit --prod --audit-level=high
+
   admin-e2e:
     name: Admin end-to-end (Playwright)
     runs-on: ubuntu-latest

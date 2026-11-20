@@ -284,7 +284,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 ### Phase 6: Beta → 1.0 (weeks 22–26)
 
 - [ ] Private beta with 10–20 real sites (bloggers, small businesses, 2–3 agencies)
-- [ ] Security review (auth, uploads, XSS/CSRF/SQLi, plugin permissions)
+- [ ] Security review (auth, uploads, XSS/CSRF/SQLi, plugin permissions) — security headers, `SECURITY.md`, audit job and a first review done (N39, `docs/security-review.md`); second pass is N62
 - [ ] Performance budget: <100 ms TTFB cached, Lighthouse 95+ on default theme
 - [ ] Accessibility audit of admin + default theme (WCAG 2.1 AA)
 - [ ] Docs site, landing page, launch posts
