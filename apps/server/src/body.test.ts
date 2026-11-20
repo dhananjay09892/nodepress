@@ -95,7 +95,10 @@ describe('post body at its permalink', () => {
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), 'np-body-'));
     await mkdir(join(root, 'demo', 'templates'), { recursive: true });
-    await writeFile(join(root, 'demo', 'theme.json'), JSON.stringify({ name: 'demo', version: '1.0.0' }));
+    await writeFile(
+      join(root, 'demo', 'theme.json'),
+      JSON.stringify({ name: 'demo', version: '1.0.0' }),
+    );
     await writeFile(
       join(root, 'demo', 'templates', 'index.mjs'),
       `export default (p) => '<article>' + p.html + '</article>';`,

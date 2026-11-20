@@ -86,6 +86,9 @@ importers:
       '@nodepress/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@nodepress/editor':
+        specifier: workspace:*
+        version: link:../../packages/editor
       '@nodepress/plugin-hello':
         specifier: workspace:*
         version: link:../../plugins/hello-nodepress
