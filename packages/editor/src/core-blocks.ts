@@ -211,6 +211,75 @@ const button: BlockDefinition = {
   },
 };
 
+/** Where the contact form script is served from (the server mounts it when contact is on). */
+export const CONTACT_FORM_SCRIPT_PATH = '/np/contact-form.js';
+const FORM_ID = /^[a-z0-9-]{1,40}$/;
+
+function contactText(block: Block, key: string, fallback: string, max: number): string {
+  const value = attr(block, key, isString)?.replace(/\s+/g, ' ').trim();
+  return value ? value.slice(0, max) : fallback;
+}
+
+const contactForm: BlockDefinition = {
+  name: 'core/contact-form',
+  title: 'Contact form',
+  validate(block) {
+    const form = block.attrs?.['form'];
+    if (form !== undefined && (typeof form !== 'string' || !FORM_ID.test(form))) {
+      throw new Error('contact form id must be 1-40 lowercase letters, digits or dashes');
+    }
+    for (const key of ['submitLabel', 'successMessage'] as const) {
+      const value = block.attrs?.[key];
+      if (value !== undefined && (typeof value !== 'string' || value.length > 200)) {
+        throw new Error(`contact form ${key} must be text of at most 200 characters`);
+      }
+    }
+    return block;
+  },
+  render(block) {
+    const formAttr = attr(block, 'form', isString);
+    const form = formAttr && FORM_ID.test(formAttr) ? formAttr : 'contact';
+    const label = contactText(block, 'submitLabel', 'Send message', 60);
+    const success = contactText(
+      block,
+      'successMessage',
+      'Thank you. Your message has been sent.',
+      200,
+    );
+    const id = `np-${form}`;
+    const field = (name: string, title: string, control: string) =>
+      `<p class="np-field np-field-${name}"><label for="${id}-${name}">${title}</label>${control}` +
+      `<span class="np-field-error" id="${id}-${name}-error" role="alert" hidden></span></p>`;
+    const describe = (name: string) => `aria-describedby="${id}-${name}-error"`;
+    return (
+      `<form class="np-contact-form" method="post" action="/api/v1/contact" novalidate` +
+      ` data-np-contact-form data-form="${escapeHtml(form)}" data-success="${escapeHtml(success)}">` +
+      field(
+        'name',
+        'Name',
+        `<input id="${id}-name" name="name" type="text" autocomplete="name" required maxlength="100" ${describe('name')}>`,
+      ) +
+      field(
+        'email',
+        'Email',
+        `<input id="${id}-email" name="email" type="email" autocomplete="email" required maxlength="254" ${describe('email')}>`,
+      ) +
+      field(
+        'message',
+        'Message',
+        `<textarea id="${id}-message" name="message" rows="6" required maxlength="5000" ${describe('message')}></textarea>`,
+      ) +
+      `<p class="np-field-trap" aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">` +
+      `<label for="${id}-website">Leave this field empty</label>` +
+      `<input id="${id}-website" name="website" type="text" tabindex="-1" autocomplete="off"></p>` +
+      `<p class="np-contact-actions"><button type="submit" class="np-button np-button-fill">${escapeHtml(label)}</button></p>` +
+      `<p class="np-contact-status" role="status" aria-live="polite" hidden></p>` +
+      `<noscript><p>Turn on JavaScript to send a message from this page.</p></noscript>` +
+      `</form><script src="${CONTACT_FORM_SCRIPT_PATH}" defer></script>`
+    );
+  },
+};
+
 export const coreBlocks: readonly BlockDefinition[] = [
   paragraph,
   heading,
@@ -223,6 +292,7 @@ export const coreBlocks: readonly BlockDefinition[] = [
   columns,
   column,
   button,
+  contactForm,
 ];
 
 export function createBlockRegistry(): BlockRegistry {

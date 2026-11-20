@@ -132,6 +132,8 @@ export function blockToTiptap(block: Block): TiptapNode {
       return withAttrs({ type: 'npEmbed' }, pick(attrs, ['url']));
     case 'core/button':
       return withAttrs({ type: 'npButton' }, pick(attrs, ['text', 'href', 'style']));
+    case 'core/contact-form':
+      return withAttrs({ type: 'npContactForm' }, pick(attrs, ['form', 'submitLabel', 'successMessage']));
     case 'core/columns':
       return {
         type: 'npColumns',
@@ -232,6 +234,11 @@ export function blockFromTiptap(node: TiptapNode): Block {
       return withBlockAttrs(
         { type: 'core/button' },
         cleanAttrs(pick(attrs, ['text', 'href', 'style'])),
+      );
+    case 'npContactForm':
+      return withBlockAttrs(
+        { type: 'core/contact-form' },
+        cleanAttrs(pick(attrs, ['form', 'submitLabel', 'successMessage'])),
       );
     case 'npColumns':
       return {

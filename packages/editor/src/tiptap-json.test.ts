@@ -71,6 +71,11 @@ const fixtures: Record<string, Block> = {
     ],
   },
   button: { type: 'core/button', attrs: { text: 'Click', href: 'https://example.com' } },
+  contactForm: {
+    type: 'core/contact-form',
+    attrs: { form: 'sales', submitLabel: 'Ask us', successMessage: 'Thanks!' },
+  },
+  contactFormDefaults: { type: 'core/contact-form' },
 };
 
 describe('envelope <-> Tiptap JSON', () => {

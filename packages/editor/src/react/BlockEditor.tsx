@@ -151,6 +151,10 @@ function Toolbar({ editor }: { editor: Editor }) {
         }}
       />
       <ToolbarButton
+        label="Contact form"
+        onClick={() => run().insertContent({ type: 'npContactForm' }).run()}
+      />
+      <ToolbarButton
         label="Columns"
         onClick={() => {
           const column = { type: 'npColumn', content: [{ type: 'paragraph' }] };
