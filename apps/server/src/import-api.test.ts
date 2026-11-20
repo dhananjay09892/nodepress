@@ -199,7 +199,10 @@ const WXR_MEDIA = WXR.replace(
     <wp:attachment_url><![CDATA[https://old.example.com/wp-content/uploads/missing.png]]></wp:attachment_url>
   </item>
 </channel>`,
-).replace('<![CDATA[<p>Ciao!</p>]]>', '<![CDATA[<p>Ciao!</p><img src="https://old.example.com/wp-content/uploads/rome.png">]]>');
+).replace(
+  '<![CDATA[<p>Ciao!</p>]]>',
+  '<![CDATA[<p>Ciao!</p><img src="https://old.example.com/wp-content/uploads/rome.png">]]>',
+);
 
 type Json = Record<string, unknown>;
 

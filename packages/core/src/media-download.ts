@@ -95,7 +95,10 @@ async function assertPublic(url: URL, options: DownloadOptions): Promise<void> {
     throw new DownloadError('network', `The host ${host} could not be found.`);
   }
   if (addresses.length === 0 || addresses.some(isPrivateAddress)) {
-    throw new DownloadError('blocked_host', 'The host resolves to a private or unreachable address.');
+    throw new DownloadError(
+      'blocked_host',
+      'The host resolves to a private or unreachable address.',
+    );
   }
 }
 
@@ -189,14 +192,16 @@ export async function downloadFile(
       const data = await readBody(response.body, maxBytes);
       return {
         data,
-        contentType: response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() || null,
+        contentType:
+          response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() || null,
         finalUrl: url.toString(),
         filename: filenameFromUrl(url.toString()),
       };
     }
   } catch (error) {
     if (error instanceof DownloadError) throw error;
-    if (timedOut) throw new DownloadError('timeout', `The download took longer than ${timeoutMs} ms.`);
+    if (timedOut)
+      throw new DownloadError('timeout', `The download took longer than ${timeoutMs} ms.`);
     throw new DownloadError('network', error instanceof Error ? error.message : String(error));
   } finally {
     clearTimeout(timer);

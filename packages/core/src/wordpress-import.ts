@@ -484,7 +484,12 @@ export async function importWordPress(
   const mediaByKey = new Map<string, { id: number; url: string }>();
   const mediaByWpId = new Map<number, number>();
   if (options.importMedia) {
-    const media: MediaImportReport = { imported: [], failed: [], imagesRewritten: 0, featuredImages: 0 };
+    const media: MediaImportReport = {
+      imported: [],
+      failed: [],
+      imagesRewritten: 0,
+      featuredImages: 0,
+    };
     report.media = media;
     const limit = options.maxMediaFiles ?? DEFAULT_MAX_MEDIA_FILES;
     const seen = new Set<string>();
