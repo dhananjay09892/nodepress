@@ -88,6 +88,19 @@ export {
   type StoredMenus,
 } from './menus.js';
 export {
+  PageCache,
+  createDiskPageCache,
+  createMemoryPageCache,
+  createPageCache,
+  DEFAULT_PAGE_CACHE_ENTRIES,
+  DEFAULT_PAGE_CACHE_TTL_MS,
+  type CachedPage,
+  type DiskPageCacheOptions,
+  type MemoryPageCacheOptions,
+  type PageCacheAdapter,
+  type PageCacheOptions,
+} from './page-cache.js';
+export {
   WidgetService,
   WidgetValidationError,
   createWidgetService,
