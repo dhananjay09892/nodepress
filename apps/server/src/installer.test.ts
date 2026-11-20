@@ -24,7 +24,12 @@ const fakeHasher: PasswordHasher = {
 
 const BASE = 'http://localhost';
 const CODE = 'setup-code-1234';
-const GOOD = { code: CODE, siteName: 'My Site', email: 'owner@example.com', password: 'long enough pw' };
+const GOOD = {
+  code: CODE,
+  siteName: 'My Site',
+  email: 'owner@example.com',
+  password: 'long enough pw',
+};
 
 let database: DatabaseHandle;
 let app: ReturnType<typeof createApp>;
@@ -107,7 +112,9 @@ describe('web installer', () => {
     expect(installedName).toBe('My Site');
     // Afterwards the wizard is gone and the site is no longer redirected.
     expect((await app.request(`${BASE}/install`, { redirect: 'manual' })).status).toBe(302);
-    expect((await app.request(`${BASE}/install`, { redirect: 'manual' })).headers.get('location')).toBe('/admin/');
+    expect(
+      (await app.request(`${BASE}/install`, { redirect: 'manual' })).headers.get('location'),
+    ).toBe('/admin/');
     expect((await post(GOOD)).status).toBe(409);
     expect(await (await app.request(`${BASE}/api/v1/install/status`)).json()).toEqual({
       needsSetup: false,
@@ -143,10 +150,7 @@ describe('web installer', () => {
   });
 
   it('only one request creates the administrator when two arrive together', async () => {
-    const results = await Promise.all([
-      post(GOOD),
-      post({ ...GOOD, email: 'other@example.com' }),
-    ]);
+    const results = await Promise.all([post(GOOD), post({ ...GOOD, email: 'other@example.com' })]);
     expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
     expect(await users.list()).toHaveLength(1);
   });
