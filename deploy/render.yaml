@@ -1,0 +1,28 @@
+# Render blueprint: copy to the repository root as render.yaml, then create a Blueprint on Render.
+# The persistent disk needs a paid instance; add a Render PostgreSQL database instead if you prefer.
+services:
+  - type: web
+    name: nodepress
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    plan: starter
+    disk:
+      name: nodepress-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: SITE_NAME
+        value: NodePress
+      - key: SITE_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CONTACT_SECRET
+        generateValue: true
+      - key: WEBHOOK_SIGNING_KEY
+        generateValue: true
+      - key: TRUST_PROXY
+        value: 'true'
