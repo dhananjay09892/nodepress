@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
 const EMAIL = 'admin@example.test';
@@ -48,8 +50,9 @@ test('download a backup, refuse a wrong file and restore the backup', async ({ p
     page.getByRole('link', { name: 'Download backup' }).click(),
   ]);
   expect(download.suggestedFilename()).toMatch(/^nodepress-export-\d{4}-\d{2}-\d{2}\.json$/);
-  const file = await download.path();
-  expect(file).toBeTruthy();
+  // Playwright keeps downloads under a random name; the screen wants a .json file name.
+  const file = path.join(os.tmpdir(), download.suggestedFilename());
+  await download.saveAs(file);
 
   // A wrong file is refused before anything is sent.
   const form = page.getByRole('form', { name: 'Restore a backup' });
@@ -63,7 +66,7 @@ test('download a backup, refuse a wrong file and restore the backup', async ({ p
 
   // Restoring adds the content next to what is there: the post now exists twice, and the
   // redirect that already exists is reported, not duplicated.
-  await form.getByLabel('Backup file').setInputFiles(file!);
+  await form.getByLabel('Backup file').setInputFiles(file);
   await form.getByRole('button', { name: 'Restore backup' }).click();
   const result = page.getByRole('region', { name: 'Restore result' });
   await expect(result).toContainText('Restored', { timeout: 60_000 });
