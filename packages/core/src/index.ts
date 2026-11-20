@@ -377,3 +377,33 @@ export {
   type ThemeManifest,
   type ThemeServiceOptions,
 } from './themes.js';
+export {
+  parseWxr,
+  WxrError,
+  MAX_WXR_BYTES,
+  type WxrExport,
+  type WxrItem,
+  type WxrAuthor,
+  type WxrTerm,
+  type WxrItemTerm,
+  type WxrComment,
+} from './wxr.js';
+export {
+  htmlToBlocks,
+  mapBlockUrls,
+  safeHref,
+  type ImportedBlock,
+  type ImportedText,
+  type ImportedMark,
+} from './html-blocks.js';
+export {
+  importWordPress,
+  parseWpDate,
+  normalizePath,
+  type ImportAuthor,
+  type ImportReport,
+  type ImportRedirect,
+  type ImportedAttachment,
+  type ImportSkipped,
+  type WordPressImportOptions,
+} from './wordpress-import.js';
