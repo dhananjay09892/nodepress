@@ -4,15 +4,15 @@ Scope of this pass: browser-facing headers, the upload serving path, and a check
 
 ## Findings
 
-| # | Finding | Status |
-| - | ------- | ------ |
-| 1 | No Content-Security-Policy, framing, referrer or MIME-sniffing headers on pages, the admin or the API (only uploads had their own). | Fixed: `securityHeaders` middleware, tested, outermost so cached pages get it too. |
-| 2 | No `Strict-Transport-Security` over HTTPS. | Fixed: sent on HTTPS (or a trusted `X-Forwarded-Proto`), off with `HSTS=off`. |
-| 3 | No dependency audit in CI. | Fixed: a non-blocking `audit` job reports high and critical advisories for production dependencies; Dependabot proposes weekly updates for npm and GitHub Actions. |
-| 4 | No `SECURITY.md`. | Fixed: reporting route, what is protected, known limits. |
-| 5 | The CSP allows inline styles (`style-src 'unsafe-inline'`) because themes and the editor use them. | Accepted for now; script injection is still blocked. Follow-up N62 removes it where possible. |
-| 6 | Rate limits (login, contact form) are in memory per process. | Documented in `SECURITY.md`. A shared store is future work for multi-instance deployments. |
-| 7 | Plugins are trusted code; permissions are declared, not enforced, except `database`. | Documented in `SECURITY.md` and the plugin screen text; sandboxing is out of scope for 1.0 (see PLAN.md). |
+| #   | Finding                                                                                                                             | Status                                                                                                                                                             |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | No Content-Security-Policy, framing, referrer or MIME-sniffing headers on pages, the admin or the API (only uploads had their own). | Fixed: `securityHeaders` middleware, tested, outermost so cached pages get it too.                                                                                 |
+| 2   | No `Strict-Transport-Security` over HTTPS.                                                                                          | Fixed: sent on HTTPS (or a trusted `X-Forwarded-Proto`), off with `HSTS=off`.                                                                                      |
+| 3   | No dependency audit in CI.                                                                                                          | Fixed: a non-blocking `audit` job reports high and critical advisories for production dependencies; Dependabot proposes weekly updates for npm and GitHub Actions. |
+| 4   | No `SECURITY.md`.                                                                                                                   | Fixed: reporting route, what is protected, known limits.                                                                                                           |
+| 5   | The CSP allows inline styles (`style-src 'unsafe-inline'`) because themes and the editor use them.                                  | Accepted for now; script injection is still blocked. Follow-up N62 removes it where possible.                                                                      |
+| 6   | Rate limits (login, contact form) are in memory per process.                                                                        | Documented in `SECURITY.md`. A shared store is future work for multi-instance deployments.                                                                         |
+| 7   | Plugins are trusted code; permissions are declared, not enforced, except `database`.                                                | Documented in `SECURITY.md` and the plugin screen text; sandboxing is out of scope for 1.0 (see PLAN.md).                                                          |
 
 ## Checked and found as claimed
 

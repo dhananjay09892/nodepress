@@ -7,7 +7,11 @@ function app(options?: Parameters<typeof securityHeaders>[0]) {
   a.use('*', securityHeaders(options));
   a.get('/page', (c) => c.html('<p>hi</p>'));
   a.get('/json', (c) => c.json({ ok: true }));
-  a.get('/own', () => new Response('x', { headers: { 'Content-Security-Policy': "default-src 'none'; sandbox" } }));
+  a.get(
+    '/own',
+    () =>
+      new Response('x', { headers: { 'Content-Security-Policy': "default-src 'none'; sandbox" } }),
+  );
   a.get('/boom', () => {
     throw new Error('boom');
   });
@@ -56,11 +60,17 @@ describe('securityHeaders', () => {
   });
 
   it('sends HSTS only over HTTPS (or a trusted forwarded https)', async () => {
-    expect((await app().request('http://localhost/page')).headers.get('strict-transport-security')).toBeNull();
-    expect((await app().request('https://example.com/page')).headers.get('strict-transport-security')).toBe(HSTS_VALUE);
+    expect(
+      (await app().request('http://localhost/page')).headers.get('strict-transport-security'),
+    ).toBeNull();
+    expect(
+      (await app().request('https://example.com/page')).headers.get('strict-transport-security'),
+    ).toBe(HSTS_VALUE);
     const forwarded = { headers: { 'x-forwarded-proto': 'https' } };
     expect(
-      (await app().request('http://localhost/page', forwarded)).headers.get('strict-transport-security'),
+      (await app().request('http://localhost/page', forwarded)).headers.get(
+        'strict-transport-security',
+      ),
     ).toBeNull();
     expect(
       (await app({ trustProxy: true }).request('http://localhost/page', forwarded)).headers.get(
@@ -68,7 +78,9 @@ describe('securityHeaders', () => {
       ),
     ).toBe(HSTS_VALUE);
     expect(
-      (await app({ hsts: false }).request('https://example.com/page')).headers.get('strict-transport-security'),
+      (await app({ hsts: false }).request('https://example.com/page')).headers.get(
+        'strict-transport-security',
+      ),
     ).toBeNull();
   });
 });
