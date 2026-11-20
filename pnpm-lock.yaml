@@ -76,17 +76,16 @@ importers:
         version: 6.4.6(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15)
 
   apps/docs:
-    dependencies:
+    devDependencies:
       '@astrojs/starlight':
         specifier: ^0.34.0
         version: 0.34.8(astro@5.18.2(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.68.0)(tsx@4.23.15)(typescript@5.9.3))
-      astro:
-        specifier: ^5.7.0
-        version: 5.18.2(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.68.0)(tsx@4.23.15)(typescript@5.9.3)
-    devDependencies:
       '@types/node':
         specifier: ^22.10.0
         version: 22.20.5
+      astro:
+        specifier: ^5.7.0
+        version: 5.18.2(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.68.0)(tsx@4.23.15)(typescript@5.9.3)
       tsx:
         specifier: ^4.19.0
         version: 4.23.15
