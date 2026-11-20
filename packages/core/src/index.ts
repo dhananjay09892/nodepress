@@ -499,3 +499,18 @@ export {
   type MailAdapter,
   type MailMessage,
 } from './mail.js';
+export {
+  exportSite,
+  importSite,
+  BackupError,
+  EXPORT_FORMAT,
+  EXPORT_VERSION,
+  MAX_EXPORT_ITEMS,
+  MAX_EXPORT_BYTES,
+  type SiteExport,
+  type ExportedContent,
+  type ExportedTerm,
+  type ImportOptions,
+  type ImportSummary,
+  type BackupDeps,
+} from './backup.js';
