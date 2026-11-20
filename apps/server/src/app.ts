@@ -29,6 +29,7 @@ import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
+import { createRedirectsRoutes, type RedirectsRoutesOptions } from './redirects-api.js';
 import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
 import { buildMeta, filterMeta } from './meta.js';
@@ -143,6 +144,12 @@ export interface AppOptions {
    * responsible for `cache.attach()`, which purges it when content or options change.
    */
   pageCache?: PageCache;
+  /**
+   * Enables `/api/v1/redirects` (needs `auth`): manage redirect rules and import them from CSV,
+   * `manage_options` only. With `permalinks`, a request for a path that has a rule is redirected
+   * before the 404 page (a content page at the same path still wins).
+   */
+  redirects?: RedirectsRoutesOptions;
   /**
    * Enables `/api/v1/contact` (needs `auth` for the admin list): a public contact form endpoint
    * with spam protection, and the stored messages for `manage_options`.
@@ -290,6 +297,9 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           capabilities: options.webhooks.capabilities,
         }),
       );
+    }
+    if (options.redirects) {
+      app.route('/api/v1/redirects', createRedirectsRoutes(auth, options.redirects));
     }
     if (options.contact) app.route('/api/v1/contact', createContactRoutes(auth, options.contact));
     if (options.plugins) app.route('/api/v1/plugins', createPluginRoutes(auth, options.plugins));
@@ -526,6 +536,14 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       if (route.kind === 'redirect') {
         const query = new URL(c.req.url).search;
         return c.redirect(route.to + query, route.status);
+      }
+      // The owner's redirect rules apply to paths that are not content (real pages win).
+      if (route.kind === 'not_found' && options.redirects) {
+        const rule = await options.redirects.redirects.match(path).catch((error: unknown) => {
+          np.logger.warn(`Redirect rules could not be read for ${path}: ${String(error)}`);
+          return undefined;
+        });
+        if (rule) return c.redirect(rule.to, rule.status);
       }
       const siteName = String(np.config.siteName ?? 'NodePress');
       const status = route.kind === 'content' ? (200 as const) : (404 as const);

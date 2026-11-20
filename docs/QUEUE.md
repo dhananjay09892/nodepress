@@ -300,6 +300,13 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N28
 - Scope: manage 301/302 redirects in the admin, CSV import.
 - Done when: tests cover matching and import.
+- Delivered in slices: the service, CSV import, API and front-end matching (N32); the admin screen (N57). Plugins cannot register routes yet, so the first slice lives in core and the server.
+
+### N57 · Redirects screen in the admin
+
+- Depends on: N32
+- Scope: follow-up to N32, which delivered the redirects service in `@nodepress/core` (301/302, trailing `*` wildcard, loop protection, CSV import) and `/api/v1/redirects` (`GET`, `POST`, `PATCH /:id`, `DELETE /:id`, `POST /import` with a `text/csv` body; `manage_options`) plus the front-end matching. Add the admin "Redirects" screen (sidebar entry shown with `manage_options`, hidden on 403): a table of rules with add, edit and delete, field errors from the API shown next to the field, a CSV file picker that uploads to `/import` and lists the refused lines, and a link that downloads the current rules as CSV.
+- Done when: a Playwright test adds a rule, imports a CSV and sees the redirect work on the front page; unit tests cover the CSV export helper.
 
 ## Phase 5: Install, deploy, migrate
 

@@ -24,6 +24,7 @@ import {
   createUsersService,
   discoverThemes,
   createWebhookService,
+  createRedirects,
   createContactForm,
   createLogMailAdapter,
   isEmailAddress,
@@ -301,6 +302,7 @@ const pageCache =
       });
 pageCache?.attach();
 const contentMeta = createContentMetaStore(database);
+const redirects = createRedirects({ options });
 // Contact form: CONTACT_TO is where messages are emailed (until a real mail adapter is set up they
 // are only logged and kept). CONTACT_SECRET signs the form tokens; without it a random one is used,
 // which only means a form loaded before a restart must be loaded again.
@@ -395,6 +397,7 @@ const app = createApp(np, database, {
     running: () => np.plugins.list(),
     loaded: () => loadedPackages,
   },
+  redirects: { redirects, capabilities },
   contact: { contact, capabilities, trustProxy: process.env.TRUST_PROXY === 'true' },
   auth: {
     users,
