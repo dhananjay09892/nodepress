@@ -288,7 +288,8 @@ export function Widgets() {
       </section>
     );
   }
-  const areas = Object.entries(overview.data.areas);
+  const data = overview.data;
+  const areas = Object.entries(data.areas);
   return (
     <section className="max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold text-slate-900">Widgets</h1>
@@ -300,7 +301,7 @@ export function Widgets() {
             key={area}
             area={area}
             label={label}
-            overview={overview.data}
+            overview={data}
             menus={(menus.data ?? []).map((m) => ({ id: m.id, name: m.name }))}
           />
         ))
