@@ -370,6 +370,19 @@ export {
   type WebhookServiceOptions,
 } from './webhooks.js';
 export {
+  downloadFile,
+  filenameFromUrl,
+  runPool,
+  DownloadError,
+  DEFAULT_DOWNLOAD_MAX_BYTES,
+  DEFAULT_DOWNLOAD_TIMEOUT_MS,
+  DEFAULT_DOWNLOAD_MAX_REDIRECTS,
+  type DownloadFetch,
+  type DownloadResponse,
+  type DownloadOptions,
+  type DownloadedFile,
+} from './media-download.js';
+export {
   ThemeService,
   ThemeError,
   createThemeService,
@@ -454,6 +467,10 @@ export {
   importWordPress,
   parseWpDate,
   normalizePath,
+  mediaKey,
+  DEFAULT_MAX_MEDIA_FILES,
+  type ImportMediaFile,
+  type MediaImportReport,
   type ImportAuthor,
   type ImportReport,
   type ImportRedirect,

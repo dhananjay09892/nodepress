@@ -39,8 +39,10 @@ const BASE = 'http://localhost';
 let database: DatabaseHandle;
 let app: ReturnType<typeof createApp>;
 let content: ContentService;
+let uploads: Array<{ filename: string; alt?: string | undefined; size: number }>;
 
 beforeEach(async () => {
+  uploads = [];
   database = createDatabase({ url: ':memory:' });
   await database.migrate();
   const np = createNodePress({ logger: silentLogger });
@@ -91,6 +93,25 @@ beforeEach(async () => {
       meta: createContentMetaStore(database),
       users,
       capabilities: createCapabilities(np.hooks),
+      media: {
+        service: {
+          upload: async (input) => {
+            uploads.push({ filename: input.filename, alt: input.alt, size: input.data.byteLength });
+            return { id: 77, path: `uploads/2024/${input.filename}` } as never;
+          },
+        },
+        download: {
+          resolveHost: async () => ['93.184.216.34'],
+          fetch: async (url) =>
+            url.endsWith('missing.png')
+              ? { status: 404, headers: { get: () => null }, body: null }
+              : {
+                  status: 200,
+                  headers: { get: (n: string) => (n === 'content-type' ? 'image/png' : null) },
+                  body: new Response(new Uint8Array([1, 2, 3])).body,
+                },
+        },
+      },
     },
     redirects: {
       redirects: createRedirects({ options }),
@@ -161,6 +182,28 @@ function importWxr(
   });
 }
 
+const WXR_MEDIA = WXR.replace(
+  '</channel>',
+  `  <item>
+    <title>Colosseum</title>
+    <wp:post_id>30</wp:post_id>
+    <wp:post_type><![CDATA[attachment]]></wp:post_type>
+    <wp:status><![CDATA[inherit]]></wp:status>
+    <wp:attachment_url><![CDATA[https://old.example.com/wp-content/uploads/rome.png]]></wp:attachment_url>
+  </item>
+  <item>
+    <title>Gone</title>
+    <wp:post_id>31</wp:post_id>
+    <wp:post_type><![CDATA[attachment]]></wp:post_type>
+    <wp:status><![CDATA[inherit]]></wp:status>
+    <wp:attachment_url><![CDATA[https://old.example.com/wp-content/uploads/missing.png]]></wp:attachment_url>
+  </item>
+</channel>`,
+).replace(
+  '<![CDATA[<p>Ciao!</p>]]>',
+  '<![CDATA[<p>Ciao!</p><img src="https://old.example.com/wp-content/uploads/rome.png">]]>',
+);
+
 type Json = Record<string, unknown>;
 
 describe('GET /api/v1/import/wordpress', () => {
@@ -230,5 +273,28 @@ describe('POST /api/v1/import/wordpress', () => {
     expect(bad.status).toBe(400);
     expect(await bad.json()).toMatchObject({ error: 'invalid_wxr' });
     expect((await importWxr(admin, 'not xml at all')).status).toBe(400);
+  });
+
+  it('downloads the images into the media library, and reports the ones that fail', async () => {
+    const admin = await signIn('admin@example.com');
+    const res = await importWxr(admin, WXR_MEDIA);
+    expect(res.status).toBe(200);
+    const report = (await res.json()) as {
+      media: { imported: Array<{ newUrl: string }>; failed: Array<{ url: string }> };
+    };
+    expect(uploads).toEqual([{ filename: 'rome.png', alt: '', size: 3 }]);
+    expect(report.media.imported[0]!.newUrl).toBe('/uploads/2024/rome.png');
+    expect(report.media.failed.map((f) => f.url)).toEqual([
+      'https://old.example.com/wp-content/uploads/missing.png',
+    ]);
+    const [post] = await content.list({ type: 'post' });
+    expect(JSON.stringify(post!.body)).toContain('/uploads/2024/rome.png');
+  });
+
+  it('skips the download with download_media=false', async () => {
+    const admin = await signIn('admin@example.com');
+    const res = await importWxr(admin, WXR_MEDIA, '?download_media=false');
+    expect(uploads).toEqual([]);
+    expect(((await res.json()) as Json).media).toBeUndefined();
   });
 });
