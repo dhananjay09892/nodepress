@@ -24,6 +24,7 @@ import { Hono, type Context } from 'hono';
 import { createAdminExtensionsRoutes } from './admin-extensions-api.js';
 import { createAdminHandler } from './admin.js';
 import { createAuth, type AuthEnv, type AuthOptions } from './auth.js';
+import { createContactRoutes, type ContactRoutesOptions } from './contact-api.js';
 import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
@@ -142,6 +143,11 @@ export interface AppOptions {
    * responsible for `cache.attach()`, which purges it when content or options change.
    */
   pageCache?: PageCache;
+  /**
+   * Enables `/api/v1/contact` (needs `auth` for the admin list): a public contact form endpoint
+   * with spam protection, and the stored messages for `manage_options`.
+   */
+  contact?: ContactRoutesOptions;
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
   /**
@@ -283,6 +289,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         }),
       );
     }
+    if (options.contact) app.route('/api/v1/contact', createContactRoutes(auth, options.contact));
     if (options.plugins) app.route('/api/v1/plugins', createPluginRoutes(auth, options.plugins));
     if (options.media) {
       app.route(
