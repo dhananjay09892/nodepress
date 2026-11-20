@@ -104,7 +104,9 @@ describe('disk adapter', () => {
     await writeFile(join(dir, 'cache', 'notes.txt'), 'keep me');
     await cache.clear();
     expect(await readdir(join(dir, 'cache'))).toEqual(['notes.txt']);
-    await expect(createDiskPageCache({ dir: join(dir, 'missing') }).clear()).resolves.toBeUndefined();
+    await expect(
+      createDiskPageCache({ dir: join(dir, 'missing') }).clear(),
+    ).resolves.toBeUndefined();
   });
 });
 
@@ -176,7 +178,11 @@ describe('PageCache', () => {
         throw new Error('disk gone');
       },
     };
-    const cache = createPageCache({ adapter: broken, hooks: new HookRegistry(), logger: quiet(warnings) });
+    const cache = createPageCache({
+      adapter: broken,
+      hooks: new HookRegistry(),
+      logger: quiet(warnings),
+    });
     expect(await cache.get('/a')).toBeUndefined();
     await expect(cache.set('/a', page('A'))).resolves.toBeUndefined();
     await expect(cache.purge()).resolves.toBeUndefined();
