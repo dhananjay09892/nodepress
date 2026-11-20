@@ -6,11 +6,28 @@ import { fetchMenus } from '../menus.js';
 import { fetchThemeSettings } from '../customizer.js';
 import { fetchPlugins } from '../plugins.js';
 import { fetchWidgets } from '../widgets.js';
+import { SCREENS } from '../screen-registry.js';
+import type { AdminScreen } from '../screen-types.js';
 import { NAV_ITEMS } from '../nav.js';
 import { sessionQuery } from '../session.js';
 
 const linkClass = 'block rounded px-3 py-2 text-sm text-slate-200 hover:bg-slate-700';
 const activeClass = { className: `${linkClass} bg-slate-700 font-medium text-white` };
+
+/** A sidebar link for a self-registered screen; hidden until its `available` check passes. */
+function ScreenLink({ screen }: { screen: AdminScreen }) {
+  const allowed = useQuery({
+    queryKey: ['screen-available', screen.id],
+    queryFn: screen.available,
+    staleTime: 60_000,
+    retry: false,
+  });
+  return allowed.data ? (
+    <Link to={screen.path as never} className={linkClass} activeProps={activeClass}>
+      {screen.label}
+    </Link>
+  ) : null;
+}
 
 export function Shell() {
   const queryClient = useQueryClient();
@@ -103,6 +120,9 @@ export function Shell() {
               Customize
             </Link>
           ) : null}
+          {SCREENS.map((screen) => (
+            <ScreenLink key={screen.id} screen={screen} />
+          ))}
           {extensions.data?.menu.map((item) => (
             <Link
               key={`${item.plugin}/${item.id}`}

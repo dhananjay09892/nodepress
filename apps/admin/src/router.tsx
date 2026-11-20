@@ -17,6 +17,7 @@ import { Settings } from './screens/Settings.js';
 import { Menus } from './screens/Menus.js';
 import { Plugins } from './screens/Plugins.js';
 import { Widgets } from './screens/Widgets.js';
+import { SCREENS } from './screen-registry.js';
 import { Customize } from './screens/Customize.js';
 import { ExtensionPage } from './screens/ExtensionPage.js';
 import { EditorPreview } from './screens/EditorPreview.js';
@@ -152,6 +153,15 @@ const editorPreviewRoute = createRoute({
   component: EditorPreview,
 });
 
+// Screens that register themselves in `screens/*.screen.tsx` (see screen-types.ts).
+const registeredRoutes = SCREENS.map((screen) =>
+  createRoute({
+    getParentRoute: () => shellRoute,
+    path: screen.path,
+    component: screen.component,
+  }),
+);
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   shellRoute.addChildren([
@@ -167,6 +177,7 @@ const routeTree = rootRoute.addChildren([
     widgetsRoute,
     pluginsRoute,
     customizeRoute,
+    ...registeredRoutes,
     extensionPageRoute,
     editorPreviewRoute,
   ]),
