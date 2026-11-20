@@ -98,7 +98,7 @@ describe('Aurora front page', () => {
   });
 
   it('falls back to the blog layout and shows an empty state', async () => {
-    const html = await render(Front({ ...front, settings: undefined, posts: [] } as TemplateProps));
+    const html = await render(Front({ ...base, path: '/', posts: [] }));
     expect(html).toContain('Latest posts');
     expect(html).toContain('No posts yet.');
   });
