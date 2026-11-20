@@ -299,8 +299,10 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 ### N33 · `create-nodepress` installer
 
 - Depends on: N29, N23
+- Needs you: decide how NodePress is distributed (npm packages, a template repository or Docker first): see `docs/adr/0002-distribution.md`, fill in its `Decision:` line, then delete this line.
 - Scope: `npx create-nodepress my-site` asks site name, admin account and database, then produces a running site.
 - Done when: CI runs the installer non-interactively and the smoke test passes.
+- First slice (done, PR for N33): `packages/create-nodepress` asks (or takes flags for) the site name, administrator, database, port and public address, writes `.env` (random secrets, mode 600), `package.json`, `README.md`, `.gitignore` and `plugins-installed/` into a new folder, and runs the server of a built checkout given with `--from`; CI creates a site that way and runs the smoke checks against it. The second slice (a real `npx` install) waits for the decision above.
 
 ### N34 · Web installer
 
