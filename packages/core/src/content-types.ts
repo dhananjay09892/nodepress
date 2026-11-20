@@ -211,7 +211,7 @@ const definitionSchema = z
 
 function formatIssues(error: z.ZodError): string {
   return error.issues
-    .map((i) => `${i.path.length > 0 ? i.path.join('.') + ': ' : ''}${i.message}`)
+    .map((i) => `${i.path.length > 0 ? i.path.map(String).join('.') + ': ' : ''}${i.message}`)
     .join('; ');
 }
 
@@ -278,7 +278,7 @@ function blockSchema(depth: number): z.ZodType<BlockInput> {
     z
       .object({
         type: z.string().min(1).max(100),
-        attrs: z.record(z.unknown()).optional(),
+        attrs: z.record(z.string(), z.unknown()).optional(),
         children:
           depth < MAX_BLOCK_DEPTH
             ? z.array(blockSchema(depth + 1)).optional()
@@ -292,11 +292,11 @@ function blockSchema(depth: number): z.ZodType<BlockInput> {
 const dateValue = z.union([z.string().max(64), z.date()]).transform((v, ctx) => {
   const date = typeof v === 'string' ? new Date(v) : v;
   if (typeof v === 'string' && !/^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/.test(v)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Expected an ISO 8601 date' });
+    ctx.addIssue({ code: 'custom', message: 'Expected an ISO 8601 date' });
     return z.NEVER;
   }
   if (Number.isNaN(date.getTime())) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Expected a valid date' });
+    ctx.addIssue({ code: 'custom', message: 'Expected a valid date' });
     return z.NEVER;
   }
   return date.toISOString();
@@ -382,7 +382,7 @@ export function validateFieldValues(
   return {
     ok: false,
     issues: result.error.issues.map((i) => ({
-      path: i.path.join('.'),
+      path: i.path.map(String).join('.'),
       message: i.code === 'unrecognized_keys' ? `Unknown field: ${i.keys.join(', ')}` : i.message,
     })),
   };
@@ -627,7 +627,7 @@ export class ContentTypeRegistry {
     return {
       ok: false,
       issues: result.error.issues.map((i) => ({
-        path: i.path.join('.'),
+        path: i.path.map(String).join('.'),
         message: i.code === 'unrecognized_keys' ? `Unknown field: ${i.keys.join(', ')}` : i.message,
       })),
     };
