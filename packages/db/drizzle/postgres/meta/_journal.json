@@ -15,6 +15,13 @@
       "when": 1794260828273,
       "tag": "0001_silent_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795180451163,
+      "tag": "0002_conscious_captain_america",
+      "breakpoints": true
     }
   ]
 }
