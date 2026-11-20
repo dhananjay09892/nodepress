@@ -1,0 +1,15 @@
+.git
+.github
+**/node_modules
+**/dist
+.turbo
+.env
+.env.*
+*.db
+*.db-journal
+/media
+/plugins-installed
+playwright-report
+test-results
+apps/admin/e2e-plugins
+docs

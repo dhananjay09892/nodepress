@@ -348,6 +348,13 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: Dockerfile, docker-compose (with Postgres), templates for Railway, Render and Fly.io.
 - Done when: CI builds the image and runs the smoke test inside it.
 
+### N63 · Docker: publish and slim the image, one-click deploy buttons
+
+- Depends on: N35
+- Needs you: a GitHub Container Registry package (or Docker Hub account) for the image name, and accounts on Railway, Render and Fly.io to check the templates in `deploy/` on a real deploy.
+- Scope: follow-up to N35, whose image is built from the repository and contains the whole build tree. Publish it to the registry on version tags (`ghcr.io/<owner>/nodepress`, multi-arch), shrink it (production dependencies only through `pnpm deploy`, no sources or caches), add a read-only root filesystem test, and add "Deploy" buttons and deploy guides once the templates are verified.
+- Done when: a tag push publishes an image that CI pulls and smoke tests, and the image is under half its current size.
+
 ### N36 · WordPress importer
 
 - Depends on: N12, N11, N08

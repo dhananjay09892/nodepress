@@ -196,6 +196,67 @@ jobs:
         if: always()
         run: cat "$RUNNER_TEMP/installer-site/server.log" || true
 
+  docker:
+    name: Docker image and compose
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the image
+        run: docker build -t nodepress:ci .
+      - name: Run the image and check it
+        run: |
+          docker run -d --name np -p 3200:3000 -v np-data:/data \
+            -e SITE_NAME="Docker Site" -e SITE_URL=http://localhost:3200 \
+            -e ADMIN_EMAIL=docker-admin@example.com -e ADMIN_PASSWORD=docker-admin-password-1234 \
+            -e COOKIE_SECURE=false nodepress:ci
+          for i in $(seq 1 60); do
+            curl -fs http://localhost:3200/api/health > /dev/null && break
+            sleep 1
+          done
+          HEALTH=$(curl -fsS http://localhost:3200/api/health)
+          echo "$HEALTH"
+          echo "$HEALTH" | grep -q '"status":"ok"'
+          curl -fsS http://localhost:3200/ | grep -q "Docker Site"
+          curl -fsS http://localhost:3200/admin/ | grep -q '<div id="root">'
+          curl -fsS -H 'content-type: application/json' -H 'origin: http://localhost:3200' \
+            -d '{"email":"docker-admin@example.com","password":"docker-admin-password-1234"}' \
+            http://localhost:3200/api/v1/auth/login | grep -q '"csrfToken"'
+          test "$(docker exec np id -u)" != "0"
+          docker exec np test -f /data/nodepress.db
+          for i in $(seq 1 30); do
+            test "$(docker inspect -f '{{.State.Health.Status}}' np)" = "healthy" && break
+            sleep 2
+          done
+          test "$(docker inspect -f '{{.State.Health.Status}}' np)" = "healthy"
+          echo "Docker image check passed"
+      - name: Show container log
+        if: always()
+        run: docker logs np || true
+      - name: Start the compose stack with PostgreSQL
+        env:
+          POSTGRES_PASSWORD: compose-postgres-password-1234
+          ADMIN_EMAIL: compose-admin@example.com
+          ADMIN_PASSWORD: compose-admin-password-1234
+          SITE_NAME: Compose Site
+          COOKIE_SECURE: 'false'
+          PORT: 3300
+        run: |
+          docker compose up -d --build --wait --wait-timeout 180
+          curl -fsS http://localhost:3300/api/health | grep -q '"status":"ok"'
+          curl -fsS http://localhost:3300/ | grep -q "Compose Site"
+          curl -fsS -H 'content-type: application/json' -H 'origin: http://localhost:3300' \
+            -d '{"email":"compose-admin@example.com","password":"compose-admin-password-1234"}' \
+            http://localhost:3300/api/v1/auth/login | grep -q '"csrfToken"'
+          echo "Compose check passed"
+      - name: Show compose log
+        if: always()
+        env:
+          POSTGRES_PASSWORD: compose-postgres-password-1234
+          ADMIN_EMAIL: compose-admin@example.com
+          ADMIN_PASSWORD: compose-admin-password-1234
+        run: docker compose logs --no-color || true
+
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest

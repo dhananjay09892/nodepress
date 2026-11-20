@@ -319,7 +319,7 @@ if (contactTo && !isEmailAddress(contactTo)) {
 }
 const contact = createContactForm({
   store: createContactSubmissionsStore(database),
-  secret: process.env.CONTACT_SECRET ?? randomBytes(32).toString('hex'),
+  secret: process.env.CONTACT_SECRET || randomBytes(32).toString('hex'),
   to: contactTo && isEmailAddress(contactTo) ? contactTo : undefined,
   mail: createLogMailAdapter(np.logger.child('mail')),
   logger: np.logger.child('contact'),
