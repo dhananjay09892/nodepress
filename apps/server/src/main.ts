@@ -56,6 +56,7 @@ import helloPlugin from '@nodepress/plugin-hello';
 import seoPlugin from '@nodepress/plugin-seo';
 import { createApp } from './app.js';
 import { createBodyRenderer } from './body.js';
+import { createInstaller, type Installer } from './installer.js';
 import { ThemeSettingsService } from './theme-settings.js';
 
 const port = Number(process.env.PORT ?? 3000);

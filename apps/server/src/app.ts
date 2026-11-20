@@ -36,6 +36,7 @@ import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
 import { buildMeta, filterMeta } from './meta.js';
 import { cleanSiteUrl, createFeedRoutes, type FeedRoutesOptions } from './feeds.js';
+import type { Installer } from './installer.js';
 import { securityHeaders, type SecurityHeadersOptions } from './security-headers.js';
 import { createPageCacheMiddleware } from './page-cache.js';
 import { createThemeSettingsRoutes, type ThemeSettingsService } from './theme-settings.js';
