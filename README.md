@@ -59,22 +59,23 @@ The admin app lives in `apps/admin` (React, Vite, TanStack Router and Query, Tai
 
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 
-Feature documentation lives in [`docs/features/`](./docs/features/README.md), one file per feature (admin extensions, themes, page cache, plugin packages, WordPress importer, Plugins screen, command line, SEO, contact form, redirects, menus and more). The sections above cover the core API; read the feature files for everything else.
+Feature documentation lives in [`docs/features/`](./docs/features/README.md), one file per feature (admin extensions, themes, page cache, plugin packages, WordPress importer and import endpoint, Plugins screen, command line, installer, SEO, contact form, redirects, menus and more). The sections above cover the core API; read the feature files for everything else.
 
 ## Repository layout
 
-| Path                      | What it is                                                               |
-| ------------------------- | ------------------------------------------------------------------------ |
-| `packages/core`           | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
-| `packages/sdk`            | Public API for plugin and theme authors (`definePlugin`, types)          |
-| `packages/db`             | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
-| `packages/editor`         | Block model, block registry, core blocks and server-side HTML renderer   |
-| `apps/server`             | Hono HTTP server that boots a NodePress site                             |
-| `apps/admin`              | React admin dashboard, served by the server at `/admin`                  |
-| `themes/aurora`           | Default theme: blog and business layouts, responsive, dark mode          |
-| `themes/starter`          | Minimal example theme in TSX — copy it to start your own                 |
-| `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
-| `plugins/seo`             | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
+| Path                        | What it is                                                               |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `packages/core`             | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
+| `packages/sdk`              | Public API for plugin and theme authors (`definePlugin`, types)          |
+| `packages/db`               | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
+| `packages/editor`           | Block model, block registry, core blocks and server-side HTML renderer   |
+| `apps/server`               | Hono HTTP server that boots a NodePress site                             |
+| `apps/admin`                | React admin dashboard, served by the server at `/admin`                  |
+| `themes/aurora`             | Default theme: blog and business layouts, responsive, dark mode          |
+| `themes/starter`            | Minimal example theme in TSX — copy it to start your own                 |
+| `packages/create-nodepress` | Installer: `create-nodepress <folder>` writes a ready-to-run site folder |
+| `plugins/hello-nodepress`   | Minimal example plugin — copy it to start your own                       |
+| `plugins/seo`               | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
 
 ## Writing a plugin
 

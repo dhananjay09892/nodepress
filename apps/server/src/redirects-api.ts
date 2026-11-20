@@ -12,7 +12,7 @@ import { readBody } from './menus-api.js';
 export interface RedirectsRoutesOptions {
   redirects: Pick<
     RedirectsService,
-    'list' | 'get' | 'create' | 'update' | 'delete' | 'importCsv' | 'match'
+    'list' | 'get' | 'create' | 'update' | 'delete' | 'importCsv' | 'match' | 'addMany'
   >;
   capabilities: Capabilities;
 }

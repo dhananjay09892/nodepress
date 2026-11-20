@@ -278,10 +278,10 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 5: Install, deploy, migrate (weeks 19–21)
 
-- [ ] `create-nodepress` CLI + web installer
+- [ ] `create-nodepress` CLI + web installer — first slice of the CLI done (N33: writes a site that runs a built checkout); the real `npx` install waits for the distribution decision (`docs/adr/0002-distribution.md`); web installer is N34
 - [ ] Docker image + one-click deploy templates
 - [ ] Built-in updater
-- [ ] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, admin screen, media download and serving redirects are N55
+- [ ] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, author matching and saving the redirect map as redirects done (N55); media download (N59) and the admin screen (N60) remain
 - [ ] Backup/export (JSON + media zip)
 
 ### Phase 6: Beta → 1.0 (weeks 22–26)
