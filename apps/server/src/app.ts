@@ -104,6 +104,13 @@ export interface AppOptions {
    */
   settings?: { service: Pick<SettingsService, 'getAll' | 'update'>; capabilities: Capabilities };
   /**
+   * The web installer (`createInstaller`): while the site has no users, visitors are sent to
+   * `/install`, a wizard that checks the database and creates the first administrator.
+   */
+  installer?: Installer;
+  /** The name of the site, read when a page is drawn. Defaults to `np.config.siteName`. */
+  siteName?: () => string;
+  /**
    * Enables `/api/v1/menus` and `/api/v1/menu-locations` (needs `auth`): build navigation menus
    * and assign them to the active theme's menu locations, `edit_theme_options` only. With
    * `themes`, templates also receive the assigned menus as `menus`.
@@ -219,7 +226,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
   const app = new Hono();
   // Outermost, so cached pages and error answers get the headers too.
   app.use('*', securityHeaders(options.security));
+  if (options.installer) {
+    // Before the page cache, so a cached page never hides the wizard.
+    app.use('*', options.installer.redirect);
+    app.route('/', options.installer.routes);
+  }
   if (options.pageCache) app.use('*', createPageCacheMiddleware(options.pageCache));
+
+  const currentSiteName = (): string =>
+    options.siteName?.() ?? String(np.config.siteName ?? 'NodePress');
 
   const sessionAuth = options.auth ? createAuth(options.auth) : undefined;
   if (options.auth && sessionAuth) {
@@ -529,7 +544,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
   // The front page: drawn by the theme's `front` (or `index`) template; the built-in page below
   // is used when there is no active theme or its template fails.
   app.get('/', async (c) => {
-    const siteName = String(np.config.siteName ?? 'NodePress');
+    const siteName = currentSiteName();
     const themed = await renderThemed(
       { kind: 'front' },
       '/',
@@ -575,7 +590,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         });
         if (rule) return c.redirect(rule.to, rule.status);
       }
-      const siteName = String(np.config.siteName ?? 'NodePress');
+      const siteName = currentSiteName();
       const status = route.kind === 'content' ? (200 as const) : (404 as const);
 
       const themed = await renderThemed(

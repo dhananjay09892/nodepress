@@ -325,6 +325,9 @@ jobs:
           DATABASE_URL: file:./lighthouse.db
           SITE_NAME: Aurora Audit
           THEME: aurora
+          # A site without users shows the setup wizard instead of its pages.
+          ADMIN_EMAIL: audit-admin@example.com
+          ADMIN_PASSWORD: audit-admin-password-1234
         run: |
           set -e
           # The audited page: the front page, in both layouts. (Lighthouse refuses pages that answer 404.)

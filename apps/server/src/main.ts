@@ -310,6 +310,34 @@ const settingsService = createSettingsService({
     return page?.type === 'page' && page.status === 'published';
   },
 });
+// The site name: SITE_NAME wins; otherwise the name chosen in the installer or the settings.
+let siteName =
+  process.env.SITE_NAME ?? ((await options.get('site_title', '')) || String(np.config.siteName));
+// The web installer is on while the site has no users (after ADMIN_EMAIL/ADMIN_PASSWORD, if set).
+// Its setup code is printed here, so only someone who can read the log (or who set INSTALL_CODE)
+// can create the first administrator.
+let installer: Installer | undefined;
+if ((await users.list()).length === 0) {
+  const envCode = process.env.INSTALL_CODE;
+  if (envCode !== undefined && envCode.length < 8) {
+    np.logger.warn('INSTALL_CODE must be at least 8 characters; a random code is used instead.');
+  }
+  const installCode = envCode && envCode.length >= 8 ? envCode : randomBytes(6).toString('hex');
+  installer = createInstaller({
+    users,
+    settings: settingsService,
+    dialect: database.dialect,
+    code: installCode,
+    onInstalled: (info) => {
+      siteName = info.siteName;
+    },
+    logger: np.logger.child('install'),
+  });
+  np.logger.info(
+    `Setup is waiting: open /install on this site (port ${port}) and enter the setup code ` +
+      (envCode && envCode.length >= 8 ? 'from INSTALL_CODE.' : installCode),
+  );
+}
 // Contact form: CONTACT_TO is where messages are emailed (until a real mail adapter is set up they
 // are only logged and kept). CONTACT_SECRET signs the form tokens; without it a random one is used,
 // which only means a form loaded before a restart must be loaded again.
@@ -328,6 +356,8 @@ const contact = createContactForm({
 // sends none, for a reverse proxy that sets its own); HSTS=off never sends Strict-Transport-Security.
 const cspSetting = process.env.CONTENT_SECURITY_POLICY;
 const app = createApp(np, database, {
+  ...(installer ? { installer } : {}),
+  siteName: () => siteName,
   security: {
     ...(cspSetting === 'off' ? { csp: false as const } : cspSetting ? { csp: cspSetting } : {}),
     ...(process.env.HSTS === 'off' ? { hsts: false as const } : {}),
@@ -338,7 +368,7 @@ const app = createApp(np, database, {
   // SITE_URL (for example https://example.com) is used for absolute links in the sitemap and feed.
   feeds: {
     content,
-    siteName: () => String(np.config.siteName ?? 'NodePress'),
+    siteName: () => siteName,
     tagline: () => options.get('tagline', ''),
     siteUrl: process.env.SITE_URL,
   },
