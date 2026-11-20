@@ -14,6 +14,7 @@ import {
   createOptionsService,
   createPermalinkService,
   createScheduledPublisher,
+  createMenuService,
   createSettingsService,
   createSharpProcessor,
   createSessionsService,
@@ -263,6 +264,7 @@ const app = createApp(np, database, {
     }),
     capabilities,
   },
+  menus: { service: createMenuService({ options }), capabilities },
   ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
   auth: {
     users,

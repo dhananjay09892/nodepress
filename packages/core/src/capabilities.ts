@@ -51,6 +51,7 @@ const ADMINISTRATOR = [
   'manage_options',
   'manage_plugins',
   'manage_themes',
+  'edit_theme_options',
   'list_users',
   'create_users',
   'edit_users',

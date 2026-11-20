@@ -73,6 +73,21 @@ export {
   type SettingsServiceOptions,
 } from './settings.js';
 export {
+  MenuService,
+  MenuValidationError,
+  MenuNotFoundError,
+  createMenuService,
+  parseMenuItems,
+  isSafeMenuUrl,
+  MAX_MENUS,
+  MAX_MENU_ITEMS,
+  MAX_MENU_DEPTH,
+  type Menu,
+  type MenuItem,
+  type MenuServiceOptions,
+  type StoredMenus,
+} from './menus.js';
+export {
   PermalinkService,
   PermalinkPatternError,
   createPermalinkService,

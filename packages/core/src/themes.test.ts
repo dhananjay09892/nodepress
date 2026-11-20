@@ -21,9 +21,28 @@ describe('parseThemeManifest', () => {
       title: 'aurora',
       supports: [],
       settings: {},
+      menus: {},
+      widgetAreas: {},
       templates: 'templates',
       assets: 'assets',
     });
+  });
+
+  it('reads menu locations and widget areas, and rejects bad ones', () => {
+    const manifest = parseThemeManifest({
+      name: 'aurora',
+      version: '1.0.0',
+      menus: { primary: ' Primary menu ', 'footer-links': 'Footer' },
+      widgetAreas: { sidebar: 'Sidebar' },
+    });
+    expect(manifest.menus).toEqual({ primary: 'Primary menu', 'footer-links': 'Footer' });
+    expect(manifest.widgetAreas).toEqual({ sidebar: 'Sidebar' });
+    const bad = (extra: Record<string, unknown>) =>
+      parseThemeManifest({ name: 'aurora', version: '1.0.0', ...extra });
+    expect(() => bad({ menus: [] })).toThrow(ThemeError);
+    expect(() => bad({ menus: { 'Not Valid': 'x' } })).toThrow(/dashes/);
+    expect(() => bad({ menus: { primary: '' } })).toThrow(/label/);
+    expect(() => bad({ widgetAreas: { sidebar: 3 } })).toThrow(/label/);
   });
 
   it('keeps the optional fields and removes duplicate features', () => {

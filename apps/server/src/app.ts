@@ -4,6 +4,7 @@ import type {
   ContentService,
   ContentTypeRegistry,
   MediaService,
+  MenuService,
   NodePress,
   OptionsService,
   PermalinkService,
@@ -23,6 +24,7 @@ import { createAuth, type AuthOptions } from './auth.js';
 import { createContentRoutes } from './content-api.js';
 import { createTaxonomyRoutes } from './taxonomy-api.js';
 import { createMediaRoutes, createUploadsHandler } from './media.js';
+import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
 import { createSettingsRoutes } from './settings-api.js';
 import {
   createThemeAssetsHandler,
@@ -87,6 +89,25 @@ export interface AppOptions {
    * `manage_options` only.
    */
   settings?: { service: Pick<SettingsService, 'getAll' | 'update'>; capabilities: Capabilities };
+  /**
+   * Enables `/api/v1/menus` and `/api/v1/menu-locations` (needs `auth`): build navigation menus
+   * and assign them to the active theme's menu locations, `edit_theme_options` only. With
+   * `themes`, templates also receive the assigned menus as `menus`.
+   */
+  menus?: {
+    service: Pick<
+      MenuService,
+      | 'list'
+      | 'get'
+      | 'create'
+      | 'update'
+      | 'delete'
+      | 'getLocations'
+      | 'setLocations'
+      | 'forLocations'
+    >;
+    capabilities: Capabilities;
+  };
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
   /**
@@ -166,6 +187,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           capabilities: options.settings.capabilities,
         }),
       );
+    }
+    if (options.menus) {
+      const menuRoutes = {
+        menus: options.menus.service,
+        capabilities: options.menus.capabilities,
+        locations: () => options.themes?.service.active?.manifest.menus ?? {},
+      };
+      app.route('/api/v1/menus', createMenusRoutes(auth, menuRoutes));
+      app.route('/api/v1/menu-locations', createMenuLocationsRoutes(auth, menuRoutes));
     }
     if (options.adminExtensions) {
       app.route(
@@ -261,6 +291,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         theme.manifest.settings,
         themes.settings ? await themes.settings() : {},
       );
+      // Menus are optional: a failure here shows the page without them.
+      const menus = options.menus
+        ? await options.menus.service
+            .forLocations(Object.keys(theme.manifest.menus))
+            .catch((error: unknown) => {
+              np.logger.warn(`Menus could not be loaded for ${path}: ${String(error)}`);
+              return {};
+            })
+        : {};
       return await renderTemplate(template.component, {
         siteName,
         path,
@@ -270,6 +309,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         ...(posts ? { posts } : {}),
         tagline,
         settings,
+        menus,
         theme: {
           name: theme.manifest.name,
           version: theme.manifest.version,

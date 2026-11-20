@@ -117,7 +117,28 @@ h3 {
   display: inline-block;
   padding: 0.5rem 0.75rem; /* a comfortable touch target */
 }
-.np-aurora-header [aria-current='page'] {
+.np-aurora-menu,
+.np-aurora-submenu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.np-aurora-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.25rem;
+}
+/* Sub-menus stay visible (no hover-only menus), so keyboard and touch users can reach them. */
+.np-aurora-submenu {
+  padding-left: 0.75rem;
+  font-size: 0.95em;
+}
+.np-aurora-footer nav a {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+}
+.np-aurora-header [aria-current='page'],
+.np-aurora-footer [aria-current='page'] {
   font-weight: 700;
 }
 
