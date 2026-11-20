@@ -23,7 +23,9 @@ export class ApiError extends Error {
 
 export async function request(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
-  if (init.body !== undefined) headers.set('content-type', 'application/json');
+  if (init.body !== undefined && !headers.has('content-type')) {
+    headers.set('content-type', 'application/json');
+  }
   return fetch(path, { ...init, headers, credentials: 'same-origin' });
 }
 

@@ -4,6 +4,7 @@ import { logout } from '../api.js';
 import { fetchExtensions } from '../extensions.js';
 import { fetchMenus } from '../menus.js';
 import { fetchThemeSettings } from '../customizer.js';
+import { fetchPlugins } from '../plugins.js';
 import { fetchWidgets } from '../widgets.js';
 import { NAV_ITEMS } from '../nav.js';
 import { sessionQuery } from '../session.js';
@@ -35,6 +36,13 @@ export function Shell() {
   const widgets = useQuery({
     queryKey: ['widgets'],
     queryFn: fetchWidgets,
+    staleTime: 60_000,
+  });
+
+  // Plugins: the plugins API answers 403 without `manage_plugins`.
+  const plugins = useQuery({
+    queryKey: ['plugins'],
+    queryFn: fetchPlugins,
     staleTime: 60_000,
   });
 
@@ -83,6 +91,11 @@ export function Shell() {
           {widgets.data ? (
             <Link to="/widgets" className={linkClass} activeProps={activeClass}>
               Widgets
+            </Link>
+          ) : null}
+          {plugins.data ? (
+            <Link to="/plugins" className={linkClass} activeProps={activeClass}>
+              Plugins
             </Link>
           ) : null}
           {customizer.data ? (

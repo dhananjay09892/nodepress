@@ -414,6 +414,22 @@ export {
   type LoadPluginPackagesResult,
 } from './plugin-packages.js';
 export {
+  readZip,
+  safeZipPath,
+  ZipError,
+  DEFAULT_ZIP_LIMITS,
+  type ZipFile,
+  type ZipLimits,
+} from './zip.js';
+export {
+  installPluginZip,
+  listPluginPackages,
+  cleanIncomingFolders,
+  type InstallPluginOptions,
+  type PluginPackageInfo,
+  type BrokenPluginPackage,
+} from './plugin-install.js';
+export {
   parseWxr,
   WxrError,
   MAX_WXR_BYTES,

@@ -9,3 +9,4 @@ playwright-report/
 test-results/
 themes/*/templates/
 plugins-installed/
+apps/admin/e2e-plugins/

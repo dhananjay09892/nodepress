@@ -18,6 +18,7 @@ export default defineConfig({
     env: {
       PORT: String(PORT),
       DATABASE_URL: 'file:./e2e.db',
+      PLUGINS_DIR: './e2e-plugins',
       SITE_NAME: 'E2E Site',
       COOKIE_SECURE: 'false',
       ADMIN_EMAIL: 'admin@example.test',
