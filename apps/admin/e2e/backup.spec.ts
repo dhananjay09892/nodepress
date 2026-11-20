@@ -33,6 +33,11 @@ test('download a backup, refuse a wrong file and restore the backup', async ({ p
   });
   expect(rule.status()).toBe(201);
 
+  // The export alone, with its own limit, so a hang in it is named instead of timing out the test.
+  const probe = await page.request.get('/api/v1/backup/export', { timeout: 20_000 });
+  expect(probe.status()).toBe(200);
+  expect(Object.keys((await probe.json()) as object)).toContain('redirects');
+
   await page
     .getByRole('navigation', { name: 'Main' })
     .getByRole('link', { name: 'Backup' })
