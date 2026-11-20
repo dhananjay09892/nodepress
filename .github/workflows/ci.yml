@@ -148,6 +148,51 @@ jobs:
         if: always()
         run: cat apps/server/server.log || true
 
+  installer-smoke:
+    name: create-nodepress installer
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+      - run: pnpm install --no-frozen-lockfile
+      - if: hashFiles('packages/db/drizzle/sqlite/**') == '' || hashFiles('packages/db/drizzle/postgres/**') == ''
+        run: pnpm --filter @nodepress/db db:generate
+      - run: pnpm build
+      - name: Create a site with the installer and run it
+        run: |
+          SITE_DIR="$RUNNER_TEMP/installer-site"
+          node packages/create-nodepress/dist/bin.js "$SITE_DIR" --yes \
+            --site-name "Installer Site" \
+            --admin-email installer-admin@example.com \
+            --admin-password installer-admin-password-1234 \
+            --port 3100 --site-url http://localhost:3100 --from "$PWD"
+          test -f "$SITE_DIR/.env"
+          test "$(stat -c '%a' "$SITE_DIR/.env")" = "600"
+          cd "$SITE_DIR"
+          npm start > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fs http://localhost:3100/api/health > /dev/null && break
+            sleep 1
+          done
+          HEALTH=$(curl -fsS http://localhost:3100/api/health)
+          echo "$HEALTH"
+          echo "$HEALTH" | grep -q '"status":"ok"'
+          curl -fsS http://localhost:3100/ | grep -q "Installer Site"
+          curl -fsS http://localhost:3100/admin/ | grep -q '<div id="root">'
+          curl -fsS -H 'content-type: application/json' -H 'origin: http://localhost:3100' \
+            -d '{"email":"installer-admin@example.com","password":"installer-admin-password-1234"}' \
+            http://localhost:3100/api/v1/auth/login | grep -q '"csrfToken"'
+          test -f nodepress.db
+          echo "Installer smoke test passed"
+      - name: Show server log
+        if: always()
+        run: cat "$RUNNER_TEMP/installer-site/server.log" || true
+
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest

@@ -462,6 +462,22 @@ export {
   type WordPressImportOptions,
 } from './wordpress-import.js';
 export {
+  RedirectsService,
+  RedirectValidationError,
+  RedirectNotFoundError,
+  createRedirects,
+  parseCsv,
+  normalizeFrom,
+  normalizeTo,
+  MAX_REDIRECTS,
+  MAX_CSV_BYTES,
+  type Redirect,
+  type RedirectStatus,
+  type RedirectImportReport,
+  type StoredRedirects,
+  type RedirectsServiceOptions,
+} from './redirects.js';
+export {
   ContactFormService,
   createContactForm,
   MAX_NAME_LENGTH,
@@ -483,3 +499,18 @@ export {
   type MailAdapter,
   type MailMessage,
 } from './mail.js';
+export {
+  exportSite,
+  importSite,
+  BackupError,
+  EXPORT_FORMAT,
+  EXPORT_VERSION,
+  MAX_EXPORT_ITEMS,
+  MAX_EXPORT_BYTES,
+  type SiteExport,
+  type ExportedContent,
+  type ExportedTerm,
+  type ImportOptions,
+  type ImportSummary,
+  type BackupDeps,
+} from './backup.js';
