@@ -124,6 +124,8 @@ importers:
         specifier: workspace:*
         version: link:../db
 
+  packages/create-nodepress: {}
+
   packages/db:
     dependencies:
       '@libsql/client':

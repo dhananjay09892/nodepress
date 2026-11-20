@@ -78,24 +78,27 @@ SEO tags: themes receive a `meta` prop (`description` from the excerpt, else the
 Contact form: `POST /api/v1/contact` takes JSON `{ name, email, message, token, website }` from anyone. `GET /api/v1/contact/token` returns the signed `token` to send back; it must be at least 3 seconds old (and under a day), which stops scripts that submit instantly. `website` is a hidden honeypot field that people never fill in: a filled one gets a normal `201` answer but nothing is stored or sent. Each sender (by IP address, `TRUST_PROXY=true` behind a reverse proxy) may try 5 times an hour (`429` with `Retry-After`); spam attempts count too. Valid messages are stored in `contact_submissions` (the sender's address only as a hash) and emailed to `CONTACT_TO` through the mail adapter; a mail failure never loses the message (status `failed`). Until the SMTP adapter exists (N56) the mail adapter only logs, so read messages with `GET /api/v1/contact/submissions?page=` (`manage_options`). `CONTACT_SECRET` (16+ characters) signs the tokens; without it a random one is used, so a form loaded before a restart must be loaded again.
 The **SEO plugin** (`plugins/seo`, on by default) adds an SEO page in the admin (`manage_options`): ask search engines not to index the site (`noindex, nofollow` on every page), a default social image (a path or `https` URL), the organization name used as publisher, and a switch for schema.org data. Posts and pages get four custom fields (SEO title, meta description, social image URL, hide from search engines), which replace the `<title>`, description and `og:*` values and add `noindex, follow` when hidden. It works through the `meta:tags` filter, which now also carries `title`, `robots` and `jsonLd` (drawn by Aurora as the page title, `<meta name="robots">` and `<script type="application/ld+json">`, escaped so nothing can close the tag) and gets the item's custom fields as `context.fields`. The 404 page always gets `noindex`; JSON-LD is `WebSite` (and `Organization`) on the front page, `Article` on posts and `WebPage` on pages. A `robots.txt` is not served yet.
 
+Creating a site: `node packages/create-nodepress/dist/bin.js my-site --from .` (after `pnpm build`) asks for the site name, administrator email and password (a random one is made and shown if left empty), database (`file:./nodepress.db`, `postgres://…` or `libsql://…`), port and public address, then writes `my-site/` with a private `.env` (random `CONTACT_SECRET` and `WEBHOOK_SIGNING_KEY`), `package.json`, `README.md`, `.gitignore` and `plugins-installed/`. `--yes` skips the questions and uses the flags (`--site-name`, `--admin-email`, `--admin-password`, `--database`, `--database-token`, `--port`, `--site-url`, `--from` or `NODEPRESS_HOME`). In the new folder `npm start` runs the server of the checkout you pointed at with that `.env`. It never writes into a folder that has files. A published `npx create-nodepress` needs the distribution decision in `docs/adr/0002-distribution.md`.
+
 Redirects: `/api/v1/redirects` (`manage_options`) manages rules from an old path to a new path or `http(s)` URL, `301` (permanent, the default) or `302` (temporary): `GET`, `POST { from, to, status? }`, `PATCH /:id`, `DELETE /:id`. An old path ends without a trailing slash and may end in `*` (`/blog/*` to `/news/*` sends `/blog/2020/hello` to `/news/2020/hello`; the longest wildcard wins and exact rules win over wildcards). Paths under `/api`, `/admin` and `/uploads` and the front page cannot be redirected, and a rule that would start a loop is refused. `POST /api/v1/redirects/import` takes a `text/csv` body (1 MB, up to 5000 rules, columns `from,to[,status]`, an optional `from,to,status` header row); rows with an existing old path replace that rule, and refused rows come back as `{ line, message }` while the rest are kept. Rules apply to paths that are not content (a real page at the same path wins) and are kept in the `redirects` option. The admin screen is N57.
 
 Menus: a theme declares where it draws navigation in `theme.json` (`"menus": { "primary": "Primary menu" }`; `widgetAreas` is accepted the same way and is used by N52). Menus are kept in the options table and managed through `/api/v1/menus` (`GET`/`POST`, `GET`/`PATCH`/`DELETE /:id`) and `/api/v1/menu-locations` (`GET`, and `PUT` with `{ "primary": 3 }` to assign or `null` to clear), all needing the `edit_theme_options` capability (administrators). A menu is a tree of links up to 3 levels deep and 200 items, each with a `label`, a `url` (a site path, `http(s)`, `mailto:` or `tel:`; `javascript:` and similar are refused) and an optional `target: "_blank"`. Templates receive the assigned menus as `menus` (location name to items; unassigned locations are absent), and Aurora draws `primary` in the header and `footer` below the content. The admin Menus screen is N51.
 
 ## Repository layout
 
-| Path                      | What it is                                                               |
-| ------------------------- | ------------------------------------------------------------------------ |
-| `packages/core`           | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
-| `packages/sdk`            | Public API for plugin and theme authors (`definePlugin`, types)          |
-| `packages/db`             | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
-| `packages/editor`         | Block model, block registry, core blocks and server-side HTML renderer   |
-| `apps/server`             | Hono HTTP server that boots a NodePress site                             |
-| `apps/admin`              | React admin dashboard, served by the server at `/admin`                  |
-| `themes/aurora`           | Default theme: blog and business layouts, responsive, dark mode          |
-| `themes/starter`          | Minimal example theme in TSX — copy it to start your own                 |
-| `plugins/hello-nodepress` | Minimal example plugin — copy it to start your own                       |
-| `plugins/seo`             | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
+| Path                        | What it is                                                               |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `packages/core`             | Kernel: typed hook system (actions & filters), plugin manager, lifecycle |
+| `packages/sdk`              | Public API for plugin and theme authors (`definePlugin`, types)          |
+| `packages/db`               | Drizzle schema v1 (SQLite/libSQL and PostgreSQL) and database client     |
+| `packages/editor`           | Block model, block registry, core blocks and server-side HTML renderer   |
+| `apps/server`               | Hono HTTP server that boots a NodePress site                             |
+| `apps/admin`                | React admin dashboard, served by the server at `/admin`                  |
+| `themes/aurora`             | Default theme: blog and business layouts, responsive, dark mode          |
+| `themes/starter`            | Minimal example theme in TSX — copy it to start your own                 |
+| `packages/create-nodepress` | Installer: `create-nodepress <folder>` writes a ready-to-run site folder |
+| `plugins/hello-nodepress`   | Minimal example plugin — copy it to start your own                       |
+| `plugins/seo`               | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
 
 ## Writing a plugin
 
