@@ -213,3 +213,54 @@ describe('Aurora customizer settings', () => {
     expect(plain).not.toContain('np-aurora-logo');
   });
 });
+
+describe('Aurora SEO tags', () => {
+  const meta: NonNullable<TemplateProps['meta']> = {
+    description: 'About "this" <post>',
+    canonical: 'https://example.com/blog/hi?a=1&b=2',
+    feedUrl: 'https://example.com/feed.xml',
+    og: {
+      title: 'Hi <b>',
+      description: 'About "this" <post>',
+      type: 'article',
+      url: 'https://example.com/blog/hi?a=1&b=2',
+      siteName: 'My <Site>',
+      image: 'https://example.com/uploads/a.png',
+    },
+  };
+
+  it('draws the description, canonical link, feed link and Open Graph tags, escaped', async () => {
+    const html = await render(Single({ ...base, content: post('Hi'), meta }));
+    expect(html).toContain('name="description" content="About &quot;this&quot; &lt;post&gt;"');
+    expect(html).toContain('<link rel="canonical" href="https://example.com/blog/hi?a=1&amp;b=2"');
+    expect(html).toContain('rel="alternate" type="application/rss+xml"');
+    expect(html).toContain('href="https://example.com/feed.xml"');
+    expect(html).toContain('property="og:title" content="Hi &lt;b&gt;"');
+    expect(html).toContain('property="og:type" content="article"');
+    expect(html).toContain('property="og:url" content="https://example.com/blog/hi?a=1&amp;b=2"');
+    expect(html).toContain('property="og:site_name" content="My &lt;Site&gt;"');
+    expect(html).toContain('property="og:image" content="https://example.com/uploads/a.png"');
+    expect(html).not.toContain('<b>');
+  });
+
+  it('leaves out the canonical link, og:url, og:image and feed link when they are not set', async () => {
+    const { canonical, feedUrl, ...rest } = meta;
+    void canonical;
+    void feedUrl;
+    const { url, image, ...og } = rest.og;
+    void url;
+    void image;
+    const html = await render(NotFound({ ...base, status: 404, meta: { ...rest, og } }));
+    expect(html).not.toContain('rel="canonical"');
+    expect(html).not.toContain('og:url');
+    expect(html).not.toContain('og:image');
+    expect(html).not.toContain('application/rss+xml');
+    expect(html).toContain('property="og:title"');
+  });
+
+  it('draws no Open Graph tags without meta, and the description falls back to the tagline', async () => {
+    const html = await render(Single({ ...base, content: post('Hi'), tagline: 'Tag' }));
+    expect(html).not.toContain('og:title');
+    expect(html).toContain('name="description" content="Tag"');
+  });
+});

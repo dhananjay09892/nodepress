@@ -259,7 +259,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] Default theme **Aurora** (blog + business layouts, responsive, accessible)
 - [x] Menus & widgets/sidebar areas — menu service, API, theme menu locations and Aurora menus done (N24); admin Menus screen done (N51); widget service, API, plugin `registerWidget()` and Aurora sidebar done (N52); admin Widgets screen done (N53)
 - [x] Customizer with live preview
-- [ ] Page cache + SEO basics (meta, sitemap, RSS, Open Graph) — page cache, sitemap and RSS done (N26); meta and Open Graph tags (N54) to do
+- [x] Page cache + SEO basics (meta, sitemap, RSS, Open Graph) — page cache, sitemap and RSS (N26); meta and Open Graph tags (N54)
 
 **Exit:** a fresh install shows a polished, fast website.
 

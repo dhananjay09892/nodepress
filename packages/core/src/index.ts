@@ -382,6 +382,8 @@ export {
   type TemplateComponent,
   type TemplateImporter,
   type TemplateProps,
+  type MetaTags,
+  type MetaTagsContext,
   type TemplateTarget,
   type ResolvedTemplate,
   type Theme,
