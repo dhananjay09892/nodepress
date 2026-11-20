@@ -170,7 +170,9 @@ describe('Aurora sidebar widgets', () => {
 
   it('keeps the plain layout when the sidebar has no widgets', async () => {
     for (const w of [undefined, {}, { sidebar: [] }]) {
-      const html = await render(Single({ ...base, content: post('Hello'), ...(w ? { widgets: w } : {}) }));
+      const html = await render(
+        Single({ ...base, content: post('Hello'), ...(w ? { widgets: w } : {}) }),
+      );
       expect(html).not.toContain('<aside');
       expect(html).toContain('<main id="main" class="np-aurora-wrap np-aurora-main"');
     }

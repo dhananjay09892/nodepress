@@ -56,7 +56,10 @@ describe('built-in types', () => {
     await widgets.setAreas(
       {
         sidebar: [
-          { type: 'text', settings: { title: ' About ', text: '<b>Hi</b> & bye\nline two\n\nSecond' } },
+          {
+            type: 'text',
+            settings: { title: ' About ', text: '<b>Hi</b> & bye\nline two\n\nSecond' },
+          },
         ],
       },
       AREAS,
@@ -77,7 +80,9 @@ describe('built-in types', () => {
         {
           label: 'A <x>',
           url: '/a',
-          children: [{ label: 'Out', url: 'https://e.test', target: '_blank' as const, children: [] }],
+          children: [
+            { label: 'Out', url: 'https://e.test', target: '_blank' as const, children: [] },
+          ],
         },
         { label: 'Bad', url: 'javascript:alert(1)', children: [] },
       ],
@@ -110,7 +115,9 @@ describe('built-in types', () => {
     );
     const { sidebar } = await widgets.forAreas(['sidebar']);
     expect(asked).toBe(5); // the last recent-posts widget used the default
-    expect(sidebar![0]!.html).toBe('<ul><li><a href="/blog/one">One &amp; &lt;two&gt;</a></li></ul>');
+    expect(sidebar![0]!.html).toBe(
+      '<ul><li><a href="/blog/one">One &amp; &lt;two&gt;</a></li></ul>',
+    );
     expect(sidebar![2]!.html).toBe('');
   });
 });
@@ -150,9 +157,21 @@ describe('setAreas', () => {
     ['a non-object widget', { sidebar: [1] }, 'sidebar[0]'],
     ['an unknown type', { sidebar: [{ type: 'zzz' }] }, 'sidebar[0].type'],
     ['missing text', { sidebar: [{ type: 'text', settings: {} }] }, 'sidebar[0].settings'],
-    ['a bad count', { sidebar: [{ type: 'recent-posts', settings: { count: 99 } }] }, 'sidebar[0].settings'],
-    ['a bad menu id', { sidebar: [{ type: 'menu', settings: { menuId: 'x' } }] }, 'sidebar[0].settings'],
-    ['a bad id', { sidebar: [{ id: 'a b', type: 'text', settings: { text: 'x' } }] }, 'sidebar[0].id'],
+    [
+      'a bad count',
+      { sidebar: [{ type: 'recent-posts', settings: { count: 99 } }] },
+      'sidebar[0].settings',
+    ],
+    [
+      'a bad menu id',
+      { sidebar: [{ type: 'menu', settings: { menuId: 'x' } }] },
+      'sidebar[0].settings',
+    ],
+    [
+      'a bad id',
+      { sidebar: [{ id: 'a b', type: 'text', settings: { text: 'x' } }] },
+      'sidebar[0].id',
+    ],
     [
       'a repeated id',
       {
@@ -219,7 +238,12 @@ describe('plugin widget types', () => {
       clock,
     ]);
     await widgets.refresh();
-    expect(widgets.types().map((t) => t.type)).toEqual(['text', 'menu', 'recent-posts', 'demo/clock']);
+    expect(widgets.types().map((t) => t.type)).toEqual([
+      'text',
+      'menu',
+      'recent-posts',
+      'demo/clock',
+    ]);
     expect(warnings.some((w) => w.includes('skipped'))).toBe(true);
   });
 
@@ -234,10 +258,7 @@ describe('plugin widget types', () => {
     });
     await widgets.setAreas(
       {
-        sidebar: [
-          { type: 'demo/broken' },
-          { type: 'text', settings: { text: 'still here' } },
-        ],
+        sidebar: [{ type: 'demo/broken' }, { type: 'text', settings: { text: 'still here' } }],
       },
       AREAS,
     );

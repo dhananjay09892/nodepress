@@ -77,7 +77,9 @@ export function Layout(props: {
             </main>
             <aside class="np-aurora-sidebar" aria-label="Sidebar">
               {sidebar.map((widget) => (
-                <section class={`np-aurora-widget np-aurora-widget-${widget.type.replace(/[^a-z0-9-]/g, '-')}`}>
+                <section
+                  class={`np-aurora-widget np-aurora-widget-${widget.type.replace(/[^a-z0-9-]/g, '-')}`}
+                >
                   {widget.title ? <h2 class="np-aurora-widget-title">{widget.title}</h2> : null}
                   {raw(widget.html)}
                 </section>

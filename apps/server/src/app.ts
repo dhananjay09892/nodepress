@@ -325,7 +325,9 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       const widgets = options.widgets
         ? await options.widgets.service
             .forAreas(Object.keys(theme.manifest.widgetAreas))
-            .then((areas) => Object.fromEntries(Object.entries(areas).filter(([, list]) => list.length > 0)))
+            .then((areas) =>
+              Object.fromEntries(Object.entries(areas).filter(([, list]) => list.length > 0)),
+            )
             .catch((error: unknown) => {
               np.logger.warn(`Widgets could not be loaded for ${path}: ${String(error)}`);
               return {};

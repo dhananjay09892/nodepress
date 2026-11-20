@@ -153,7 +153,10 @@ describe('/api/v1/widgets', () => {
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { widgets: Record<string, Array<Json>> };
-    expect(body.widgets.sidebar!.map((w) => (w.settings as Json).text)).toEqual(['First', 'Second']);
+    expect(body.widgets.sidebar!.map((w) => (w.settings as Json).text)).toEqual([
+      'First',
+      'Second',
+    ]);
     expect(body.widgets.footer).toEqual([]);
     const again = (await (await call('widgets', 'GET', admin)).json()) as typeof body;
     expect(again.widgets).toEqual(body.widgets);
@@ -163,7 +166,10 @@ describe('/api/v1/widgets', () => {
     const admin = await signIn('admin');
     const bad = await call('widgets', 'PUT', admin, { sidebar: [text('ok'), { type: 'text' }] });
     expect(bad.status).toBe(400);
-    expect(await bad.json()).toMatchObject({ error: 'invalid_request', field: 'sidebar[1].settings' });
+    expect(await bad.json()).toMatchObject({
+      error: 'invalid_request',
+      field: 'sidebar[1].settings',
+    });
     const unknownArea = await call('widgets', 'PUT', admin, { header: [] });
     expect(unknownArea.status).toBe(400);
     expect(await unknownArea.json()).toMatchObject({ field: 'header' });

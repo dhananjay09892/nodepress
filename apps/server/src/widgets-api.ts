@@ -1,8 +1,4 @@
-import {
-  WidgetValidationError,
-  type Capabilities,
-  type WidgetService,
-} from '@nodepress/core';
+import { WidgetValidationError, type Capabilities, type WidgetService } from '@nodepress/core';
 import type { Context, Hono } from 'hono';
 import type { Auth, AuthEnv } from './auth.js';
 import { guarded, readBody } from './menus-api.js';

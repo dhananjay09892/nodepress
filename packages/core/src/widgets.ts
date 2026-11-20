@@ -65,10 +65,7 @@ export interface WidgetTypeDefinition {
    */
   parse(settings: Record<string, unknown>): Record<string, unknown>;
   /** Return trusted HTML. Everything user-controlled must be escaped. */
-  render(
-    settings: Record<string, unknown>,
-    context: WidgetRenderContext,
-  ): string | Promise<string>;
+  render(settings: Record<string, unknown>, context: WidgetRenderContext): string | Promise<string>;
 }
 
 /** A widget type as the API lists it (without code). */
