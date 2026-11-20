@@ -394,8 +394,14 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 ### N62 · Security hardening, second pass
 
 - Depends on: N39
-- Scope: follow-up to N39 (headers, `SECURITY.md`, audit job, first review in `docs/security-review.md`). Review every API route's capability checks against the capability map, the admin app's output encoding, and the importers (WXR, zip, CSV, backup JSON) with hostile inputs; try to drop `style-src 'unsafe-inline'` for the admin and for Aurora (move the customizer CSS into a served stylesheet or use a nonce) and tighten the policy; make the audit job blocking once it is clean; fix what the review finds or list it as tasks.
+- Scope: follow-up to N39 (headers, `SECURITY.md`, audit job, first review in `docs/security-review.md`). Review every API route's capability checks against the capability map, the admin app's output encoding, and the importers (WXR, zip, CSV, backup JSON) with hostile inputs; make the audit job blocking once it is clean; fix what the review finds or list it as tasks. Dropping `style-src 'unsafe-inline'` is split off as N66.
 - Done when: the review is extended in `docs/security-review.md`, tests cover each fix, and the audit job has no open high or critical findings.
+
+### N66 · Drop `style-src 'unsafe-inline'`
+
+- Depends on: N62
+- Scope: split from N62. The default policy allows inline styles because the Aurora customizer writes its settings into a `<style>` tag and style attributes, the admin editor and React components set `style` attributes, and the contact form block hides its honeypot with one. Find every inline style (admin build, Aurora, the starter theme, blocks), move them to served stylesheets, classes or CSS variables set from script (`element.style.setProperty` is allowed under CSP), or give the customizer a per-response nonce, then remove `'unsafe-inline'` from `DEFAULT_CSP` and test the admin and both themes with a strict policy.
+- Done when: the default policy has no `'unsafe-inline'`, Playwright and Lighthouse pass with it, and the page cache keeps working with the nonce (if one is used).
 
 ### N40 · End-to-end test suite
 

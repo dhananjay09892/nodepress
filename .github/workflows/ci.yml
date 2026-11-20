@@ -260,8 +260,8 @@ jobs:
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest
-    # Reports high and critical advisories without blocking merges; N62 makes it blocking once clean.
-    continue-on-error: true
+    # Blocks merges on high and critical advisories in production dependencies (N62). A new advisory
+    # is fixed by a dependency bump, which Dependabot proposes weekly.
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
