@@ -432,6 +432,7 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N29
 - Scope: `apps/docs` with Starlight: getting started, plugin guide, theme guide, hooks reference generated from types.
 - Done when: docs build in CI.
+- Status: built (see `docs/features/docs-site.md`); publishing the site is not done.
 
 ### N99 · Plan the next tasks
 
