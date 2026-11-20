@@ -23,6 +23,7 @@ import {
   createUsersService,
   discoverThemes,
   createWebhookService,
+  createRedirects,
   createDiskPageCache,
   createMemoryPageCache,
   createPageCache,
@@ -377,6 +378,7 @@ const app = createApp(np, database, {
     running: () => np.plugins.list(),
     loaded: () => loadedPackages,
   },
+  redirects: { redirects, capabilities },
   auth: {
     users,
     sessions,

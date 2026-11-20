@@ -143,6 +143,12 @@ export interface AppOptions {
    * responsible for `cache.attach()`, which purges it when content or options change.
    */
   pageCache?: PageCache;
+  /**
+   * Enables `/api/v1/redirects` (needs `auth`): manage redirect rules and import them from CSV,
+   * `manage_options` only. With `permalinks`, a request for a path that has a rule is redirected
+   * before the 404 page (a content page at the same path still wins).
+   */
+  redirects?: RedirectsRoutesOptions;
   /** Enables `/api/v1/webhooks` (needs `auth`): manage webhooks, `manage_options` only. */
   webhooks?: { service: WebhookService; capabilities: Capabilities };
   /**
@@ -285,6 +291,9 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           capabilities: options.webhooks.capabilities,
         }),
       );
+    }
+    if (options.redirects) {
+      app.route('/api/v1/redirects', createRedirectsRoutes(auth, options.redirects));
     }
     if (options.plugins) app.route('/api/v1/plugins', createPluginRoutes(auth, options.plugins));
     if (options.media) {
