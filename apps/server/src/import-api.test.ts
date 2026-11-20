@@ -110,7 +110,10 @@ async function signIn(email: string) {
     body: JSON.stringify({ email, password: PASSWORD }),
   });
   const { csrfToken } = (await res.json()) as { csrfToken: string };
-  return { cookie: (res.headers.get('set-cookie') ?? '').split(';')[0]!, 'x-csrf-token': csrfToken };
+  return {
+    cookie: (res.headers.get('set-cookie') ?? '').split(';')[0]!,
+    'x-csrf-token': csrfToken,
+  };
 }
 
 const WXR = `<?xml version="1.0" encoding="UTF-8" ?>
@@ -181,7 +184,9 @@ describe('POST /api/v1/import/wordpress', () => {
 
     const posts = await content.list({ type: 'post', status: 'published' });
     expect(posts).toHaveLength(1);
-    const jane = (await (await app.request(`${BASE}/api/v1/auth/me`, { headers: await signIn('jane@example.com') })).json()) as {
+    const jane = (await (
+      await app.request(`${BASE}/api/v1/auth/me`, { headers: await signIn('jane@example.com') })
+    ).json()) as {
       user: { id: number };
     };
     expect(posts[0]!.authorId).toBe(jane.user.id);
