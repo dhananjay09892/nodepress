@@ -336,6 +336,35 @@ export class RedirectsService {
     });
   }
 
+  /**
+   * Add several rules at once (for example the redirect map of an import). A rule for an old
+   * path that already has one is left alone, and rules that are not valid (or would loop) are
+   * reported, not thrown; the rest are kept.
+   */
+  addMany(
+    rows: ReadonlyArray<{ from: unknown; to: unknown; status?: unknown }>,
+  ): Promise<{ created: number; skipped: Array<{ from: string; message: string }> }> {
+    return this.#serial(async () => {
+      const stored = await this.#load();
+      let { nextId } = stored;
+      let rules = [...stored.redirects];
+      const result = { created: 0, skipped: [] as Array<{ from: string; message: string }> };
+      for (const row of rows) {
+        const label = typeof row.from === 'string' ? row.from : String(row.from);
+        try {
+          const rule = this.#validate({ nextId, redirects: rules }, undefined, row);
+          rules = [...rules, { id: nextId++, ...rule }];
+          result.created++;
+        } catch (error) {
+          if (!(error instanceof RedirectValidationError)) throw error;
+          result.skipped.push({ from: label, message: error.message });
+        }
+      }
+      if (result.created > 0) await this.#save({ nextId, redirects: rules });
+      return result;
+    });
+  }
+
   /** The rule for a request path (no query string), or `undefined`. Exact rules beat wildcards; the longest wildcard wins. */
   async match(path: string): Promise<{ to: string; status: RedirectStatus } | undefined> {
     const { redirects } = await this.#load();

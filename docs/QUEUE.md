@@ -308,6 +308,18 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: follow-up to N32, which delivered the redirects service in `@nodepress/core` (301/302, trailing `*` wildcard, loop protection, CSV import) and `/api/v1/redirects` (`GET`, `POST`, `PATCH /:id`, `DELETE /:id`, `POST /import` with a `text/csv` body; `manage_options`) plus the front-end matching. Add the admin "Redirects" screen (sidebar entry shown with `manage_options`, hidden on 403): a table of rules with add, edit and delete, field errors from the API shown next to the field, a CSV file picker that uploads to `/import` and lists the refused lines, and a link that downloads the current rules as CSV.
 - Done when: a Playwright test adds a rule, imports a CSV and sees the redirect work on the front page; unit tests cover the CSV export helper.
 
+### N59 · WordPress import: download media
+
+- Depends on: N55
+- Scope: follow-up to N55, whose import report lists the files in `attachments` but does not download them. Download each attachment into the media library (through the media service, so type and size checks and variants apply), with a guarded fetch (http(s) only, no private or loopback addresses, size and time limits, a few at a time; reuse the webhook host check), rewrite image URLs in imported blocks and the `_thumbnail_id` into the `featured_image` custom field, and report files that failed so the import can be repeated for them.
+- Done when: tests with a fake fetcher cover success, blocked hosts, oversize files and the rewrite; the import report lists what was and was not downloaded.
+
+### N60 · WordPress import screen in the admin
+
+- Depends on: N55
+- Scope: follow-up to N55, which delivered `POST /api/v1/import/wordpress` (WXR body up to 64 MB; authors matched by email, else the importing user or `default_author`; old URLs saved as 301 redirects; one import at a time). Add the admin "Import" screen (sidebar entry shown with `manage_options`): choose the `.xml` file, choose the default author and whether to match authors by email, run the import, and show the report (counts, skipped items, redirects saved or skipped, warnings).
+- Done when: a Playwright test uploads the fixture export and sees the report; the imported post opens on the front page and its old URL redirects.
+
 ## Phase 5: Install, deploy, migrate
 
 ### N33 · `create-nodepress` installer
@@ -341,6 +353,7 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N36
 - Scope: finish N36's first slice. `POST /api/v1/import/wordpress` (admin only, size limit) that runs `importWordPress` and returns its report; an admin Import screen with author matching (by email, or choose a user); download the files listed in `attachments` into the media library and rewrite image URLs and `_thumbnail_id`; serve the redirect map (store old path → new path and answer 301 before the 404).
 - Done when: an API test imports the fixture export, a Playwright test uploads it, and an old URL answers 301 to the new one.
+- Delivered in slices: the endpoint, author matching and saving the redirect map as redirects (N55); media download (N59); the admin Import screen (N60).
 
 ### N37 · Backup and export
 
