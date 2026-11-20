@@ -96,6 +96,15 @@ importers:
         specifier: ^4.6.0
         version: 4.13.17
 
+  packages/cli:
+    dependencies:
+      '@nodepress/core':
+        specifier: workspace:*
+        version: link:../core
+      '@nodepress/db':
+        specifier: workspace:*
+        version: link:../db
+
   packages/core:
     dependencies:
       '@node-rs/argon2':
