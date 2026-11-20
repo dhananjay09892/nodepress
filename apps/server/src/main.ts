@@ -24,6 +24,7 @@ import {
   createUsersService,
   discoverThemes,
   createWebhookService,
+  createRedirects,
   createContactForm,
   createLogMailAdapter,
   isEmailAddress,
@@ -301,6 +302,7 @@ const pageCache =
       });
 pageCache?.attach();
 const contentMeta = createContentMetaStore(database);
+const redirects = createRedirects({ options });
 const settingsService = createSettingsService({
   options,
   isPublishedPage: async (id) => {
@@ -401,6 +403,16 @@ const app = createApp(np, database, {
     capabilities,
     running: () => np.plugins.list(),
     loaded: () => loadedPackages,
+  },
+  redirects: { redirects, capabilities },
+  wordpressImport: {
+    content,
+    taxonomies,
+    permalinks,
+    meta: contentMeta,
+    users,
+    capabilities,
+    logger: np.logger.child('import'),
   },
   contact: { contact, capabilities, trustProxy: process.env.TRUST_PROXY === 'true' },
   auth: {

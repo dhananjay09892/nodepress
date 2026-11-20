@@ -462,6 +462,22 @@ export {
   type WordPressImportOptions,
 } from './wordpress-import.js';
 export {
+  RedirectsService,
+  RedirectValidationError,
+  RedirectNotFoundError,
+  createRedirects,
+  parseCsv,
+  normalizeFrom,
+  normalizeTo,
+  MAX_REDIRECTS,
+  MAX_CSV_BYTES,
+  type Redirect,
+  type RedirectStatus,
+  type RedirectImportReport,
+  type StoredRedirects,
+  type RedirectsServiceOptions,
+} from './redirects.js';
+export {
   ContactFormService,
   createContactForm,
   MAX_NAME_LENGTH,
