@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Content } from './content.js';
+import type { MenuItem } from './menus.js';
 import type { HookRegistry } from './hooks.js';
 import { silentLogger, type Logger } from './logger.js';
 
@@ -39,6 +40,10 @@ export interface ThemeManifest {
   supports: string[];
   /** Settings schema for the customizer (edited in the admin); kept as given. */
   settings: Record<string, unknown>;
+  /** Menu locations the theme draws, `name` → label (for example `primary` → "Primary menu"). */
+  menus: Record<string, string>;
+  /** Widget areas the theme draws, `name` → label (for example `sidebar` → "Sidebar"). */
+  widgetAreas: Record<string, string>;
   /** Folder of templates, relative to the theme (default `templates`). */
   templates: string;
   /** Folder of static assets, relative to the theme (default `assets`). */
@@ -62,6 +67,27 @@ function readSubDir(raw: Record<string, unknown>, key: 'templates' | 'assets'): 
     throw new ThemeError(`"${key}" must be a relative folder such as "${key}"`);
   }
   return value;
+}
+
+const MAX_SLOTS = 20;
+
+/** Read `menus` or `widgetAreas`: an object of slot name → label. */
+function readSlots(raw: Record<string, unknown>, key: 'menus' | 'widgetAreas'): Record<string, string> {
+  const value = raw[key] ?? {};
+  if (!isRecord(value) || Object.keys(value).length > MAX_SLOTS) {
+    throw new ThemeError(`"${key}" must be an object of name to label (max ${MAX_SLOTS})`);
+  }
+  const slots: Record<string, string> = {};
+  for (const [name, label] of Object.entries(value)) {
+    if (!THEME_NAME_PATTERN.test(name) || name.length > 64) {
+      throw new ThemeError(`"${key}" name "${name}" must be lowercase letters, digits and dashes`);
+    }
+    if (typeof label !== 'string' || label.trim() === '' || label.length > 100) {
+      throw new ThemeError(`"${key}.${name}" must be a non-empty label (max 100)`);
+    }
+    slots[name] = label.trim();
+  }
+  return slots;
 }
 
 /** Validate the parsed contents of a `theme.json`. Throws `ThemeError` with a readable message. */
@@ -101,6 +127,8 @@ export function parseThemeManifest(raw: unknown): ThemeManifest {
     ...(typeof raw.description === 'string' ? { description: raw.description } : {}),
     supports: [...new Set(supports as string[])],
     settings,
+    menus: readSlots(raw, 'menus'),
+    widgetAreas: readSlots(raw, 'widgetAreas'),
     templates: readSubDir(raw, 'templates'),
     assets: readSubDir(raw, 'assets'),
   };
@@ -266,6 +294,11 @@ export interface TemplateProps {
   tagline?: string;
   /** Latest published posts with their URLs; set on the front page. */
   posts?: Array<{ content: Content; url: string }>;
+  /**
+   * The menu assigned to each of the theme's menu locations (`theme.json` `menus`), as a tree.
+   * Locations with no menu assigned are left out.
+   */
+  menus?: Record<string, MenuItem[]>;
   /** The theme's settings: defaults from `theme.json` `settings`, with any overrides applied. */
   settings?: Record<string, unknown>;
   theme: {

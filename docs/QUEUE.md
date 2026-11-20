@@ -216,6 +216,19 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N22, N20
 - Scope: menu builder API and admin screen, theme-declared menu locations and widget areas.
 - Done when: tests and a Playwright test cover creating a menu.
+- Delivered in slices: the menu service, API, theme locations and Aurora rendering (N24); the admin Menus screen and its Playwright test (N51); widget areas (N52).
+
+### N51 · Menus screen in the admin
+
+- Depends on: N24
+- Scope: follow-up to N24, which delivered the menu service, `/api/v1/menus`, `/api/v1/menu-locations` (`edit_theme_options`), theme-declared menu locations (`menus` in `theme.json`) and Aurora's primary and footer menus. Add the admin "Menus" screen (sidebar entry shown with `edit_theme_options`): pick or create a menu, add, edit, remove and reorder links with nesting up to 3 levels (keyboard-operable move up/down/indent buttons, no drag-only controls), rename and delete a menu, and assign menus to the active theme's locations.
+- Done when: a Playwright test creates a menu with a nested link, assigns it to a location and sees it on the front page; unit tests cover the tree-editing helpers.
+
+### N52 · Widget areas
+
+- Depends on: N24
+- Scope: follow-up to N24, whose theme manifest already accepts `widgetAreas`. Widget service (areas declared by the active theme, ordered widgets per area stored in the options table, built-in `text` (plain text, escaped), `menu` and `recent-posts` widget types, `registerWidget()` for plugins), `GET`/`PUT /api/v1/widgets` (`edit_theme_options`), `widgets` prop for templates, a `sidebar` area in Aurora, and the admin "Widgets" screen.
+- Done when: API tests cover validation and permission denial, a theme test shows a widget in the sidebar, and a Playwright test adds a text widget.
 
 ### N25 · Theme customizer with live preview
 

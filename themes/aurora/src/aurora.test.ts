@@ -34,6 +34,38 @@ describe('Aurora page frame', () => {
     expect(html).toContain('<nav aria-label="Primary">');
   });
 
+  it('draws the assigned menus, marks the current page and escapes labels', async () => {
+    const primary = [
+      { label: 'Home', url: '/', children: [] },
+      {
+        label: 'Blog <b>',
+        url: '/blog/hi',
+        children: [{ label: 'Docs', url: 'https://example.com', target: '_blank' as const, children: [] }],
+      },
+    ];
+    const html = await render(
+      Single({
+        ...base,
+        content: post('Hello'),
+        menus: { primary, footer: [{ label: 'Contact', url: '/contact', children: [] }] },
+      }),
+    );
+    expect(html).toContain('<ul class="np-aurora-menu">');
+    expect(html).toContain('<a href="/blog/hi" aria-current="page">Blog &lt;b&gt;</a>');
+    expect(html).not.toContain('<a href="/" aria-current');
+    expect(html).toContain('<ul class="np-aurora-submenu">');
+    expect(html).toContain('target="_blank" rel="noopener noreferrer"');
+    expect(html).toContain('<nav aria-label="Footer">');
+    expect(html).toContain('>Contact</a>');
+  });
+
+  it('falls back to a Home link and no footer menu when none is assigned', async () => {
+    const html = await render(Single({ ...base, content: post('Hello'), menus: {} }));
+    expect(html).toContain('>Home</a>');
+    expect(html).not.toContain('np-aurora-menu"');
+    expect(html).not.toContain('aria-label="Footer"');
+  });
+
   it('escapes text but keeps trusted body HTML', async () => {
     const html = await render(
       Single({
