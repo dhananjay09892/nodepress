@@ -84,7 +84,10 @@ export async function deleteRedirect(id: number, csrfToken: string): Promise<voi
 
 export const MAX_CSV_BYTES = 1024 * 1024;
 
-export async function importRedirectsCsv(text: string, csrfToken: string): Promise<CsvImportReport> {
+export async function importRedirectsCsv(
+  text: string,
+  csrfToken: string,
+): Promise<CsvImportReport> {
   const res = await request('/api/v1/redirects/import', {
     method: 'POST',
     headers: { 'content-type': 'text/csv', 'x-csrf-token': csrfToken },
@@ -101,7 +104,10 @@ function csvField(value: string): string {
 
 /** The rules as a CSV file the import accepts (`from,to,status` with a header row). */
 export function redirectsToCsv(rules: readonly RedirectRule[]): string {
-  const lines = ['from,to,status', ...rules.map((r) => [r.from, r.to, String(r.status)].map(csvField).join(','))];
+  const lines = [
+    'from,to,status',
+    ...rules.map((r) => [r.from, r.to, String(r.status)].map(csvField).join(',')),
+  ];
   return `${lines.join('\r\n')}\r\n`;
 }
 

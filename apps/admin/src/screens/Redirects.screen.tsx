@@ -42,7 +42,8 @@ function RuleRow({ rule }: { rule: RedirectRule }) {
   const [status, setStatus] = useState<number>(rule.status);
 
   const save = useMutation({
-    mutationFn: () => updateRedirect(rule.id, diffRedirect(rule, { from, to, status }), csrf(queryClient)),
+    mutationFn: () =>
+      updateRedirect(rule.id, diffRedirect(rule, { from, to, status }), csrf(queryClient)),
     onSuccess: async () => {
       setEditing(false);
       await queryClient.invalidateQueries({ queryKey: ['redirects'] });
@@ -97,9 +98,16 @@ function RuleRow({ rule }: { rule: RedirectRule }) {
   return (
     <tr className="border-t border-slate-200 bg-slate-50">
       <td colSpan={4} className="px-3 py-3">
-        <form aria-label={`Edit redirect from ${rule.from}`} onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-4">
+        <form
+          aria-label={`Edit redirect from ${rule.from}`}
+          onSubmit={onSubmit}
+          className="grid gap-3 sm:grid-cols-4"
+        >
           <div>
-            <label htmlFor={`edit-from-${rule.id}`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`edit-from-${rule.id}`}
+              className="block text-sm font-medium text-slate-700"
+            >
               From
             </label>
             <input
@@ -109,10 +117,17 @@ function RuleRow({ rule }: { rule: RedirectRule }) {
               aria-invalid={fromError ? true : undefined}
               className={fieldClass}
             />
-            {fromError && <p role="alert" className="mt-1 text-xs text-red-800">{fromError}</p>}
+            {fromError && (
+              <p role="alert" className="mt-1 text-xs text-red-800">
+                {fromError}
+              </p>
+            )}
           </div>
           <div>
-            <label htmlFor={`edit-to-${rule.id}`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`edit-to-${rule.id}`}
+              className="block text-sm font-medium text-slate-700"
+            >
               To
             </label>
             <input
@@ -122,10 +137,17 @@ function RuleRow({ rule }: { rule: RedirectRule }) {
               aria-invalid={toError ? true : undefined}
               className={fieldClass}
             />
-            {toError && <p role="alert" className="mt-1 text-xs text-red-800">{toError}</p>}
+            {toError && (
+              <p role="alert" className="mt-1 text-xs text-red-800">
+                {toError}
+              </p>
+            )}
           </div>
           <div>
-            <label htmlFor={`edit-status-${rule.id}`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`edit-status-${rule.id}`}
+              className="block text-sm font-medium text-slate-700"
+            >
               Type
             </label>
             <select
@@ -163,7 +185,8 @@ function AddForm() {
   const [to, setTo] = useState('');
   const [status, setStatus] = useState(301);
   const add = useMutation({
-    mutationFn: () => createRedirect({ from: from.trim(), to: to.trim(), status }, csrf(queryClient)),
+    mutationFn: () =>
+      createRedirect({ from: from.trim(), to: to.trim(), status }, csrf(queryClient)),
     onSuccess: async () => {
       setFrom('');
       setTo('');
@@ -194,7 +217,11 @@ function AddForm() {
           aria-invalid={fromError ? true : undefined}
           className={fieldClass}
         />
-        {fromError && <p role="alert" className="mt-1 text-xs text-red-800">{fromError}</p>}
+        {fromError && (
+          <p role="alert" className="mt-1 text-xs text-red-800">
+            {fromError}
+          </p>
+        )}
       </div>
       <div>
         <label htmlFor="redirect-to" className="block text-sm font-medium text-slate-700">
@@ -208,7 +235,11 @@ function AddForm() {
           aria-invalid={toError ? true : undefined}
           className={fieldClass}
         />
-        {toError && <p role="alert" className="mt-1 text-xs text-red-800">{toError}</p>}
+        {toError && (
+          <p role="alert" className="mt-1 text-xs text-red-800">
+            {toError}
+          </p>
+        )}
       </div>
       <div>
         <label htmlFor="redirect-status" className="block text-sm font-medium text-slate-700">
@@ -273,8 +304,8 @@ function ImportPanel({ rules }: { rules: RedirectRule[] }) {
         Import and export
       </h2>
       <p className="text-sm text-slate-700">
-        A CSV file with the columns <code>from,to,status</code> (the header row is optional). Rows with an
-        old path that already has a rule replace that rule.
+        A CSV file with the columns <code>from,to,status</code> (the header row is optional). Rows
+        with an old path that already has a rule replace that rule.
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <div>
@@ -294,7 +325,12 @@ function ImportPanel({ rules }: { rules: RedirectRule[] }) {
             className="text-sm"
           />
         </div>
-        <button type="button" className={buttonClass} disabled={rules.length === 0} onClick={download}>
+        <button
+          type="button"
+          className={buttonClass}
+          disabled={rules.length === 0}
+          onClick={download}
+        >
           Download CSV
         </button>
       </div>
@@ -306,7 +342,8 @@ function ImportPanel({ rules }: { rules: RedirectRule[] }) {
       {report && (
         <div role="status" className="space-y-2 text-sm text-slate-900">
           <p>
-            Imported: {report.created} created, {report.updated} updated, {report.errors.length} refused.
+            Imported: {report.created} created, {report.updated} updated, {report.errors.length}{' '}
+            refused.
           </p>
           {report.errors.length > 0 && (
             <ul className="list-disc pl-5 text-red-800">
@@ -329,9 +366,9 @@ function Redirects() {
     <div className="space-y-6 p-6">
       <h1 className="text-2xl font-semibold text-slate-900">Redirects</h1>
       <p className="max-w-2xl text-sm text-slate-700">
-        Send visitors from an old address to a new one. A path ending in <code>*</code> matches any ending, and
-        the same <code>*</code> in the target is replaced by what it matched. A real page at the same address
-        always wins.
+        Send visitors from an old address to a new one. A path ending in <code>*</code> matches any
+        ending, and the same <code>*</code> in the target is replaced by what it matched. A real
+        page at the same address always wins.
       </p>
       <AddForm />
       {rules.isPending && <p>Loading…</p>}
@@ -347,10 +384,18 @@ function Redirects() {
                 <caption className="sr-only">Redirect rules</caption>
                 <thead className="text-xs uppercase text-slate-700">
                   <tr>
-                    <th scope="col" className="px-3 py-2">From</th>
-                    <th scope="col" className="px-3 py-2">To</th>
-                    <th scope="col" className="px-3 py-2">Type</th>
-                    <th scope="col" className="px-3 py-2"><span className="sr-only">Actions</span></th>
+                    <th scope="col" className="px-3 py-2">
+                      From
+                    </th>
+                    <th scope="col" className="px-3 py-2">
+                      To
+                    </th>
+                    <th scope="col" className="px-3 py-2">
+                      Type
+                    </th>
+                    <th scope="col" className="px-3 py-2">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

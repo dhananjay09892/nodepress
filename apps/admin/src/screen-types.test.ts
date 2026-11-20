@@ -13,7 +13,12 @@ const make = (id: string, label: string, order?: number) =>
 
 describe('sortScreens', () => {
   it('orders by order, then label, without changing the input', () => {
-    const input = [make('b', 'Beta'), make('c', 'Charlie', 5), make('a', 'Alpha'), make('d', 'Delta', 5)];
+    const input = [
+      make('b', 'Beta'),
+      make('c', 'Charlie', 5),
+      make('a', 'Alpha'),
+      make('d', 'Delta', 5),
+    ];
     expect(sortScreens(input).map((s) => s.id)).toEqual(['c', 'd', 'a', 'b']);
     expect(input.map((s) => s.id)).toEqual(['b', 'c', 'a', 'd']);
   });

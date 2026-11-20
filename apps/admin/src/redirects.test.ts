@@ -40,7 +40,9 @@ describe('redirectsToCsv', () => {
       rule(1, '/old', '/new'),
       rule(2, '/a,b', 'https://example.com/?q="x"', 302),
     ]);
-    expect(csv).toBe('from,to,status\r\n/old,/new,301\r\n"/a,b","https://example.com/?q=""x""",302\r\n');
+    expect(csv).toBe(
+      'from,to,status\r\n/old,/new,301\r\n"/a,b","https://example.com/?q=""x""",302\r\n',
+    );
   });
 
   it('is just the header for no rules', () => {
@@ -61,13 +63,19 @@ describe('diffRedirect', () => {
 
 describe('describeRedirectError', () => {
   it('uses the server message for a refused rule and plain sentences otherwise', () => {
-    expect(describeRedirectError(new RedirectApiError(400, 'invalid_request', 'from', 'Too long.'))).toBe(
-      'Too long.',
-    );
+    expect(
+      describeRedirectError(new RedirectApiError(400, 'invalid_request', 'from', 'Too long.')),
+    ).toBe('Too long.');
     expect(describeRedirectError(new RedirectApiError(403, 'forbidden'))).toMatch(/permission/);
-    expect(describeRedirectError(new RedirectApiError(404, 'not_found'))).toMatch(/no longer exists/);
-    expect(describeRedirectError(new RedirectApiError(413, 'payload_too_large'))).toMatch(/too large/);
-    expect(describeRedirectError(new RedirectApiError(415, 'unsupported_media_type'))).toMatch(/CSV/);
+    expect(describeRedirectError(new RedirectApiError(404, 'not_found'))).toMatch(
+      /no longer exists/,
+    );
+    expect(describeRedirectError(new RedirectApiError(413, 'payload_too_large'))).toMatch(
+      /too large/,
+    );
+    expect(describeRedirectError(new RedirectApiError(415, 'unsupported_media_type'))).toMatch(
+      /CSV/,
+    );
     expect(describeRedirectError(new Error('x'))).toMatch(/went wrong/);
   });
 });
@@ -93,10 +101,14 @@ describe('API calls', () => {
 
     const updated = stubFetch(200, { redirect: rule(3, '/x', '/z') });
     await updateRedirect(3, { to: '/z' }, 'tok');
-    expect((updated.mock.calls[0] as unknown as [string, RequestInit])[0]).toBe('/api/v1/redirects/3');
+    expect((updated.mock.calls[0] as unknown as [string, RequestInit])[0]).toBe(
+      '/api/v1/redirects/3',
+    );
 
     stubFetch(400, { error: 'invalid_request', field: 'from', message: 'Reserved path.' });
-    await expect(createRedirect({ from: '/admin', to: '/y', status: 301 }, 'tok')).rejects.toMatchObject({
+    await expect(
+      createRedirect({ from: '/admin', to: '/y', status: 301 }, 'tok'),
+    ).rejects.toMatchObject({
       status: 400,
       field: 'from',
       detail: 'Reserved path.',
