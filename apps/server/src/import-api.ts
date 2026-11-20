@@ -36,6 +36,7 @@ export interface WordPressImportResponse extends ImportReport {
 
 /**
  * Routes for `/api/v1/import`:
+ * - `GET /wordpress`: `{ maxBytes }` for people allowed to import (403 for others).
  * - `POST /wordpress`: the body is a WordPress export (WXR, `application/xml` or `text/xml`, up
  *   to 25 MB). Needs `manage_options` (session with CSRF token, or a Bearer token). Items are
  *   assigned to the user whose email matches the WordPress author, else to the user running the
@@ -60,6 +61,9 @@ export function createImportRoutes(auth: Auth, options: ImportRoutesOptions): Ho
     }
     await next();
   });
+
+  // What the admin Import screen asks first: the same permission check, plus the size limit.
+  routes.get('/wordpress', (c) => c.json({ maxBytes: MAX_WXR_BYTES }));
 
   routes.post('/wordpress', async (c) => {
     const type = (c.req.header('content-type') ?? '').toLowerCase();
