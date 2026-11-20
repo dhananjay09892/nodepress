@@ -47,6 +47,17 @@ jobs:
         run: pnpm --filter @nodepress/db db:generate
       - name: Build
         run: pnpm build
+      - name: CLI scaffolds, checks and packs a plugin
+        run: |
+          set -e
+          CLI="node packages/cli/dist/bin.js"
+          WORK="$RUNNER_TEMP/cli-plugin"
+          $CLI plugin create ci-example --dir "$WORK"
+          $CLI plugin check "$WORK/ci-example"
+          $CLI plugin pack "$WORK/ci-example" --out "$WORK/ci-example.zip"
+          unzip -l "$WORK/ci-example.zip" | grep -q plugin.json
+          $CLI theme create ci-theme --dir "$WORK"
+          test -f "$WORK/ci-theme/theme.json"
       - name: Format check
         run: pnpm format:check
       - name: Lint
