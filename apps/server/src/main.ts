@@ -39,6 +39,7 @@ import {
 } from '@nodepress/db';
 import helloPlugin from '@nodepress/plugin-hello';
 import { createApp } from './app.js';
+import { createBodyRenderer } from './body.js';
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -228,6 +229,7 @@ const app = createApp(np, database, {
   themes: {
     service: themes,
     settings: () => themeSettings,
+    renderBody: createBodyRenderer({ hooks: np.hooks, logger: np.logger.child('render') }),
     tagline: () => options.get('tagline', ''),
     latestPosts: () =>
       content.list({

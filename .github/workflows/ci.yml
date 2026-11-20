@@ -79,6 +79,9 @@ jobs:
           PORT: 3000
           DATABASE_URL: file:./ci.db
           SITE_NAME: CI Site
+          ADMIN_EMAIL: ci-admin@example.com
+          ADMIN_PASSWORD: ci-admin-password-1234
+          COOKIE_SECURE: 'false'
         run: |
           node dist/main.js > server.log 2>&1 &
           for i in $(seq 1 30); do
@@ -112,6 +115,20 @@ jobs:
           ADMIN=$(curl -fsS http://localhost:3000/admin/)
           echo "$ADMIN" | grep -q '<div id="root">'
           curl -fsS http://localhost:3000/admin/login | grep -q '<div id="root">'
+
+          echo "--- post body on the front end ---"
+          curl -fsS -c cookies.txt -H 'content-type: application/json' -H 'origin: http://localhost:3000' \
+            -d '{"email":"ci-admin@example.com","password":"ci-admin-password-1234"}' \
+            http://localhost:3000/api/v1/auth/login > login.json
+          CSRF=$(node -e "console.log(JSON.parse(require('fs').readFileSync('login.json','utf8')).csrfToken)")
+          curl -fsS -b cookies.txt -H 'content-type: application/json' -H 'origin: http://localhost:3000' \
+            -H "x-csrf-token: $CSRF" \
+            -d '{"title":"Smoke Page","slug":"smoke-page","status":"published","body":[{"type":"core/heading","attrs":{"level":2},"content":[{"text":"Smoke heading"}]},{"type":"core/paragraph","content":[{"text":"Smoke paragraph"}]},{"type":"core/list","attrs":{"ordered":false},"children":[{"type":"core/list-item","content":[{"text":"Smoke item"}]}]}]}' \
+            http://localhost:3000/api/v1/content/page
+          BODY=$(curl -fsS http://localhost:3000/smoke-page)
+          echo "$BODY" | grep -q '<h2>Smoke heading</h2>'
+          echo "$BODY" | grep -q '<p>Smoke paragraph</p>'
+          echo "$BODY" | grep -q '<li>Smoke item</li>'
 
           echo "Smoke test passed ✅"
       - name: Show server log
