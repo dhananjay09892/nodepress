@@ -413,6 +413,7 @@ export {
   type LoadPluginPackagesOptions,
   type LoadPluginPackagesResult,
 } from './plugin-packages.js';
+export {
   parseWxr,
   WxrError,
   MAX_WXR_BYTES,
