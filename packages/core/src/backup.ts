@@ -279,6 +279,8 @@ const exportSchema = z.object({
     .optional(),
 });
 
+type ParsedExport = z.infer<typeof exportSchema>;
+
 export class BackupError extends Error {
   constructor(message: string) {
     super(message);
@@ -477,10 +479,7 @@ export async function importSite(
  * theme gets its menu only when it has none yet, so the look of the site is not changed.
  */
 async function importMenus(
-  file: {
-    menus?: Array<{ id: number; name: string; items: unknown[] }>;
-    menuLocations?: Record<string, number>;
-  },
+  file: ParsedExport,
   deps: BackupDeps,
   summary: ImportSummary,
 ): Promise<Map<number, number>> {
@@ -526,16 +525,7 @@ async function importMenus(
  * the new id of its menu (and left out when the menu was not restored).
  */
 async function importWidgets(
-  file: {
-    widgets?: Record<
-      string,
-      Array<{
-        id?: string | undefined;
-        type: string;
-        settings?: Record<string, unknown> | undefined;
-      }>
-    >;
-  },
+  file: ParsedExport,
   deps: BackupDeps,
   summary: ImportSummary,
   menuIds: Map<number, number>,
@@ -588,7 +578,7 @@ async function importWidgets(
 
 /** Redirect rules are added (invalid ones, and ones for a path that already has a rule, are reported). */
 async function importRedirects(
-  file: { redirects?: Array<{ from: string; to: string; status: number }> },
+  file: ParsedExport,
   deps: BackupDeps,
   summary: ImportSummary,
 ): Promise<void> {
