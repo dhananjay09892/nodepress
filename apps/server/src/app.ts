@@ -330,7 +330,18 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     if (options.redirects) {
       app.route('/api/v1/redirects', createRedirectsRoutes(auth, options.redirects));
     }
-    if (options.backup) app.route('/api/v1/backup', createBackupRoutes(auth, options.backup));
+    if (options.backup) {
+      app.route(
+        '/api/v1/backup',
+        createBackupRoutes(auth, {
+          // The locations and areas are the active theme's, unless the caller gave them.
+          menuLocations: () => Object.keys(options.themes?.service.active?.manifest.menus ?? {}),
+          widgetAreas: () =>
+            Object.keys(options.themes?.service.active?.manifest.widgetAreas ?? {}),
+          ...options.backup,
+        }),
+      );
+    }
     if (options.contact) app.route('/api/v1/contact', createContactRoutes(auth, options.contact));
     if (options.plugins) app.route('/api/v1/plugins', createPluginRoutes(auth, options.plugins));
     if (options.media) {

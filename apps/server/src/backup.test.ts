@@ -2,12 +2,15 @@ import {
   createApiTokensService,
   createCapabilities,
   createContentService,
+  createMenuService,
   createNodePress,
   createOptionsService,
+  createRedirects,
   createSessionsService,
   createSettingsService,
   createTaxonomyService,
   createUsersService,
+  createWidgetService,
   exportSite,
   importSite,
   silentLogger,
@@ -97,7 +100,7 @@ async function makeSite() {
     auth: { users, sessions, apiTokens },
     backup: { ...deps, capabilities: createCapabilities(np.hooks) },
   });
-  return { database, deps, content, taxonomies, settings, admin, editor, app, users };
+  return { database, deps, content, taxonomies, settings, admin, editor, app, users, options, np };
 }
 
 type Site = Awaited<ReturnType<typeof makeSite>>;
@@ -304,6 +307,133 @@ describe('importSite (round trip)', () => {
   });
 });
 
+/** The deps with menus, widgets and redirects, for a theme with a `primary` menu and a `sidebar`. */
+function withExtras(site: Site): BackupDeps {
+  const menus = createMenuService({ options: site.options });
+  return {
+    ...site.deps,
+    menus,
+    widgets: createWidgetService({
+      options: site.options,
+      hooks: site.np.hooks,
+      getMenu: (id) => menus.get(id),
+      recentPosts: async () => [],
+    }),
+    redirects: createRedirects({ options: site.options }),
+    menuLocations: () => ['primary'],
+    widgetAreas: () => ['sidebar'],
+  };
+}
+
+describe('menus, widgets and redirects in a backup', () => {
+  async function seedExtras(site: Site) {
+    const deps = withExtras(site);
+    const menu = await deps.menus!.create({
+      name: 'Main',
+      items: [
+        { label: 'Home', url: '/', children: [] },
+        { label: 'About', url: '/about', children: [{ label: 'Team', url: '/team', children: [] }] },
+      ],
+    });
+    await deps.menus!.setLocations({ primary: menu.id }, ['primary']);
+    await deps.widgets!.setAreas(
+      {
+        sidebar: [
+          { type: 'text', settings: { title: 'Hi', text: 'Welcome' } },
+          { type: 'menu', settings: { menuId: menu.id } },
+        ],
+      },
+      ['sidebar'],
+    );
+    await deps.redirects!.addMany([
+      { from: '/old', to: '/new' },
+      { from: '/gone/*', to: '/', status: 302 },
+    ]);
+    return { deps, menu };
+  }
+
+  it('exports them, and old exports without them still import', async () => {
+    const site = await makeSite();
+    const { deps, menu } = await seedExtras(site);
+    const data = await exportSite(deps);
+    expect(data.menus).toEqual([
+      { id: menu.id, name: 'Main', items: expect.any(Array) },
+    ]);
+    expect(data.menuLocations).toEqual({ primary: menu.id });
+    expect(Object.keys(data.widgets!)).toEqual(['sidebar']);
+    expect(data.widgets!.sidebar!.map((w) => w.type)).toEqual(['text', 'menu']);
+    expect(data.redirects).toEqual([
+      { from: '/old', to: '/new', status: 301 },
+      { from: '/gone/*', to: '/', status: 302 },
+    ]);
+    // A site that cannot manage them leaves the sections out, and a file without them imports.
+    const plain = await exportSite(site.deps);
+    expect(plain.menus).toBeUndefined();
+    const target = await makeSite();
+    const summary = await importSite(JSON.parse(JSON.stringify(plain)), withExtras(target));
+    expect(summary).toMatchObject({ menus: 0, widgets: 0, redirects: 0, warnings: [] });
+  });
+
+  it('restores menus with their location, widgets (menu widgets point at the new menu) and redirects', async () => {
+    const source = await makeSite();
+    await seedExtras(source);
+    const exported = JSON.parse(JSON.stringify(await exportSite(withExtras(source)))) as SiteExport;
+
+    const target = await makeSite();
+    const targetDeps = withExtras(target);
+    // The target already has a menu, so the new one gets a different id.
+    await targetDeps.menus!.create({ name: 'Existing', items: [] });
+    const summary = await importSite(exported, targetDeps);
+    expect(summary).toMatchObject({ menus: 1, widgets: 2, redirects: 2, warnings: [] });
+
+    const menus = await targetDeps.menus!.list();
+    const restored = menus.find((m) => m.name === 'Main')!;
+    expect(restored.items[1]!.children[0]!.label).toBe('Team');
+    expect(await targetDeps.menus!.getLocations()).toEqual({ primary: restored.id });
+    const { sidebar } = await targetDeps.widgets!.getAreas(['sidebar']);
+    expect(sidebar!.map((w) => w.type)).toEqual(['text', 'menu']);
+    expect(sidebar![1]!.settings).toEqual({ menuId: restored.id });
+    expect((await targetDeps.redirects!.list()).map((r) => [r.from, r.to, r.status])).toEqual([
+      ['/old', '/new', 301],
+      ['/gone/*', '/', 302],
+    ]);
+  });
+
+  it('leaves assigned locations and filled areas alone, and reports what it could not do', async () => {
+    const source = await makeSite();
+    await seedExtras(source);
+    const exported = JSON.parse(JSON.stringify(await exportSite(withExtras(source)))) as SiteExport;
+    exported.redirects!.push({ from: '/admin/x', to: '/y', status: 301 });
+    exported.widgets!.footer = [{ type: 'text', settings: { text: 'x' } }];
+
+    const target = await makeSite();
+    const deps = withExtras(target);
+    const other = await deps.menus!.create({ name: 'Other', items: [] });
+    await deps.menus!.setLocations({ primary: other.id }, ['primary']);
+    await deps.widgets!.setAreas({ sidebar: [{ type: 'text', settings: { text: 'mine' } }] }, ['sidebar']);
+    const summary = await importSite(exported, deps);
+
+    expect(await deps.menus!.getLocations()).toEqual({ primary: other.id });
+    const { sidebar } = await deps.widgets!.getAreas(['sidebar']);
+    expect(sidebar).toHaveLength(1);
+    expect(summary).toMatchObject({ menus: 1, widgets: 0, redirects: 2 });
+    expect(summary.warnings.join('\n')).toMatch(/location "primary" already has a menu/);
+    expect(summary.warnings.join('\n')).toMatch(/area "sidebar" already has widgets/);
+    expect(summary.warnings.join('\n')).toMatch(/area "footer" does not exist/);
+    expect(summary.warnings.join('\n')).toMatch(/Redirect from "\/admin\/x" skipped/);
+  });
+
+  it('says so when the site cannot take them', async () => {
+    const source = await makeSite();
+    await seedExtras(source);
+    const exported = JSON.parse(JSON.stringify(await exportSite(withExtras(source)))) as SiteExport;
+    const target = await makeSite();
+    const summary = await importSite(exported, target.deps);
+    expect(summary.warnings).toHaveLength(3);
+    expect(summary).toMatchObject({ menus: 0, widgets: 0, redirects: 0 });
+  });
+});
+
 describe('/api/v1/backup', () => {
   async function signIn(site: Site, email: string) {
     const res = await site.app.request(`${BASE}/api/v1/auth/login`, {
@@ -370,5 +500,16 @@ describe('/api/v1/backup', () => {
     const notExport = await send('{"hello":1}');
     expect(notExport.status).toBe(400);
     expect(await notExport.json()).toMatchObject({ error: 'invalid_export' });
+  });
+
+  it('tells the admin screen the size limit, to administrators only', async () => {
+    const site = await makeSite();
+    expect((await site.app.request(`${BASE}/api/v1/backup`)).status).toBe(401);
+    const editor = await signIn(site, 'editor@example.com');
+    expect((await site.app.request(`${BASE}/api/v1/backup`, { headers: editor })).status).toBe(403);
+    const admin = await signIn(site, 'admin@example.com');
+    const res = await site.app.request(`${BASE}/api/v1/backup`, { headers: admin });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ maxBytes: 256 * 1024 * 1024 });
   });
 });

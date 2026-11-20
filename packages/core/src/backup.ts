@@ -2,8 +2,11 @@ import { z } from 'zod';
 import type { ContentService, Content, ContentStatusName } from './content.js';
 import { CONTENT_STATUSES } from './content.js';
 import { silentLogger, type Logger } from './logger.js';
+import type { Menu, MenuItem, MenuService } from './menus.js';
+import type { RedirectsService } from './redirects.js';
 import type { SettingsService } from './settings.js';
 import type { TaxonomyService } from './taxonomies.js';
+import type { WidgetInstance, WidgetService } from './widgets.js';
 
 export const EXPORT_FORMAT = 'nodepress-export';
 export const EXPORT_VERSION = 1;
@@ -49,6 +52,32 @@ export interface SiteExport {
   content: ExportedContent[];
   /** Who wrote the items: for matching authors when importing. Never includes passwords. */
   authors: Array<{ id: number; email: string; displayName: string }>;
+  /** Navigation menus (absent in files made before menus were backed up). */
+  menus?: ExportedMenu[];
+  /** Menu location of the theme → id of the menu assigned to it. */
+  menuLocations?: Record<string, number>;
+  /** Widget area of the theme → the widgets placed in it. */
+  widgets?: Record<string, ExportedWidget[]>;
+  /** Redirect rules. */
+  redirects?: ExportedRedirect[];
+}
+
+export interface ExportedMenu {
+  id: number;
+  name: string;
+  items: MenuItem[];
+}
+
+export interface ExportedWidget {
+  id: string;
+  type: string;
+  settings: Record<string, unknown>;
+}
+
+export interface ExportedRedirect {
+  from: string;
+  to: string;
+  status: number;
 }
 
 export interface BackupDeps {
@@ -67,6 +96,16 @@ export interface BackupDeps {
     getMetaMany(ids: number[]): Promise<Map<number, Record<string, unknown>>>;
     setMeta(contentId: number, values: Record<string, unknown>): Promise<void>;
   };
+  /** Menus: exported with their location assignments, and added on import. */
+  menus?: Pick<MenuService, 'list' | 'create' | 'getLocations' | 'setLocations'>;
+  /** Widgets placed in the areas of the active theme. */
+  widgets?: Pick<WidgetService, 'getAreas' | 'setAreas'>;
+  /** The menu locations of the active theme (empty or missing without a theme). */
+  menuLocations?: () => readonly string[];
+  /** The widget areas of the active theme (empty or missing without a theme). */
+  widgetAreas?: () => readonly string[];
+  /** Redirect rules: exported, and added on import. */
+  redirects?: Pick<RedirectsService, 'list' | 'addMany'>;
   /** Users, only to name the authors in an export. */
   users?: { list(): Promise<Array<{ id: number; email: string; displayName: string }>> };
   logger?: Logger;
@@ -137,7 +176,7 @@ export async function exportSite(deps: BackupDeps): Promise<SiteExport> {
         .map((u) => ({ id: u.id, email: u.email, displayName: u.displayName }))
     : [];
 
-  return {
+  const result: SiteExport = {
     format: EXPORT_FORMAT,
     version: EXPORT_VERSION,
     exportedAt: now().toISOString(),
@@ -146,6 +185,31 @@ export async function exportSite(deps: BackupDeps): Promise<SiteExport> {
     content,
     authors,
   };
+  if (deps.menus) {
+    const menus: Menu[] = await deps.menus.list();
+    result.menus = menus.map((m) => ({ id: m.id, name: m.name, items: m.items }));
+    result.menuLocations = await deps.menus.getLocations();
+  }
+  if (deps.widgets) {
+    const areas = await deps.widgets.getAreas(deps.widgetAreas?.() ?? []);
+    result.widgets = Object.fromEntries(
+      Object.entries(areas)
+        .filter(([, list]) => list.length > 0)
+        .map(([area, list]) => [area, list.map(exportedWidget)]),
+    );
+  }
+  if (deps.redirects) {
+    result.redirects = (await deps.redirects.list()).map((r) => ({
+      from: r.from,
+      to: r.to,
+      status: r.status,
+    }));
+  }
+  return result;
+}
+
+function exportedWidget(widget: WidgetInstance): ExportedWidget {
+  return { id: widget.id, type: widget.type, settings: widget.settings };
 }
 
 const text = (max: number) => z.string().max(max);
@@ -187,6 +251,30 @@ const exportSchema = z.object({
     )
     .max(MAX_EXPORT_ITEMS),
   authors: z.array(z.object({ id: z.number().int(), email: text(254), displayName: text(200) })),
+  // Absent in files from before these were backed up. Each service checks the details on import.
+  menus: z
+    .array(z.object({ id: z.number().int(), name: text(200), items: z.array(z.unknown()).max(1000) }))
+    .max(200)
+    .optional(),
+  menuLocations: z.record(text(100), z.number().int()).optional(),
+  widgets: z
+    .record(
+      text(100),
+      z
+        .array(
+          z.object({
+            id: text(100).optional(),
+            type: text(100),
+            settings: z.record(z.string(), z.unknown()).optional(),
+          }),
+        )
+        .max(100),
+    )
+    .optional(),
+  redirects: z
+    .array(z.object({ from: text(1000), to: text(4000), status: z.number().int() }))
+    .max(10_000)
+    .optional(),
 });
 
 export class BackupError extends Error {
@@ -210,6 +298,10 @@ export interface ImportSummary {
   /** Old content id → new content id. */
   idMap: Record<string, number>;
   settingsApplied: string[];
+  /** Menus, widgets and redirects added (absent when the file has none or the site cannot take them). */
+  menus: number;
+  widgets: number;
+  redirects: number;
   skipped: Array<{ id: number; title: string; reason: string }>;
   warnings: string[];
 }
@@ -250,6 +342,9 @@ export async function importSite(
     content: 0,
     idMap: {},
     settingsApplied: [],
+    menus: 0,
+    widgets: 0,
+    redirects: 0,
     skipped: [],
     warnings: [],
   };
@@ -368,7 +463,125 @@ export async function importSite(
       summary.warnings.push(`Setting "${key}" was not applied: ${errorText(error)}`);
     }
   }
+
+  const menuIds = await importMenus(file, deps, summary);
+  await importWidgets(file, deps, summary, menuIds);
+  await importRedirects(file, deps, summary);
   return summary;
+}
+
+/**
+ * Menus are added next to the existing ones (the service checks every item). A location of the
+ * theme gets its menu only when it has none yet, so the look of the site is not changed.
+ */
+async function importMenus(
+  file: { menus?: Array<{ id: number; name: string; items: unknown[] }>; menuLocations?: Record<string, number> },
+  deps: BackupDeps,
+  summary: ImportSummary,
+): Promise<Map<number, number>> {
+  const menuIds = new Map<number, number>();
+  if (!file.menus || file.menus.length === 0) return menuIds;
+  if (!deps.menus) {
+    summary.warnings.push('Menus in the file were not restored: this site cannot manage menus.');
+    return menuIds;
+  }
+  for (const menu of file.menus) {
+    try {
+      const created = await deps.menus.create({ name: menu.name, items: menu.items });
+      menuIds.set(menu.id, created.id);
+      summary.menus++;
+    } catch (error) {
+      summary.warnings.push(`Menu "${menu.name}" skipped: ${errorText(error)}`);
+    }
+  }
+  const known = deps.menuLocations?.() ?? [];
+  const current = await deps.menus.getLocations();
+  for (const [location, oldId] of Object.entries(file.menuLocations ?? {})) {
+    const newId = menuIds.get(oldId);
+    if (newId === undefined) continue;
+    if (!known.includes(location)) {
+      summary.warnings.push(`Menu location "${location}" does not exist in this theme; not assigned.`);
+    } else if (current[location] !== undefined) {
+      summary.warnings.push(`Menu location "${location}" already has a menu; left as it is.`);
+    } else {
+      try {
+        await deps.menus.setLocations({ [location]: newId }, known);
+      } catch (error) {
+        summary.warnings.push(`Menu location "${location}" not assigned: ${errorText(error)}`);
+      }
+    }
+  }
+  return menuIds;
+}
+
+
+/**
+ * Widgets go into the areas of the active theme that have none yet; a menu widget is pointed at
+ * the new id of its menu (and left out when the menu was not restored).
+ */
+async function importWidgets(
+  file: {
+    widgets?: Record<string, Array<{ id?: string | undefined; type: string; settings?: Record<string, unknown> | undefined }>>;
+  },
+  deps: BackupDeps,
+  summary: ImportSummary,
+  menuIds: Map<number, number>,
+): Promise<void> {
+  const areas = Object.entries(file.widgets ?? {});
+  if (areas.length === 0) return;
+  if (!deps.widgets) {
+    summary.warnings.push('Widgets in the file were not restored: this site cannot manage widgets.');
+    return;
+  }
+  const known = deps.widgetAreas?.() ?? [];
+  const current = await deps.widgets.getAreas(known);
+  for (const [area, list] of areas) {
+    if (!known.includes(area)) {
+      summary.warnings.push(`Widget area "${area}" does not exist in this theme; its widgets were skipped.`);
+      continue;
+    }
+    if ((current[area] ?? []).length > 0) {
+      summary.warnings.push(`Widget area "${area}" already has widgets; left as it is.`);
+      continue;
+    }
+    const widgets: Array<{ type: string; settings: Record<string, unknown> }> = [];
+    for (const widget of list) {
+      const settings = { ...(widget.settings ?? {}) };
+      if (widget.type === 'menu') {
+        const mapped = typeof settings['menuId'] === 'number' ? menuIds.get(settings['menuId']) : undefined;
+        if (mapped === undefined) {
+          summary.warnings.push(`A menu widget in "${area}" was skipped: its menu was not restored.`);
+          continue;
+        }
+        settings['menuId'] = mapped;
+      }
+      widgets.push({ type: widget.type, settings });
+    }
+    try {
+      await deps.widgets.setAreas({ [area]: widgets }, known);
+      summary.widgets += widgets.length;
+    } catch (error) {
+      summary.warnings.push(`Widgets of "${area}" skipped: ${errorText(error)}`);
+    }
+  }
+}
+
+/** Redirect rules are added (invalid ones, and ones for a path that already has a rule, are reported). */
+async function importRedirects(
+  file: { redirects?: Array<{ from: string; to: string; status: number }> },
+  deps: BackupDeps,
+  summary: ImportSummary,
+): Promise<void> {
+  if (!file.redirects || file.redirects.length === 0) return;
+  if (!deps.redirects) {
+    summary.warnings.push('Redirects in the file were not restored: this site cannot manage redirects.');
+    return;
+  }
+  const result = await deps.redirects.addMany(file.redirects);
+  summary.redirects = result.created;
+  for (const skipped of result.skipped) {
+    summary.warnings.push(`Redirect from "${skipped.from}" skipped: ${skipped.message}`);
+  }
 }
 
 function orderParentsFirst<T extends { id: number; parentId: number | null }>(items: T[]): T[] {
