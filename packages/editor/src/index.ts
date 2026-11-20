@@ -1,5 +1,5 @@
 export { BlockRegistry } from './registry.js';
-export { coreBlocks, createBlockRegistry } from './core-blocks.js';
+export { coreBlocks, createBlockRegistry, CONTACT_FORM_SCRIPT_PATH } from './core-blocks.js';
 export { renderBlocks, validateDocument } from './render.js';
 export { renderInline, plainText } from './inline.js';
 export { escapeHtml, safeUrl } from './html.js';

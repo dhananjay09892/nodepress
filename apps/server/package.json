@@ -18,6 +18,7 @@
     "@nodepress/editor": "workspace:*",
     "@nodepress/plugin-hello": "workspace:*",
     "@nodepress/plugin-seo": "workspace:*",
-    "hono": "^4.6.0"
+    "hono": "^4.6.0",
+    "nodemailer": "^10.0.6"
   }
 }

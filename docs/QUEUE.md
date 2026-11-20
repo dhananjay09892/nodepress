@@ -287,13 +287,19 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N28
 - Scope: form block, spam protection (honeypot and rate limit), submissions stored and emailed through a mail adapter.
 - Done when: tests cover submission and spam rejection.
-- Delivered in slices: the service, spam protection, storage, mail adapter interface and API (N31); the form block, SMTP and the admin Messages screen (N56). Plugins cannot register routes or use the database yet, so the first slice lives in core and the server.
+- Delivered in slices: the service, spam protection, storage, mail adapter interface and API (N31); the form block and SMTP (N56); the admin Messages screen (N64). Plugins cannot register routes or use the database yet, so the first slice lives in core and the server.
 
 ### N56 · Contact form block and SMTP mail
 
 - Depends on: N31
-- Scope: follow-up to N31, which delivered the contact form service in `@nodepress/core` (validation, honeypot, signed time token, per-sender rate limit, stored in `contact_submissions`, mail adapter interface with memory and log adapters) and `/api/v1/contact` (`GET /token`, `POST /`, `GET /submissions`). Add the `core/contact-form` block (editor block, renderer that draws a labelled, accessible `<form>` with the hidden `website` honeypot and the token, plus a small script-free fallback and a script that posts the JSON and shows the field errors), an SMTP mail adapter selected with `MAIL_URL` (needs npm access for `nodemailer`), and an admin "Messages" screen listing `GET /api/v1/contact/submissions`.
-- Done when: renderer tests cover the form markup and escaping, the SMTP adapter is tested against a fake transport, and a Playwright test sends a message from a page and sees it in the admin.
+- Scope: follow-up to N31, which delivered the contact form service in `@nodepress/core` (validation, honeypot, signed time token, per-sender rate limit, stored in `contact_submissions`, mail adapter interface with memory and log adapters) and `/api/v1/contact` (`GET /token`, `POST /`, `GET /submissions`). Add the `core/contact-form` block (editor block, renderer that draws a labelled, accessible `<form>` with the hidden `website` honeypot and the token, plus a small script-free fallback and a script that posts the JSON and shows the field errors), an SMTP mail adapter selected with `MAIL_URL` (needs npm access for `nodemailer`). The admin "Messages" screen is split off as N64.
+- Done when: renderer tests cover the form markup and escaping, and the SMTP adapter is tested against a fake transport.
+
+### N64 · Contact messages screen in the admin
+
+- Depends on: N56, N57
+- Scope: split from N56. Add the admin "Messages" screen as a self-registering screen (`apps/admin/src/screens/Messages.screen.tsx`, see `docs/features/redirects-screen.md`): list `GET /api/v1/contact/submissions` with paging (name, email, form, mail status, date, message), shown with `manage_options`.
+- Done when: a Playwright test sends a message from a page that has the contact form block and sees it in the admin.
 
 ### N32 · Redirects plugin
 

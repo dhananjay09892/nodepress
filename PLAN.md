@@ -269,7 +269,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] Install/activate/deactivate from admin (upload .zip or from registry) — admin Plugins screen with .zip upload, permission review and enable/disable done (N28); installing from a registry is not built
 - [x] `nodepress` CLI and plugin scaffolder — `@nodepress/cli` has `migrate`, `dev`, `plugin create|check|pack` and `theme create` (N29)
 - [x] First-party plugin: SEO (N30)
-- [ ] First-party plugin: Contact Form (service and API N31; block and SMTP N56)
+- [ ] First-party plugin: Contact Form (service and API N31; block and SMTP N56; Messages screen N64)
 - [x] First-party plugin: Redirects (service, CSV and API N32; admin screen N57)
 - [ ] First-party plugin: Analytics (privacy-friendly)
 - [ ] Plugin author docs + example repo
@@ -281,7 +281,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] `create-nodepress` CLI + web installer — first slice of the CLI done (N33: writes a site that runs a built checkout); the real `npx` install waits for the distribution decision (`docs/adr/0002-distribution.md`); web installer is N34
 - [ ] Docker image + one-click deploy templates — Dockerfile, compose with PostgreSQL and Railway, Render and Fly.io templates done (N35, `deploy/`); one-click buttons and publishing the image are N63
 - [ ] Built-in updater
-- [ ] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, author matching and saving the redirect map as redirects done (N55); the admin Import screen done (N60); media download (N59) remains
+- [x] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, author matching and saving the redirect map as redirects done (N55); the admin Import screen done (N60); media download done (N59)
 - [ ] Backup/export (JSON + media zip) — JSON export and import of content, fields, terms and settings done (N37); media zip, menus, widgets, redirects and the admin screen are N61
 
 ### Phase 6: Beta → 1.0 (weeks 22–26)
