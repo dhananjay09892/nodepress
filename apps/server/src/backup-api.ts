@@ -16,8 +16,9 @@ export interface BackupRoutesOptions extends BackupDeps {
 
 /**
  * Routes for `/api/v1/backup` (`manage_options`; session writes need the CSRF token):
+ * - `GET /`: `{ maxBytes }`, the largest file `POST /import` takes.
  * - `GET /export`: the whole site's content (every status, with custom fields and terms),
- *   terms and settings as one JSON download. No users, passwords, tokens or secrets.
+ *   terms, settings, menus, widgets and redirect rules as one JSON download. No users, passwords, tokens or secrets.
  * - `POST /import`: read such a file back (`application/json`, up to 256 MB). Content is added
  *   next to what is already there (nothing is changed or deleted). Items go to the user whose
  *   email matches the author in the file, else to the user running the import. Custom fields
@@ -39,6 +40,9 @@ export function createBackupRoutes(auth: Auth, options: BackupRoutesOptions): Ho
     }
     await next();
   });
+
+  // For the admin screen: whether the user may use backups, and the largest file an import takes.
+  routes.get('/', (c) => c.json({ maxBytes: MAX_EXPORT_BYTES }));
 
   routes.get('/export', async (c) => {
     const data = await exportSite(options);
