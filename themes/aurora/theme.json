@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "title": "Aurora",
   "description": "The default theme: a clean blog or business front page, responsive, accessible (WCAG 2.1 AA) and with automatic dark mode.",
-  "supports": ["dark-mode", "responsive", "blog-layout", "business-layout", "menus"],
+  "supports": ["dark-mode", "responsive", "blog-layout", "business-layout", "menus", "widgets"],
   "settings": {
     "layout": {
       "type": "select",
@@ -17,5 +17,8 @@
   "menus": {
     "primary": "Primary menu",
     "footer": "Footer menu"
+  },
+  "widgetAreas": {
+    "sidebar": "Sidebar"
   }
 }

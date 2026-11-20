@@ -20,7 +20,7 @@ export interface MenusRoutesOptions {
 const MAX_BODY_BYTES = 256 * 1024;
 
 /** A router that is uncached, same-origin, signed in and limited to `edit_theme_options`. */
-function guarded(auth: Auth, capabilities: Capabilities): Hono<AuthEnv> {
+export function guarded(auth: Auth, capabilities: Capabilities): Hono<AuthEnv> {
   const routes = new Hono<AuthEnv>();
   routes.use('*', async (c, next) => {
     c.header('Cache-Control', 'no-store');
@@ -37,7 +37,7 @@ function guarded(auth: Auth, capabilities: Capabilities): Hono<AuthEnv> {
   return routes;
 }
 
-async function readBody(c: Context<AuthEnv>): Promise<Record<string, unknown> | Response> {
+export async function readBody(c: Context<AuthEnv>): Promise<Record<string, unknown> | Response> {
   if (!(c.req.header('content-type') ?? '').toLowerCase().startsWith('application/json')) {
     return c.json({ error: 'unsupported_media_type' }, 415);
   }

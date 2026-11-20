@@ -1,4 +1,5 @@
 import { AdminExtensions, type ScopedAdmin } from './admin-extensions.js';
+import type { WidgetTypeDefinition } from './widgets.js';
 import { scopeHooks, type HookRegistry, type ScopedHooks } from './hooks.js';
 import type { JobQueue, ScopedJobs } from './jobs.js';
 import type { Logger } from './logger.js';
@@ -20,6 +21,11 @@ export interface PluginContext {
    * fields. Everything added here is removed on deactivation.
    */
   admin: ScopedAdmin;
+  /**
+   * Add a widget type that site owners can place in a theme's widget areas. Removed when the
+   * plugin is deactivated.
+   */
+  registerWidget(definition: WidgetTypeDefinition): void;
 }
 
 export interface PluginDefinition {
@@ -117,6 +123,9 @@ export class PluginManager {
       logger: this.#logger.child(name),
       config: this.#config,
       admin: this.#admin.scoped(name),
+      registerWidget: (definition) => {
+        scopeHooks(this.#hooks, name).addFilter('widget:types', (types) => [...types, definition]);
+      },
       ...(this.#jobs ? { jobs: this.#jobs.scoped(name) } : {}),
     };
 

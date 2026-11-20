@@ -302,6 +302,11 @@ export interface TemplateProps {
    * Locations with no menu assigned are left out.
    */
   menus?: Record<string, MenuItem[]>;
+  /**
+   * The widgets in each of the theme's widget areas (`theme.json` `widgetAreas`), in order and
+   * already rendered to HTML. Areas with no widgets are left out.
+   */
+  widgets?: Record<string, Array<{ id: string; type: string; title?: string; html: string }>>;
   /** The theme's settings: defaults from `theme.json` `settings`, with any overrides applied. */
   settings?: Record<string, unknown>;
   theme: {

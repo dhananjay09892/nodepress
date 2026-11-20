@@ -148,3 +148,31 @@ describe('Aurora front page', () => {
     }
   });
 });
+
+describe('Aurora sidebar widgets', () => {
+  const widgets = {
+    sidebar: [
+      { id: 'w1', type: 'text', title: 'About <us>', html: '<p>Trusted <b>html</b></p>' },
+      { id: 'w2', type: 'recent-posts', html: '<ul><li><a href="/blog/a">A</a></li></ul>' },
+    ],
+  };
+
+  it('draws the widgets in a labelled aside next to the main landmark', async () => {
+    const html = await render(Single({ ...base, content: post('Hello'), widgets }));
+    expect(html).toContain('<aside class="np-aurora-sidebar" aria-label="Sidebar">');
+    expect(html.match(/<main /g)).toHaveLength(1);
+    expect(html).toContain('<h2 class="np-aurora-widget-title">About &lt;us&gt;</h2>');
+    expect(html).toContain('<p>Trusted <b>html</b></p>');
+    expect(html).toContain('np-aurora-widget-recent-posts');
+    // A widget without a title has no empty heading.
+    expect(html.match(/np-aurora-widget-title/g)).toHaveLength(1);
+  });
+
+  it('keeps the plain layout when the sidebar has no widgets', async () => {
+    for (const w of [undefined, {}, { sidebar: [] }]) {
+      const html = await render(Single({ ...base, content: post('Hello'), ...(w ? { widgets: w } : {}) }));
+      expect(html).not.toContain('<aside');
+      expect(html).toContain('<main id="main" class="np-aurora-wrap np-aurora-main"');
+    }
+  });
+});

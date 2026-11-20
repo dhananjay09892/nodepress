@@ -88,6 +88,20 @@ export {
   type StoredMenus,
 } from './menus.js';
 export {
+  WidgetService,
+  WidgetValidationError,
+  createWidgetService,
+  MAX_WIDGETS_PER_AREA,
+  MAX_RECENT_POSTS,
+  type RenderedWidget,
+  type WidgetField,
+  type WidgetInstance,
+  type WidgetRenderContext,
+  type WidgetServiceOptions,
+  type WidgetTypeDefinition,
+  type WidgetTypeInfo,
+} from './widgets.js';
+export {
   PermalinkService,
   PermalinkPatternError,
   createPermalinkService,

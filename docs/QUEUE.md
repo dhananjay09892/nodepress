@@ -229,6 +229,13 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N24
 - Scope: follow-up to N24, whose theme manifest already accepts `widgetAreas`. Widget service (areas declared by the active theme, ordered widgets per area stored in the options table, built-in `text` (plain text, escaped), `menu` and `recent-posts` widget types, `registerWidget()` for plugins), `GET`/`PUT /api/v1/widgets` (`edit_theme_options`), `widgets` prop for templates, a `sidebar` area in Aurora, and the admin "Widgets" screen.
 - Done when: API tests cover validation and permission denial, a theme test shows a widget in the sidebar, and a Playwright test adds a text widget.
+- Delivered in slices: the widget service, `/api/v1/widgets`, `context.registerWidget()`, the `widgets` template prop and Aurora's sidebar (N52); the admin Widgets screen and its Playwright test (N53).
+
+### N53 · Widgets screen in the admin
+
+- Depends on: N52
+- Scope: follow-up to N52, which delivered the widget service (built-in `text`, `menu` and `recent-posts` types), `GET`/`PUT /api/v1/widgets` (`edit_theme_options`; the `GET` lists the theme's `areas`, the `widgets` in each and the available `types` with their `fields`), `context.registerWidget()` for plugins and Aurora's `sidebar` area. Add the admin "Widgets" screen (sidebar entry shown with `edit_theme_options`, hidden when the API answers 403): one section per area, a list of the area's widgets with a form per widget drawn from its type's `fields` (`text`, `textarea`, `number`, `menu` choices from `/api/v1/menus`), keyboard-operable Move up / Move down / Remove buttons (no drag-only controls), an "Add widget" type picker, and Save per screen through `PUT /api/v1/widgets`; unit tests for the list-editing helpers.
+- Done when: a Playwright test adds a text widget to the sidebar and sees it on the front page; unit tests cover the helpers.
 
 ### N25 · Theme customizer with live preview
 
