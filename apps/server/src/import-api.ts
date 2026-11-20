@@ -1,11 +1,14 @@
 import {
+  downloadFile,
   importWordPress,
   MAX_WXR_BYTES,
   WxrError,
   type Capabilities,
   type ContentService,
+  type DownloadOptions,
   type ImportReport,
   type Logger,
+  type MediaService,
   type PermalinkService,
   type RedirectsService,
   type TaxonomyService,
@@ -24,6 +27,11 @@ export interface ImportRoutesOptions {
   capabilities: Capabilities;
   /** Where the redirect map of the old site is saved. Without it the map is only returned. */
   redirects?: Pick<RedirectsService, 'addMany'>;
+  /**
+   * Where the images of the old site are copied to. Without it files are only listed. With it
+   * they are downloaded (public addresses only, 10 MB each) unless `?download_media=false`.
+   */
+  media?: { service: Pick<MediaService, 'upload'>; download?: DownloadOptions };
   logger?: Logger;
 }
 
@@ -42,7 +50,9 @@ export interface WordPressImportResponse extends ImportReport {
  *   assigned to the user whose email matches the WordPress author, else to the user running the
  *   import (or to `?default_author=<user id>`); `?match_authors=false` gives everything to that
  *   default author. The old URLs found in the export are saved as 301 redirects when the site
- *   has redirects enabled. Answers with the import report; one bad item never stops the rest.
+ *   has redirects enabled. With `media` set, the images of the export are downloaded into the
+ *   media library, their addresses in the content are replaced and featured images are kept
+ *   (`?download_media=false` skips this). Answers with the import report; one bad item never stops the rest.
  *   Only one import runs at a time (`409` otherwise).
  */
 export function createImportRoutes(auth: Auth, options: ImportRoutesOptions): Hono<AuthEnv> {
@@ -81,6 +91,8 @@ export function createImportRoutes(auth: Auth, options: ImportRoutesOptions): Ho
       defaultAuthorId = id;
     }
     const matchAuthors = c.req.query('match_authors') !== 'false';
+    const media = options.media;
+    const downloadMedia = media !== undefined && c.req.query('download_media') !== 'false';
 
     if (running) return c.json({ error: 'import_running' }, 409);
     running = true;
@@ -107,6 +119,20 @@ export function createImportRoutes(auth: Auth, options: ImportRoutesOptions): Ho
             }
             return cache.get(key) ?? defaultAuthorId;
           },
+          ...(media && downloadMedia
+            ? {
+                importMedia: async (file) => {
+                  const downloaded = await downloadFile(file.url, media.download);
+                  const saved = await media.service.upload({
+                    data: downloaded.data,
+                    filename: downloaded.filename,
+                    alt: file.alt,
+                    uploadedBy: user.id,
+                  });
+                  return { id: saved.id, url: `/${saved.path}` };
+                },
+              }
+            : {}),
           ...(options.logger ? { logger: options.logger } : {}),
         });
       } catch (error) {

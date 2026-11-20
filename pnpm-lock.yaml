@@ -98,6 +98,9 @@ importers:
       hono:
         specifier: ^4.6.0
         version: 4.13.17
+      nodemailer:
+        specifier: ^10.0.6
+        version: 10.6.1
 
   packages/cli:
     dependencies:
@@ -3742,6 +3745,13 @@ packages:
       }
     engines: { node: '>=18' }
 
+  nodemailer@10.6.1:
+    resolution:
+      {
+        integrity: sha512-d7kfFfS/tR4Aca+SBvRaQ+MXKNv7d2JiRe5TxaRcFT/kYMh4GGPnW9aKksTIEvyEbA7d/7HYWE4YPDEHxzJj/g==,
+      }
+    engines: { node: '>=20.0.0' }
+
   optionator@0.9.4:
     resolution:
       {
@@ -6303,6 +6313,8 @@ snapshots:
       formdata-polyfill: 4.0.10
 
   node-releases@2.0.63: {}
+
+  nodemailer@10.6.1: {}
 
   optionator@0.9.4:
     dependencies:

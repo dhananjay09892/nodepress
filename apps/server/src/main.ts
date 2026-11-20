@@ -26,7 +26,6 @@ import {
   createWebhookService,
   createRedirects,
   createContactForm,
-  createLogMailAdapter,
   isEmailAddress,
   createDiskPageCache,
   createMemoryPageCache,
@@ -56,6 +55,7 @@ import helloPlugin from '@nodepress/plugin-hello';
 import seoPlugin from '@nodepress/plugin-seo';
 import { createApp } from './app.js';
 import { createBodyRenderer } from './body.js';
+import { createMailFromEnv } from './mail-setup.js';
 import { ThemeSettingsService } from './theme-settings.js';
 
 const port = Number(process.env.PORT ?? 3000);
@@ -310,8 +310,8 @@ const settingsService = createSettingsService({
     return page?.type === 'page' && page.status === 'published';
   },
 });
-// Contact form: CONTACT_TO is where messages are emailed (until a real mail adapter is set up they
-// are only logged and kept). CONTACT_SECRET signs the form tokens; without it a random one is used,
+// Contact form: CONTACT_TO is where messages are emailed (through MAIL_URL and MAIL_FROM; without
+// them they are only logged and kept). CONTACT_SECRET signs the form tokens; without it a random one is used,
 // which only means a form loaded before a restart must be loaded again.
 const contactTo = process.env.CONTACT_TO;
 if (contactTo && !isEmailAddress(contactTo)) {
@@ -321,7 +321,7 @@ const contact = createContactForm({
   store: createContactSubmissionsStore(database),
   secret: process.env.CONTACT_SECRET || randomBytes(32).toString('hex'),
   to: contactTo && isEmailAddress(contactTo) ? contactTo : undefined,
-  mail: createLogMailAdapter(np.logger.child('mail')),
+  mail: await createMailFromEnv(process.env, np.logger.child('mail')),
   logger: np.logger.child('contact'),
 });
 // Security headers are on by default. CONTENT_SECURITY_POLICY replaces the default policy ("off"
@@ -423,6 +423,7 @@ const app = createApp(np, database, {
     meta: contentMeta,
     users,
     capabilities,
+    media: { service: media },
     logger: np.logger.child('import'),
   },
   contact: { contact, capabilities, trustProxy: process.env.TRUST_PROXY === 'true' },

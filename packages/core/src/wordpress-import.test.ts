@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ContentRecord } from './content.js';
 import {
   importWordPress,
+  mediaKey,
   normalizePath,
   parseWpDate,
   type WordPressImportOptions,
@@ -247,6 +248,68 @@ describe('importWordPress', () => {
     await expect(importWordPress('<html/>', harness().options)).rejects.toThrow(
       /not a WordPress export/,
     );
+  });
+});
+
+describe('media download', () => {
+  const ROME = 'https://old.example.com/wp-content/uploads/rome.jpg';
+
+  it('downloads attachments, rewrites image addresses and sets the featured image', async () => {
+    const seen: string[] = [];
+    const h = harness({
+      importMedia: async (file) => {
+        seen.push(file.url);
+        return { id: 55, url: '/uploads/2024/rome.jpg' };
+      },
+    });
+    const report = await importWordPress(WXR_FIXTURE, h.options);
+    expect(seen).toEqual([ROME]);
+    expect(report.media?.imported).toEqual([
+      { url: ROME, mediaId: 55, newUrl: '/uploads/2024/rome.jpg', wpId: 30 },
+    ]);
+    expect(report.media?.failed).toEqual([]);
+    expect(report.media?.featuredImages).toBe(1);
+    expect(report.media?.imagesRewritten).toBeGreaterThan(0);
+    const rome = byTitle(h.records, 'Hello Rome');
+    expect(JSON.stringify(rome.body)).toContain('/uploads/2024/rome.jpg');
+    expect(JSON.stringify(rome.body)).not.toContain(ROME);
+    expect(h.metas.get(rome.id)).toMatchObject({ featured_image: 55 });
+  });
+
+  it('reports files that fail and keeps going', async () => {
+    const h = harness({
+      importMedia: async () => {
+        throw new Error('blocked_host');
+      },
+    });
+    const report = await importWordPress(WXR_FIXTURE, h.options);
+    expect(report.media?.imported).toEqual([]);
+    expect(report.media?.failed).toEqual([{ url: ROME, reason: 'blocked_host' }]);
+    expect(JSON.stringify(byTitle(h.records, 'Hello Rome').body)).toContain(ROME);
+  });
+
+  it('stops at maxMediaFiles', async () => {
+    let calls = 0;
+    const h = harness({
+      maxMediaFiles: 0,
+      importMedia: async () => {
+        calls++;
+        return { id: 1, url: '/x' };
+      },
+    });
+    const report = await importWordPress(WXR_FIXTURE, h.options);
+    expect(calls).toBe(0);
+    expect(report.media?.failed).toHaveLength(1);
+  });
+
+  it('does nothing without importMedia', async () => {
+    const report = await importWordPress(WXR_FIXTURE, harness().options);
+    expect(report.media).toBeUndefined();
+  });
+
+  it('mediaKey ignores scheme, size suffixes and -scaled', () => {
+    expect(mediaKey('http://a.com/up/x-300x200.jpg')).toBe(mediaKey('https://a.com/up/x.jpg'));
+    expect(mediaKey('https://a.com/up/x-scaled.jpg')).toBe(mediaKey('https://a.com/up/x.jpg'));
   });
 });
 

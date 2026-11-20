@@ -186,3 +186,16 @@ describe('GET /api/v1/contact/submissions', () => {
     expect(body.submissions[0]).not.toHaveProperty('ipHash');
   });
 });
+
+describe('GET /np/contact-form.js', () => {
+  it('serves the script of the contact form block', async () => {
+    const res = await app.request(`${BASE}/np/contact-form.js`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/javascript');
+    const script = await res.text();
+    expect(script).toContain('/api/v1/contact/token');
+    expect(script).toContain('data-np-contact-form');
+    // It must parse as JavaScript.
+    expect(() => new Function(script)).not.toThrow();
+  });
+});
