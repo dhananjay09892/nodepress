@@ -17,7 +17,8 @@ function senderOf(c: Context, trustProxy: boolean): string {
     const forwarded = c.req.header('x-forwarded-for')?.split(',').pop()?.trim();
     if (forwarded) return forwarded;
   }
-  const env = c.env as unknown as { incoming?: { socket?: { remoteAddress?: string } } } | undefined;
+  const env = c.env as unknown as
+    { incoming?: { socket?: { remoteAddress?: string } } } | undefined;
   return env?.incoming?.socket?.remoteAddress ?? 'unknown';
 }
 
@@ -56,13 +57,22 @@ export function createContactRoutes(auth: Auth, options: ContactRoutesOptions): 
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
       return c.json({ error: 'invalid_request' }, 400);
     }
-    const result = await contact.submit(body as Record<string, unknown>, senderOf(c, options.trustProxy ?? false));
+    const result = await contact.submit(
+      body as Record<string, unknown>,
+      senderOf(c, options.trustProxy ?? false),
+    );
     if (result.ok) return c.json({ ok: true }, 201);
     if (result.error === 'rate_limited') {
       c.header('Retry-After', String(Math.max(1, Math.ceil((result.retryAfterMs ?? 0) / 1000))));
       return c.json({ error: 'rate_limited' }, 429);
     }
-    return c.json({ error: result.error === 'bad_token' ? 'bad_token' : 'invalid_request', fields: result.fields }, 400);
+    return c.json(
+      {
+        error: result.error === 'bad_token' ? 'bad_token' : 'invalid_request',
+        fields: result.fields,
+      },
+      400,
+    );
   });
 
   routes.get('/submissions', auth.authenticate, async (c) => {
@@ -70,7 +80,10 @@ export function createContactRoutes(auth: Auth, options: ContactRoutesOptions): 
       return c.json({ error: 'forbidden' }, 403);
     }
     const page = Math.max(1, Math.floor(Number(c.req.query('page') ?? '1')) || 1);
-    const { items, total } = await contact.list({ limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE });
+    const { items, total } = await contact.list({
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    });
     return c.json({
       total,
       page,

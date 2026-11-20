@@ -125,7 +125,9 @@ describe('POST /api/v1/contact', () => {
 
   it('rejects a missing or too fresh token', async () => {
     expect(((await (await post(good)).json()) as { error: string }).error).toBe('bad_token');
-    const fresh = ((await (await app.request(`${BASE}/api/v1/contact/token`)).json()) as { token: string }).token;
+    const fresh = (
+      (await (await app.request(`${BASE}/api/v1/contact/token`)).json()) as { token: string }
+    ).token;
     const res = await post({ ...good, token: fresh });
     expect(res.status).toBe(400);
     expect(((await res.json()) as { error: string }).error).toBe('bad_token');
@@ -164,11 +166,16 @@ describe('GET /api/v1/contact/submissions', () => {
     await post({ ...good, token: await token() });
     expect((await app.request(`${BASE}/api/v1/contact/submissions`)).status).toBe(401);
     const editor = await signIn('editor@example.com');
-    expect((await app.request(`${BASE}/api/v1/contact/submissions`, { headers: editor })).status).toBe(403);
+    expect(
+      (await app.request(`${BASE}/api/v1/contact/submissions`, { headers: editor })).status,
+    ).toBe(403);
     const admin = await signIn('admin@example.com');
     const res = await app.request(`${BASE}/api/v1/contact/submissions`, { headers: admin });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { total: number; submissions: Array<Record<string, unknown>> };
+    const body = (await res.json()) as {
+      total: number;
+      submissions: Array<Record<string, unknown>>;
+    };
     expect(body.total).toBe(1);
     expect(body.submissions[0]).toMatchObject({
       name: 'Ada',

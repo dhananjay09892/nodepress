@@ -29,7 +29,9 @@ export function createMemoryMailAdapter(): MailAdapter & { readonly sent: MailMe
 export function createLogMailAdapter(logger: Logger): MailAdapter {
   return {
     async send(message) {
-      logger.info(`Mail (not sent, no mail adapter configured): "${message.subject}" to ${message.to}`);
+      logger.info(
+        `Mail (not sent, no mail adapter configured): "${message.subject}" to ${message.to}`,
+      );
     },
   };
 }

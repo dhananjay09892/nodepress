@@ -29,7 +29,9 @@ export interface ContactSubmissionsTableStore {
 }
 
 /** Contact submissions store for whichever dialect the handle uses. All queries are parameterized. */
-export function createContactSubmissionsStore(handle: DatabaseHandle): ContactSubmissionsTableStore {
+export function createContactSubmissionsStore(
+  handle: DatabaseHandle,
+): ContactSubmissionsTableStore {
   return handle.dialect === 'postgres'
     ? build(handle.db, pgSchema.contactSubmissions)
     : build(handle.db, sqliteSchema.contactSubmissions);
@@ -52,12 +54,7 @@ function build(
       return saved;
     },
     async list({ limit, offset }) {
-      return db
-        .select()
-        .from(table)
-        .orderBy(desc(table.id))
-        .limit(limit)
-        .offset(offset);
+      return db.select().from(table).orderBy(desc(table.id)).limit(limit).offset(offset);
     },
     async count() {
       const [row] = await db.select({ total: count() }).from(table);

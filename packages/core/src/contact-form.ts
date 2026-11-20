@@ -105,7 +105,10 @@ export class ContactFormService {
 
   /** Hash of the sender's address, so submissions can be grouped without keeping the address. */
   hashSender(sender: string): string {
-    return createHmac('sha256', this.#options.secret).update(`ip:${sender}`).digest('hex').slice(0, 32);
+    return createHmac('sha256', this.#options.secret)
+      .update(`ip:${sender}`)
+      .digest('hex')
+      .slice(0, 32);
   }
 
   async submit(input: ContactInput, sender: string): Promise<ContactResult> {
@@ -119,16 +122,19 @@ export class ContactFormService {
 
     // A filled honeypot gets the same answer as success, so a bot learns nothing.
     const trap = input[HONEYPOT_FIELD];
-    if (trap !== undefined && trap !== null && String(trap) !== '') return { ok: true, submission: null };
+    if (trap !== undefined && trap !== null && String(trap) !== '')
+      return { ok: true, submission: null };
 
     if (!this.#tokenValid(input.token)) return { ok: false, error: 'bad_token' };
 
     const fields: Record<string, string> = {};
     const name = clean(input.name);
     const email = typeof input.email === 'string' ? input.email.trim() : '';
-    const message = typeof input.message === 'string' ? input.message.replace(/\r\n/g, '\n').trim() : '';
+    const message =
+      typeof input.message === 'string' ? input.message.replace(/\r\n/g, '\n').trim() : '';
     if (!name) fields.name = 'Enter your name.';
-    else if (name.length > MAX_NAME_LENGTH) fields.name = `Use at most ${MAX_NAME_LENGTH} characters.`;
+    else if (name.length > MAX_NAME_LENGTH)
+      fields.name = `Use at most ${MAX_NAME_LENGTH} characters.`;
     if (!isEmailAddress(email)) fields.email = 'Enter a valid email address.';
     if (!message) fields.message = 'Enter a message.';
     else if (message.length > MAX_MESSAGE_LENGTH) {
@@ -136,14 +142,27 @@ export class ContactFormService {
     }
     if (Object.keys(fields).length > 0) return { ok: false, error: 'invalid', fields };
 
-    const form = typeof input.form === 'string' && /^[a-z0-9-]{1,40}$/.test(input.form) ? input.form : 'contact';
+    const form =
+      typeof input.form === 'string' && /^[a-z0-9-]{1,40}$/.test(input.form)
+        ? input.form
+        : 'contact';
     const mailStatus = await this.#mail(form, name, email, message);
-    const submission = await this.#options.store.insert({ form, name, email, message, ipHash, mailStatus });
+    const submission = await this.#options.store.insert({
+      form,
+      name,
+      email,
+      message,
+      ipHash,
+      mailStatus,
+    });
     return { ok: true, submission };
   }
 
   async list(options: { limit: number; offset: number }) {
-    const [items, total] = await Promise.all([this.#options.store.list(options), this.#options.store.count()]);
+    const [items, total] = await Promise.all([
+      this.#options.store.list(options),
+      this.#options.store.count(),
+    ]);
     return { items, total };
   }
 

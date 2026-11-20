@@ -61,7 +61,16 @@ describe('isEmailAddress', () => {
   it('accepts plain addresses and rejects odd ones', () => {
     expect(isEmailAddress('a@b.co')).toBe(true);
     expect(isEmailAddress('a.b+c@sub.example.com')).toBe(true);
-    for (const bad of ['', 'a', 'a@b', 'a b@c.de', 'a@b.c\nBcc: x@y.z', '<a@b.co>', 'a@@b.co', 'a@.co']) {
+    for (const bad of [
+      '',
+      'a',
+      'a@b',
+      'a b@c.de',
+      'a@b.c\nBcc: x@y.z',
+      '<a@b.co>',
+      'a@@b.co',
+      'a@.co',
+    ]) {
       expect(isEmailAddress(bad), bad).toBe(false);
     }
   });
@@ -98,14 +107,18 @@ describe('ContactFormService', () => {
       'ip',
     );
     expect(result).toMatchObject({ ok: false, error: 'invalid' });
-    if (!result.ok) expect(Object.keys(result.fields ?? {}).sort()).toEqual(['email', 'message', 'name']);
+    if (!result.ok)
+      expect(Object.keys(result.fields ?? {}).sort()).toEqual(['email', 'message', 'name']);
     expect(t.store.rows).toHaveLength(0);
     expect(t.mail.sent).toHaveLength(0);
   });
 
   it('answers a filled honeypot like success but stores and sends nothing', async () => {
     const t = setup();
-    const result = await t.form.submit({ ...good, [HONEYPOT_FIELD]: 'http://spam', token: t.token() }, 'ip');
+    const result = await t.form.submit(
+      { ...good, [HONEYPOT_FIELD]: 'http://spam', token: t.token() },
+      'ip',
+    );
     expect(result).toEqual({ ok: true, submission: null });
     expect(t.store.rows).toHaveLength(0);
     expect(t.mail.sent).toHaveLength(0);
@@ -114,11 +127,17 @@ describe('ContactFormService', () => {
   it('rejects a missing, forged, too fresh or expired token', async () => {
     const t = setup();
     expect(await t.form.submit({ ...good }, 'a')).toMatchObject({ ok: false, error: 'bad_token' });
-    expect(await t.form.submit({ ...good, token: '123.abc' }, 'b')).toMatchObject({ error: 'bad_token' });
+    expect(await t.form.submit({ ...good, token: '123.abc' }, 'b')).toMatchObject({
+      error: 'bad_token',
+    });
     const fresh = t.form.issueToken();
-    expect(await t.form.submit({ ...good, token: fresh }, 'c')).toMatchObject({ error: 'bad_token' });
+    expect(await t.form.submit({ ...good, token: fresh }, 'c')).toMatchObject({
+      error: 'bad_token',
+    });
     const [issued] = fresh.split('.');
-    expect(await t.form.submit({ ...good, token: `${issued}.${'0'.repeat(64)}` }, 'd')).toMatchObject({
+    expect(
+      await t.form.submit({ ...good, token: `${issued}.${'0'.repeat(64)}` }, 'd'),
+    ).toMatchObject({
       error: 'bad_token',
     });
     const old = t.form.issueToken();
@@ -149,7 +168,9 @@ describe('ContactFormService', () => {
     const blocked = await send();
     expect(blocked).toMatchObject({ ok: false, error: 'rate_limited' });
     if (!blocked.ok) expect(blocked.retryAfterMs).toBeGreaterThan(0);
-    expect(await t.form.submit({ ...good, token: t.token() }, 'other-ip')).toMatchObject({ ok: true });
+    expect(await t.form.submit({ ...good, token: t.token() }, 'other-ip')).toMatchObject({
+      ok: true,
+    });
     t.advance(61 * 60 * 1000);
     expect(await send()).toMatchObject({ ok: true });
   });
@@ -158,7 +179,9 @@ describe('ContactFormService', () => {
     const t = setup({ maxPerWindow: 2 });
     await t.form.submit({ ...good, [HONEYPOT_FIELD]: 'x', token: t.token() }, 'bot');
     await t.form.submit({ ...good, [HONEYPOT_FIELD]: 'x', token: t.token() }, 'bot');
-    expect(await t.form.submit({ ...good, token: t.token() }, 'bot')).toMatchObject({ error: 'rate_limited' });
+    expect(await t.form.submit({ ...good, token: t.token() }, 'bot')).toMatchObject({
+      error: 'rate_limited',
+    });
   });
 
   it('keeps the message when email fails, and skips email without a recipient', async () => {
@@ -174,8 +197,14 @@ describe('ContactFormService', () => {
     });
     const none = createContactForm({ store: memoryStore(), secret: SECRET, now: () => 5_000_000 });
     const token = none.issueToken();
-    const later = createContactForm({ store: memoryStore(), secret: SECRET, now: () => 5_000_000 + MIN_FILL_MS + 1 });
-    expect(await later.submit({ ...good, token }, 'a')).toMatchObject({ submission: { mailStatus: 'skipped' } });
+    const later = createContactForm({
+      store: memoryStore(),
+      secret: SECRET,
+      now: () => 5_000_000 + MIN_FILL_MS + 1,
+    });
+    expect(await later.submit({ ...good, token }, 'a')).toMatchObject({
+      submission: { mailStatus: 'skipped' },
+    });
   });
 
   it('cannot be tricked into header injection through the name', async () => {
@@ -196,6 +225,8 @@ describe('ContactFormService', () => {
 
   it('refuses a weak secret or an odd recipient', () => {
     expect(() => createContactForm({ store: memoryStore(), secret: 'short' })).toThrow(RangeError);
-    expect(() => createContactForm({ store: memoryStore(), secret: SECRET, to: 'a b' })).toThrow(RangeError);
+    expect(() => createContactForm({ store: memoryStore(), secret: SECRET, to: 'a b' })).toThrow(
+      RangeError,
+    );
   });
 });
