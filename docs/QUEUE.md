@@ -326,11 +326,17 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: follow-up to N55, which delivered `POST /api/v1/import/wordpress` (WXR body up to 64 MB; authors matched by email, else the importing user or `default_author`; old URLs saved as 301 redirects; one import at a time). Add the admin "Import" screen (sidebar entry shown with `manage_options`): choose the `.xml` file, choose the default author and whether to match authors by email, run the import, and show the report (counts, skipped items, redirects saved or skipped, warnings).
 - Done when: a Playwright test uploads the fixture export and sees the report; the imported post opens on the front page and its old URL redirects.
 
-### N61 · Backup: media zip, menus, widgets and redirects
+### N61 · Backup: menus, widgets and redirects, and the Backup screen
 
 - Depends on: N37
-- Scope: follow-up to N37, whose export is the JSON of content (every status), custom fields, terms and site settings, and whose import adds that next to existing content. Add what it leaves out: a media zip (`GET /api/v1/backup/media`, the originals with a manifest of ids, alt text and MIME types; a strict reader on import that goes through the media service so type, size and variant rules apply, then rewrites `featured_image` and image blocks to the new ids), and menus, widgets, theme settings and redirect rules (validated by their services on import). Add the admin "Backup" screen (download export, upload a file, show the summary).
-- Done when: a round-trip test covers media (with a fake image processor), menus, widgets and redirects; a Playwright test downloads an export and imports it into a fresh site.
+- Scope: follow-up to N37, whose export is the JSON of content (every status), custom fields, terms and site settings, and whose import adds that next to existing content. Add menus (with their locations), widgets and redirect rules (validated by their services on import), and the admin "Backup" screen (download export, upload a file, show the summary). The media zip and theme settings are split off as N65.
+- Done when: a round-trip test covers menus, widgets and redirects; a Playwright test downloads an export and imports it into a fresh site.
+
+### N65 · Backup: media zip and theme settings
+
+- Depends on: N61
+- Scope: split from N61. Add what the JSON backup of N61 leaves out: a media zip (`GET /api/v1/backup/media`, the originals with a manifest of ids, alt text and MIME types; a strict reader on import that goes through the media service so type, size and variant rules apply, then rewrites `featured_image` and image blocks to the new ids) and the theme settings of the active theme (validated by the theme settings service). The Backup screen offers both.
+- Done when: a round-trip test covers media (with a fake image processor) and theme settings; a Playwright test downloads the media zip and restores it into the empty site.
 
 ## Phase 5: Install, deploy, migrate
 
@@ -400,8 +406,14 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 ### N62 · Security hardening, second pass
 
 - Depends on: N39
-- Scope: follow-up to N39 (headers, `SECURITY.md`, audit job, first review in `docs/security-review.md`). Review every API route's capability checks against the capability map, the admin app's output encoding, and the importers (WXR, zip, CSV, backup JSON) with hostile inputs; try to drop `style-src 'unsafe-inline'` for the admin and for Aurora (move the customizer CSS into a served stylesheet or use a nonce) and tighten the policy; make the audit job blocking once it is clean; fix what the review finds or list it as tasks.
+- Scope: follow-up to N39 (headers, `SECURITY.md`, audit job, first review in `docs/security-review.md`). Review every API route's capability checks against the capability map, the admin app's output encoding, and the importers (WXR, zip, CSV, backup JSON) with hostile inputs; make the audit job blocking once it is clean; fix what the review finds or list it as tasks. Dropping `style-src 'unsafe-inline'` is split off as N66.
 - Done when: the review is extended in `docs/security-review.md`, tests cover each fix, and the audit job has no open high or critical findings.
+
+### N66 · Drop `style-src 'unsafe-inline'`
+
+- Depends on: N62
+- Scope: split from N62. The default policy allows inline styles because the Aurora customizer writes its settings into a `<style>` tag and style attributes, the admin editor and React components set `style` attributes, and the contact form block hides its honeypot with one. Find every inline style (admin build, Aurora, the starter theme, blocks), move them to served stylesheets, classes or CSS variables set from script (`element.style.setProperty` is allowed under CSP), or give the customizer a per-response nonce, then remove `'unsafe-inline'` from `DEFAULT_CSP` and test the admin and both themes with a strict policy.
+- Done when: the default policy has no `'unsafe-inline'`, Playwright and Lighthouse pass with it, and the page cache keeps working with the nonce (if one is used).
 
 ### N40 · End-to-end test suite
 

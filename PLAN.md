@@ -278,16 +278,16 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 
 ### Phase 5: Install, deploy, migrate (weeks 19–21)
 
-- [ ] `create-nodepress` CLI + web installer — first slice of the CLI done (N33: writes a site that runs a built checkout); the real `npx` install waits for the distribution decision (`docs/adr/0002-distribution.md`); web installer is N34
+- [ ] `create-nodepress` CLI + web installer — first slice of the CLI done (N33: writes a site that runs a built checkout); the real `npx` install waits for the distribution decision (`docs/adr/0002-distribution.md`); web installer done (N34, `docs/features/web-installer.md`)
 - [ ] Docker image + one-click deploy templates — Dockerfile, compose with PostgreSQL and Railway, Render and Fly.io templates done (N35, `deploy/`); one-click buttons and publishing the image are N63
 - [ ] Built-in updater
 - [x] WordPress importer — WXR reader, HTML-to-blocks conversion, content/terms/comments import, link rewriting and the redirect map done in `@nodepress/core` (N36); endpoint, author matching and saving the redirect map as redirects done (N55); the admin Import screen done (N60); media download done (N59)
-- [ ] Backup/export (JSON + media zip) — JSON export and import of content, fields, terms and settings done (N37); media zip, menus, widgets, redirects and the admin screen are N61
+- [ ] Backup/export (JSON + media zip) — JSON export and import of content, fields, terms and settings done (N37); menus, widgets, redirects and the admin Backup screen done (N61); media zip and theme settings are N65
 
 ### Phase 6: Beta → 1.0 (weeks 22–26)
 
 - [ ] Private beta with 10–20 real sites (bloggers, small businesses, 2–3 agencies)
-- [ ] Security review (auth, uploads, XSS/CSRF/SQLi, plugin permissions) — security headers, `SECURITY.md`, audit job and a first review done (N39, `docs/security-review.md`); second pass is N62
+- [ ] Security review (auth, uploads, XSS/CSRF/SQLi, plugin permissions) — security headers, `SECURITY.md`, audit job and a first review done (N39, `docs/security-review.md`); second pass done (N62: route guard test, importer hardening, blocking audit); dropping inline styles from the CSP is N66
 - [x] Performance budget: <100 ms TTFB cached, Lighthouse 95+ on default theme — enforced in CI (N41): the smoke job times cached pages, the Lighthouse job also scores performance
 - [ ] Accessibility audit of admin + default theme (WCAG 2.1 AA)
 - [ ] Docs site (built: `apps/docs`), landing page, launch posts

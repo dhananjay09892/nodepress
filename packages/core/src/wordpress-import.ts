@@ -352,10 +352,11 @@ export async function importWordPress(
   const placed = new Set<WxrItem>();
   const place = (item: WxrItem, depth = 0): void => {
     if (placed.has(item)) return;
+    // Marked first, so pages that are each other's parent are placed once, not once per round.
+    placed.add(item);
     const parent = item.parent !== undefined ? byWpId.get(item.parent) : undefined;
     if (parent && parent !== item && importable.includes(parent) && depth < 50)
       place(parent, depth + 1);
-    placed.add(item);
     ordered.push(item);
   };
   importable.forEach((item) => place(item));
