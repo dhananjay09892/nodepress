@@ -86,12 +86,24 @@ const MAX_EXCERPT = 5000;
 export function parseWpDate(value: string): Date | undefined {
   const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/.exec(value.trim());
   if (!match || match[1] === '0000') return undefined;
-  const [, y, mo, d, h, mi, s] = match.map(Number) as [number, number, number, number, number, number, number];
+  const [, y, mo, d, h, mi, s] = match.map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
   const date = new Date(Date.UTC(y, mo - 1, d, h, mi, s));
   // Date.UTC rolls 13/45 over silently; accept only dates that read back the same.
   const same =
-    date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d &&
-    date.getUTCHours() === h && date.getUTCMinutes() === mi && date.getUTCSeconds() === s;
+    date.getUTCFullYear() === y &&
+    date.getUTCMonth() === mo - 1 &&
+    date.getUTCDate() === d &&
+    date.getUTCHours() === h &&
+    date.getUTCMinutes() === mi &&
+    date.getUTCSeconds() === s;
   return same ? date : undefined;
 }
 
@@ -206,9 +218,19 @@ export async function importWordPress(
     const category = categoriesBySlug.get(slug);
     if (!category || depth > 20) return null;
     let parentId: number | null = null;
-    if (category.parent && category.parent !== slug) parentId = await addCategory(category.parent, depth + 1);
+    if (category.parent && category.parent !== slug)
+      parentId = await addCategory(category.parent, depth + 1);
     doneCategories.add(slug);
-    return termIdFor(options, termCache, 'category', category.slug, category.name, parentId, category.description ?? null, report);
+    return termIdFor(
+      options,
+      termCache,
+      'category',
+      category.slug,
+      category.name,
+      parentId,
+      category.description ?? null,
+      report,
+    );
   };
   for (const category of wxr.categories) {
     try {
@@ -219,7 +241,16 @@ export async function importWordPress(
   }
   for (const tag of wxr.tags) {
     try {
-      await termIdFor(options, termCache, 'tag', tag.slug, tag.name, null, tag.description ?? null, report);
+      await termIdFor(
+        options,
+        termCache,
+        'tag',
+        tag.slug,
+        tag.name,
+        null,
+        tag.description ?? null,
+        report,
+      );
     } catch (error) {
       report.warnings.push(`Tag "${tag.name}" was not imported: ${messageOf(error)}`);
     }
@@ -267,14 +298,21 @@ export async function importWordPress(
   const place = (item: WxrItem, depth = 0): void => {
     if (placed.has(item)) return;
     const parent = item.parent !== undefined ? byWpId.get(item.parent) : undefined;
-    if (parent && parent !== item && importable.includes(parent) && depth < 50) place(parent, depth + 1);
+    if (parent && parent !== item && importable.includes(parent) && depth < 50)
+      place(parent, depth + 1);
     placed.add(item);
     ordered.push(item);
   };
   importable.forEach((item) => place(item));
 
   const now = (options.now ?? (() => new Date()))();
-  const created: Array<{ item: WxrItem; id: number; path: string; blocks: ImportedBlock[]; status: string }> = [];
+  const created: Array<{
+    item: WxrItem;
+    id: number;
+    path: string;
+    blocks: ImportedBlock[];
+    status: string;
+  }> = [];
   for (const item of ordered) {
     const mapped = STATUS[item.status];
     if (!mapped) {
@@ -300,7 +338,9 @@ export async function importWordPress(
       }
       const slug = item.slug && SLUG.test(item.slug) ? item.slug : undefined;
       if (item.slug && !slug) {
-        report.warnings.push(`"${item.title}": slug "${item.slug}" was replaced by one made from the title`);
+        report.warnings.push(
+          `"${item.title}": slug "${item.slug}" was replaced by one made from the title`,
+        );
       }
       const blocks = htmlToBlocks(item.content);
       const authorId = await authorIdFor(item.creator);
@@ -325,10 +365,21 @@ export async function importWordPress(
         // Other taxonomies have no home yet.
         if (term.taxonomy !== 'category' && term.taxonomy !== 'tag') continue;
         try {
-          const id = await termIdFor(options, termCache, term.taxonomy, term.slug, term.name, null, null, report);
+          const id = await termIdFor(
+            options,
+            termCache,
+            term.taxonomy,
+            term.slug,
+            term.name,
+            null,
+            null,
+            report,
+          );
           if (!termIds[term.taxonomy].includes(id)) termIds[term.taxonomy].push(id);
         } catch (error) {
-          report.warnings.push(`"${item.title}": term "${term.name}" was not added: ${messageOf(error)}`);
+          report.warnings.push(
+            `"${item.title}": term "${term.name}" was not added: ${messageOf(error)}`,
+          );
         }
       }
       for (const taxonomy of ['category', 'tag'] as const) {
@@ -336,7 +387,9 @@ export async function importWordPress(
         try {
           await options.taxonomies.setContentTerms(record.id, taxonomy, termIds[taxonomy]);
         } catch (error) {
-          report.warnings.push(`"${item.title}": ${taxonomy} terms were not saved: ${messageOf(error)}`);
+          report.warnings.push(
+            `"${item.title}": ${taxonomy} terms were not saved: ${messageOf(error)}`,
+          );
         }
       }
       if (options.meta) {
@@ -347,7 +400,13 @@ export async function importWordPress(
         };
         await options.meta.setMeta(record.id, values);
       }
-      created.push({ item, id: record.id, path: await options.permalinks.pathFor(record), blocks, status });
+      created.push({
+        item,
+        id: record.id,
+        path: await options.permalinks.pathFor(record),
+        blocks,
+        status,
+      });
     } catch (error) {
       logger.warn(`Could not import "${item.title}": ${messageOf(error)}`);
       report.skipped.push({
@@ -377,7 +436,8 @@ export async function importWordPress(
   for (const entry of created) {
     if (entry.item.id !== undefined) idToPath.set(entry.item.id, entry.path);
     const oldPath = pathOf(entry.item.link);
-    if (oldPath !== undefined && entry.item.link !== '') pathMap.set(normalizePath(oldPath), entry.path);
+    if (oldPath !== undefined && entry.item.link !== '')
+      pathMap.set(normalizePath(oldPath), entry.path);
   }
   for (const entry of created) {
     const oldPath = pathOf(entry.item.link);
@@ -403,7 +463,9 @@ export async function importWordPress(
   };
   for (const entry of created) {
     const before = report.linksRewritten;
-    const blocks = mapBlockUrls(entry.blocks, (url, kind) => (kind === 'link' ? rewrite(url) : url));
+    const blocks = mapBlockUrls(entry.blocks, (url, kind) =>
+      kind === 'link' ? rewrite(url) : url,
+    );
     if (report.linksRewritten === before) continue;
     try {
       await options.content.update(entry.id, { body: blocks as unknown as ContentBlock[] });

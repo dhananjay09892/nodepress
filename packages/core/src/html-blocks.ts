@@ -30,12 +30,42 @@ const MAX_DEPTH = 32;
 const VOID = new Set(['br', 'img', 'hr', 'input', 'meta', 'link', 'source', 'wbr']);
 const DROP = new Set(['script', 'style', 'iframe', 'object', 'embed', 'noscript', 'template']);
 const BLOCK_TAGS = new Set([
-  'p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'pre',
-  'figure', 'figcaption', 'table', 'tr', 'section', 'article', 'hr',
+  'p',
+  'div',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'pre',
+  'figure',
+  'figcaption',
+  'table',
+  'tr',
+  'section',
+  'article',
+  'hr',
 ]);
 const ENTITIES: Record<string, string> = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', hellip: '…', ndash: '–',
-  mdash: '—', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', copy: '©',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  hellip: '…',
+  ndash: '–',
+  mdash: '—',
+  lsquo: '‘',
+  rsquo: '’',
+  ldquo: '“',
+  rdquo: '”',
+  copy: '©',
 };
 
 function decode(text: string): string {
@@ -81,7 +111,12 @@ function tokenize(html: string): Token[] {
     while ((a = attrPattern.exec(rest)) !== null) {
       attrs[(a[1] as string).toLowerCase()] = decode(a[2] ?? a[3] ?? a[4] ?? '');
     }
-    tokens.push({ kind: 'open', tag, attrs, selfClosing: rest.trim().endsWith('/') || VOID.has(tag) });
+    tokens.push({
+      kind: 'open',
+      tag,
+      attrs,
+      selfClosing: rest.trim().endsWith('/') || VOID.has(tag),
+    });
     if (DROP.has(tag) && !rest.trim().endsWith('/')) {
       // Skip everything up to the matching close tag.
       const close = new RegExp(`</${tag}\\s*>`, 'ig');
@@ -194,7 +229,10 @@ function paragraphsFromPlainText(text: string): ImportedBlock[] {
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter((p) => p !== '')
-    .map((p) => ({ type: 'core/paragraph', content: [{ text: decode(p).replace(/\s*\n\s*/g, '\n') }] }));
+    .map((p) => ({
+      type: 'core/paragraph',
+      content: [{ text: decode(p).replace(/\s*\n\s*/g, '\n') }],
+    }));
 }
 
 /** Convert HTML (or WordPress classic text) to blocks. Never throws. */
@@ -204,7 +242,8 @@ export function htmlToBlocks(html: string): ImportedBlock[] {
   // Classic content: no block-level tags at all, so blank lines make the paragraphs.
   if (!/<\s*(p|div|h[1-6]|ul|ol|blockquote|pre|figure|table)\b/i.test(source)) {
     const withBreaks = source.replace(/<br\s*\/?>/gi, '\n');
-    if (!/<[a-zA-Z]/.test(withBreaks)) return paragraphsFromPlainText(withBreaks).slice(0, MAX_BLOCKS);
+    if (!/<[a-zA-Z]/.test(withBreaks))
+      return paragraphsFromPlainText(withBreaks).slice(0, MAX_BLOCKS);
     // Inline markup inside classic paragraphs: convert each paragraph separately.
     return source
       .split(/\n{2,}/)
@@ -262,7 +301,11 @@ export function htmlToBlocks(html: string): ImportedBlock[] {
         flush();
         const inner = parseInline(tag);
         if (inner.length > 0) {
-          builder.blocks.push({ type: 'core/heading', attrs: { level: Number(tag[1]) }, content: inner });
+          builder.blocks.push({
+            type: 'core/heading',
+            attrs: { level: Number(tag[1]) },
+            content: inner,
+          });
         }
         builder.blocks.push(...deferred.splice(0));
       } else if (tag === 'p') {
@@ -273,7 +316,11 @@ export function htmlToBlocks(html: string): ImportedBlock[] {
       } else if (tag === 'pre') {
         flush();
         const raw = collectRawText('pre');
-        if (raw.trim() !== '') builder.blocks.push({ type: 'core/code', content: [{ text: raw.replace(/^\n+|\n+$/g, '') }] });
+        if (raw.trim() !== '')
+          builder.blocks.push({
+            type: 'core/code',
+            content: [{ text: raw.replace(/^\n+|\n+$/g, '') }],
+          });
       } else if (tag === 'ul' || tag === 'ol') {
         flush();
         const items = parseList(tag, depth + 1);
@@ -288,9 +335,16 @@ export function htmlToBlocks(html: string): ImportedBlock[] {
         flush();
         const inner = parseBlocks('blockquote', depth + 1);
         const text = inner.flatMap((b) => b.content ?? []);
-        if (text.length > 0) builder.blocks.push({ type: 'core/quote', content: joinParagraphs(text, inner) });
+        if (text.length > 0)
+          builder.blocks.push({ type: 'core/quote', content: joinParagraphs(text, inner) });
         else builder.blocks.push(...inner);
-      } else if (tag === 'div' || tag === 'section' || tag === 'article' || tag === 'figure' || tag === 'figcaption') {
+      } else if (
+        tag === 'div' ||
+        tag === 'section' ||
+        tag === 'article' ||
+        tag === 'figure' ||
+        tag === 'figcaption'
+      ) {
         flush();
         builder.blocks.push(...parseBlocks(tag, depth + 1));
       } else if (tag === 'li' || tag === 'table' || tag === 'tr' || tag === 'td' || tag === 'th') {
@@ -320,11 +374,13 @@ export function htmlToBlocks(html: string): ImportedBlock[] {
         builder.addText('\n', (stack[stack.length - 1] as Frame).marks);
       } else if (INLINE_BREAKERS.has(token.tag)) {
         builder.addText('\n', (stack[stack.length - 1] as Frame).marks);
-        if (!token.selfClosing) stack.push({ tag: token.tag, marks: (stack[stack.length - 1] as Frame).marks });
+        if (!token.selfClosing)
+          stack.push({ tag: token.tag, marks: (stack[stack.length - 1] as Frame).marks });
       } else if (token.tag === 'img') {
         const src = safeHref(token.attrs['src']);
         const alt = token.attrs['alt'];
-        if (hoistImages && src) deferred.push({ type: 'core/image', attrs: { src, alt: alt ?? '' } });
+        if (hoistImages && src)
+          deferred.push({ type: 'core/image', attrs: { src, alt: alt ?? '' } });
         else if (alt) builder.addText(alt, (stack[stack.length - 1] as Frame).marks);
       } else if (!token.selfClosing) {
         const mark = markFor(token.tag, token.attrs);

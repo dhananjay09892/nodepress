@@ -82,7 +82,12 @@ function parseXml(xml: string): XmlNode {
         const head = (selfClosing ? inner.slice(0, -1) : inner).trim();
         const name = head.split(/\s/, 1)[0] ?? '';
         if (name === '') throw new WxrError('An element has no name');
-        const node: XmlNode = { name, attrs: parseAttrs(head.slice(name.length)), text: '', children: [] };
+        const node: XmlNode = {
+          name,
+          attrs: parseAttrs(head.slice(name.length)),
+          text: '',
+          children: [],
+        };
         top().children.push(node);
         if (!selfClosing) {
           if (stack.length >= MAX_DEPTH) throw new WxrError('The file is nested too deeply');
@@ -288,7 +293,8 @@ export function parseWxr(xml: string): WxrExport {
   const channel = rss ? child(rss, 'channel') : undefined;
   if (!channel) throw new WxrError('This is not a WordPress export (no <rss><channel>)');
   const itemNodes = childrenOf(channel, 'item');
-  if (itemNodes.length > MAX_ITEMS) throw new WxrError(`The export has more than ${MAX_ITEMS} items`);
+  if (itemNodes.length > MAX_ITEMS)
+    throw new WxrError(`The export has more than ${MAX_ITEMS} items`);
 
   const clean = (url: string): string => url.trim().replace(/\/+$/, '');
   const siteUrl = clean(childText(channel, 'wp:base_site_url') || childText(channel, 'link'));

@@ -4,7 +4,9 @@ import { htmlToBlocks, mapBlockUrls, safeHref } from './html-blocks.js';
 describe('htmlToBlocks', () => {
   it('converts paragraphs with inline marks and links', () => {
     expect(
-      htmlToBlocks('<p>Hi <strong>bold <em>both</em></strong> and <a href="/x?a=1#h">link</a>.</p>'),
+      htmlToBlocks(
+        '<p>Hi <strong>bold <em>both</em></strong> and <a href="/x?a=1#h">link</a>.</p>',
+      ),
     ).toEqual([
       {
         type: 'core/paragraph',
@@ -72,7 +74,10 @@ describe('htmlToBlocks', () => {
     expect(htmlToBlocks('')).toEqual([]);
     expect(htmlToBlocks('   ')).toEqual([]);
     expect(htmlToBlocks('<div>loose <b>text</div><p>next</p>')).toEqual([
-      { type: 'core/paragraph', content: [{ text: 'loose ' }, { text: 'text', marks: [{ type: 'bold' }] }] },
+      {
+        type: 'core/paragraph',
+        content: [{ text: 'loose ' }, { text: 'text', marks: [{ type: 'bold' }] }],
+      },
       { type: 'core/paragraph', content: [{ text: 'next' }] },
     ]);
     expect(() => htmlToBlocks('<p><a href="x">unclosed')).not.toThrow();
@@ -89,7 +94,15 @@ describe('mapBlockUrls', () => {
     const blocks = mapBlockUrls(
       [
         { type: 'core/paragraph', content: [{ text: 'a', marks: [{ type: 'link', href: '/a' }] }] },
-        { type: 'core/list', children: [{ type: 'core/list-item', content: [{ text: 'b', marks: [{ type: 'link', href: '/b' }] }] }] },
+        {
+          type: 'core/list',
+          children: [
+            {
+              type: 'core/list-item',
+              content: [{ text: 'b', marks: [{ type: 'link', href: '/b' }] }],
+            },
+          ],
+        },
         { type: 'core/image', attrs: { src: '/i.png', alt: '' } },
       ],
       (url, kind) => `${kind}:${url}`,

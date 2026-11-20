@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import type { ContentRecord } from './content.js';
-import { importWordPress, normalizePath, parseWpDate, type WordPressImportOptions } from './wordpress-import.js';
+import {
+  importWordPress,
+  normalizePath,
+  parseWpDate,
+  type WordPressImportOptions,
+} from './wordpress-import.js';
 import { WXR_FIXTURE } from './testing/wxr-fixture.js';
 
 const NOW = new Date('2026-11-20T12:00:00Z');
 
 function harness(overrides: Partial<WordPressImportOptions> = {}) {
   const records = new Map<number, ContentRecord>();
-  const terms = new Map<string, { id: number; name: string; parentId: number | null; description: string | null }>();
+  const terms = new Map<
+    string,
+    { id: number; name: string; parentId: number | null; description: string | null }
+  >();
   const assigned = new Map<string, number[]>();
   const metas = new Map<number, Record<string, unknown>>();
   let nextId = 100;
@@ -15,8 +23,15 @@ function harness(overrides: Partial<WordPressImportOptions> = {}) {
   const options: WordPressImportOptions = {
     content: {
       async create(input) {
-        const same = [...records.values()].filter((r) => r.type === input.type && r.slug.startsWith(input.slug ?? 'x'));
-        const slug = input.slug ?? (input.title ?? 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const same = [...records.values()].filter(
+          (r) => r.type === input.type && r.slug.startsWith(input.slug ?? 'x'),
+        );
+        const slug =
+          input.slug ??
+          (input.title ?? 'untitled')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
         const record: ContentRecord = {
           id: nextId++,
           type: input.type,
@@ -46,7 +61,12 @@ function harness(overrides: Partial<WordPressImportOptions> = {}) {
         return t ? ({ id: t.id, taxonomy, slug, name: t.name } as never) : undefined;
       },
       async createTerm(input) {
-        const t = { id: nextTerm++, name: input.name, parentId: input.parentId ?? null, description: input.description ?? null };
+        const t = {
+          id: nextTerm++,
+          name: input.name,
+          parentId: input.parentId ?? null,
+          description: input.description ?? null,
+        };
         terms.set(`${input.taxonomy}:${input.slug}`, t);
         return { id: t.id, taxonomy: input.taxonomy, slug: input.slug, name: input.name } as never;
       },
@@ -57,7 +77,11 @@ function harness(overrides: Partial<WordPressImportOptions> = {}) {
     },
     permalinks: {
       async pathFor(content) {
-        return content.type === 'post' ? `/blog/${content.slug}` : content.parentId ? `/${records.get(content.parentId)!.slug}/${content.slug}` : `/${content.slug}`;
+        return content.type === 'post'
+          ? `/blog/${content.slug}`
+          : content.parentId
+            ? `/${records.get(content.parentId)!.slug}/${content.slug}`
+            : `/${content.slug}`;
       },
     },
     meta: {
@@ -84,7 +108,13 @@ describe('importWordPress', () => {
     expect(report.idMap).toEqual({ '10': 100, '11': 101, '20': 102, '21': 103, '22': 104 });
 
     const about = byTitle(h.records, 'About us');
-    expect(about).toMatchObject({ type: 'page', status: 'published', slug: 'about', authorId: 7, parentId: null });
+    expect(about).toMatchObject({
+      type: 'page',
+      status: 'published',
+      slug: 'about',
+      authorId: 7,
+      parentId: null,
+    });
     expect(about.publishedAt?.toISOString()).toBe('2024-01-02T08:00:00.000Z');
 
     const team = byTitle(h.records, 'Team');
@@ -103,19 +133,33 @@ describe('importWordPress', () => {
 
     const rome = byTitle(h.records, 'Hello Rome');
     expect(rome.excerpt).toBe('Ciao');
-    expect(rome.body.map((b) => b.type)).toEqual(['core/paragraph', 'core/heading', 'core/list', 'core/image']);
+    expect(rome.body.map((b) => b.type)).toEqual([
+      'core/paragraph',
+      'core/heading',
+      'core/list',
+      'core/image',
+    ]);
     expect(JSON.stringify(rome.body)).not.toContain('alert');
   });
 
   it('creates categories (parents first) and tags, assigns them, and ignores other taxonomies', async () => {
     const h = harness();
     await importWordPress(WXR_FIXTURE, h.options);
-    expect(h.terms.get('category:travel')).toMatchObject({ name: 'Travel', parentId: null, description: 'Trips' });
+    expect(h.terms.get('category:travel')).toMatchObject({
+      name: 'Travel',
+      parentId: null,
+      description: 'Trips',
+    });
     expect(h.terms.get('category:travel-italy')?.parentId).toBe(h.terms.get('category:travel')?.id);
-    expect([...h.terms.keys()].filter((k) => k.startsWith('tag:')).sort()).toEqual(['tag:new-tag', 'tag:rome']);
+    expect([...h.terms.keys()].filter((k) => k.startsWith('tag:')).sort()).toEqual([
+      'tag:new-tag',
+      'tag:rome',
+    ]);
     expect([...h.terms.keys()].some((k) => k.startsWith('series'))).toBe(false);
     const romeId = byTitle(h.records, 'Hello Rome').id;
-    expect(h.assigned.get(`${romeId}:category`)).toEqual([h.terms.get('category:travel-italy')!.id]);
+    expect(h.assigned.get(`${romeId}:category`)).toEqual([
+      h.terms.get('category:travel-italy')!.id,
+    ]);
     expect(h.assigned.get(`${romeId}:tag`)).toHaveLength(2);
   });
 
@@ -126,7 +170,9 @@ describe('importWordPress', () => {
     const meta = h.metas.get(rome.id)!;
     expect(meta['wp_id']).toBe(20);
     expect(meta['wp_link']).toBe('https://old.example.com/2024/05/hello-rome/');
-    expect(meta['wp_comments']).toEqual([expect.objectContaining({ author: 'Bob', content: 'Nice!' })]);
+    expect(meta['wp_comments']).toEqual([
+      expect.objectContaining({ author: 'Bob', content: 'Nice!' }),
+    ]);
     expect(h.metas.get(byTitle(h.records, 'About us').id)).not.toHaveProperty('wp_comments');
   });
 
@@ -198,7 +244,9 @@ describe('importWordPress', () => {
   });
 
   it('rejects text that is not a WordPress export', async () => {
-    await expect(importWordPress('<html/>', harness().options)).rejects.toThrow(/not a WordPress export/);
+    await expect(importWordPress('<html/>', harness().options)).rejects.toThrow(
+      /not a WordPress export/,
+    );
   });
 });
 
