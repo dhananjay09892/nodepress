@@ -94,6 +94,26 @@ const NpButton = Node.create({
   },
 });
 
+const NpContactForm = Node.create({
+  name: 'npContactForm',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return nullableAttrs('form', 'submitLabel', 'successMessage');
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-np-block="contact-form"]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'div',
+      mergeAttributes(HTMLAttributes, { 'data-np-block': 'contact-form' }),
+      'Contact form (name, email and message)',
+    ];
+  },
+});
+
 const NpColumn = Node.create({
   name: 'npColumn',
   content: 'block+',
@@ -154,6 +174,7 @@ export function createExtensions(): Extensions {
     NpImage,
     NpEmbed,
     NpButton,
+    NpContactForm,
     NpColumn,
     NpColumns,
     NpUnknown,

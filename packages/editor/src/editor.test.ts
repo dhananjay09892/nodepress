@@ -158,6 +158,40 @@ describe('core blocks render', () => {
   });
 });
 
+describe('contact form block', () => {
+  const html = render({ type: 'core/contact-form' });
+  it('draws a labelled form with the honeypot, the script and a no-script note', () => {
+    expect(html).toContain('<form class="np-contact-form" method="post" action="/api/v1/contact"');
+    for (const name of ['name', 'email', 'message']) {
+      expect(html).toContain(`<label for="np-contact-${name}">`);
+      expect(html).toContain(`id="np-contact-${name}-error" role="alert" hidden`);
+    }
+    expect(html).toContain('name="website"');
+    expect(html).toContain('tabindex="-1"');
+    expect(html).toContain('<noscript>');
+    expect(html).toContain('<script src="/np/contact-form.js" defer></script>');
+    expect(html).toContain('data-form="contact"');
+  });
+  it('escapes the texts and ignores a bad form id', () => {
+    const out = render({
+      type: 'core/contact-form',
+      attrs: { form: 'x" onload="1', submitLabel: '<b>Go</b>', successMessage: 'a"b' },
+    });
+    expect(out).toContain('data-form="contact"');
+    expect(out).toContain('&lt;b&gt;Go&lt;/b&gt;');
+    expect(out).toContain('data-success="a&quot;b"');
+    expect(out).not.toContain('<b>Go');
+  });
+  it('validates its attributes', () => {
+    const registry = createBlockRegistry();
+    const issues = (attrs: Record<string, unknown>) =>
+      validateDocument({ version: 1, blocks: [{ type: 'core/contact-form', attrs }] }, registry);
+    expect(issues({ form: 'sales' })).toEqual([]);
+    expect(issues({ form: 'Bad Id' })).toHaveLength(1);
+    expect(issues({ submitLabel: 'x'.repeat(201) })).toHaveLength(1);
+  });
+});
+
 describe('registry and error isolation', () => {
   it('rejects bad and duplicate names', () => {
     const r = new BlockRegistry();

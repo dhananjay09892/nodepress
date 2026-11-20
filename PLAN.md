@@ -269,7 +269,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [ ] Install/activate/deactivate from admin (upload .zip or from registry) — admin Plugins screen with .zip upload, permission review and enable/disable done (N28); installing from a registry is not built
 - [x] `nodepress` CLI and plugin scaffolder — `@nodepress/cli` has `migrate`, `dev`, `plugin create|check|pack` and `theme create` (N29)
 - [x] First-party plugin: SEO (N30)
-- [ ] First-party plugin: Contact Form (service and API N31; block and SMTP N56)
+- [ ] First-party plugin: Contact Form (service and API N31; block and SMTP N56; Messages screen N64)
 - [x] First-party plugin: Redirects (service, CSV and API N32; admin screen N57)
 - [ ] First-party plugin: Analytics (privacy-friendly)
 - [ ] Plugin author docs + example repo

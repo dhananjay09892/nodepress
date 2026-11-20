@@ -45,3 +45,62 @@ export function isEmailAddress(value: string): boolean {
     /^[^@]+@[^@.][^@]*\.[^@.]+$/.test(value)
   );
 }
+
+/** What the SMTP adapter needs from a mail library; `nodemailer`'s transport fits. */
+export interface SmtpTransport {
+  sendMail(message: {
+    from: string;
+    to: string;
+    replyTo?: string;
+    subject: string;
+    text: string;
+  }): Promise<unknown>;
+}
+
+export interface SmtpMailAdapterOptions {
+  transport: SmtpTransport;
+  /** The sender address (a plain address; many providers require one they have verified). */
+  from: string;
+}
+
+/**
+ * Sends mail through an SMTP transport. Addresses are checked again here and line breaks are
+ * removed from the subject, so a message can never add headers.
+ */
+export function createSmtpMailAdapter(options: SmtpMailAdapterOptions): MailAdapter {
+  if (!isEmailAddress(options.from)) throw new RangeError('from must be a plain email address');
+  return {
+    async send(message) {
+      if (!isEmailAddress(message.to)) throw new RangeError('to must be a plain email address');
+      if (message.replyTo !== undefined && !isEmailAddress(message.replyTo)) {
+        throw new RangeError('replyTo must be a plain email address');
+      }
+      await options.transport.sendMail({
+        from: options.from,
+        to: message.to,
+        ...(message.replyTo ? { replyTo: message.replyTo } : {}),
+        subject: message.subject.replace(/[\r\n]+/g, ' ').slice(0, 200),
+        text: message.text,
+      });
+    },
+  };
+}
+
+/**
+ * Checks a `MAIL_URL` (`smtp://user:password@host:587` or `smtps://…` for TLS from the start).
+ * Returns a problem description, or `null` when the address is usable.
+ */
+export function checkMailUrl(value: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return 'MAIL_URL is not a valid address';
+  }
+  if (url.protocol !== 'smtp:' && url.protocol !== 'smtps:') {
+    return 'MAIL_URL must start with smtp:// or smtps://';
+  }
+  if (!url.hostname) return 'MAIL_URL needs a host';
+  if (url.port !== '' && !/^\d{1,5}$/.test(url.port)) return 'MAIL_URL has a bad port';
+  return null;
+}

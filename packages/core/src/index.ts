@@ -512,9 +512,13 @@ export {
 export {
   createMemoryMailAdapter,
   createLogMailAdapter,
+  createSmtpMailAdapter,
+  checkMailUrl,
   isEmailAddress,
   type MailAdapter,
   type MailMessage,
+  type SmtpTransport,
+  type SmtpMailAdapterOptions,
 } from './mail.js';
 export {
   exportSite,
