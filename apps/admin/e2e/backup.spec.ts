@@ -12,6 +12,9 @@ async function signIn(page: Page) {
 }
 
 test('download a backup, refuse a wrong file and restore the backup', async ({ page }) => {
+  // The restore adds back every item of the shared test site, so give it room, and give each
+  // slow step its own limit so a failure names the step instead of the whole test timing out.
+  test.setTimeout(120_000);
   const title = `Backup${Date.now()}`;
   const from = `/${title.toLowerCase()}-old`;
 
@@ -36,7 +39,7 @@ test('download a backup, refuse a wrong file and restore the backup', async ({ p
     .click();
   await expect(page.getByRole('heading', { name: 'Backup', level: 1 })).toBeVisible();
   const [download] = await Promise.all([
-    page.waitForEvent('download'),
+    page.waitForEvent('download', { timeout: 20_000 }),
     page.getByRole('link', { name: 'Download backup' }).click(),
   ]);
   expect(download.suggestedFilename()).toMatch(/^nodepress-export-\d{4}-\d{2}-\d{2}\.json$/);
@@ -58,7 +61,7 @@ test('download a backup, refuse a wrong file and restore the backup', async ({ p
   await form.getByLabel('Backup file').setInputFiles(file!);
   await form.getByRole('button', { name: 'Restore backup' }).click();
   const result = page.getByRole('region', { name: 'Restore result' });
-  await expect(result).toContainText('Restored');
+  await expect(result).toContainText('Restored', { timeout: 60_000 });
   await expect(result).toContainText(`Redirect from "${from}" skipped`);
 
   const list = await page.request.get(`/api/v1/content/post?q=${title}`);
