@@ -49,7 +49,7 @@ async function run(
   dom: ReturnType<typeof fakeDom>,
   responses: Array<{ status: number; body: unknown }>,
 ) {
-  const calls: Array<{ url: string; init?: { body?: string } }> = [];
+  const calls: Array<{ url: string; init?: { body?: string } | undefined }> = [];
   const queue = [{ status: 200, body: { token: 'tok' } }, ...responses];
   const fetchFn = async (url: string, init?: { body?: string }) => {
     calls.push({ url, init });
