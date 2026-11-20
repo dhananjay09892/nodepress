@@ -46,11 +46,17 @@ describe('building drafts', () => {
     expect(
       draftFromInstance({ id: 'a', type: 'recent-posts', settings: { count: 3 } }, recent),
     ).toEqual({ id: 'a', type: 'recent-posts', values: { title: '', count: '3' } });
-    expect(draftFromInstance({ id: 'a', type: 'gone', settings: { x: 1 } }, undefined).values).toEqual({});
+    expect(
+      draftFromInstance({ id: 'a', type: 'gone', settings: { x: 1 } }, undefined).values,
+    ).toEqual({});
   });
 
   it('starts a new widget empty, with the lowest number for number fields', () => {
-    expect(newDraft(text, 'n1')).toEqual({ id: 'n1', type: 'text', values: { title: '', text: '' } });
+    expect(newDraft(text, 'n1')).toEqual({
+      id: 'n1',
+      type: 'text',
+      values: { title: '', text: '' },
+    });
     expect(newDraft(recent, 'n2').values).toEqual({ title: '', count: '1' });
   });
 
@@ -113,13 +119,16 @@ describe('checking and sending', () => {
   });
 
   it('builds the payload: blank optional values dropped, numbers and menu ids converted', () => {
-    expect(toPayload({ id: 'a', type: 'text', values: { title: '', text: ' Hi ' } }, text)).toEqual({
-      id: 'a',
-      type: 'text',
-      settings: { text: ' Hi ' },
-    });
+    expect(toPayload({ id: 'a', type: 'text', values: { title: '', text: ' Hi ' } }, text)).toEqual(
+      {
+        id: 'a',
+        type: 'text',
+        settings: { text: ' Hi ' },
+      },
+    );
     expect(
-      toPayload({ id: 'b', type: 'recent-posts', values: { title: 'New', count: '4' } }, recent).settings,
+      toPayload({ id: 'b', type: 'recent-posts', values: { title: 'New', count: '4' } }, recent)
+        .settings,
     ).toEqual({ title: 'New', count: 4 });
     expect(toPayload({ id: 'c', type: 'menu', values: { menuId: '7' } }, menu).settings).toEqual({
       menuId: 7,

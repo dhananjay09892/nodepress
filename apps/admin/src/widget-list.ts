@@ -32,7 +32,10 @@ export interface WidgetDraft {
   values: Record<string, string>;
 }
 
-export function draftFromInstance(instance: WidgetInstance, type: WidgetTypeInfo | undefined): WidgetDraft {
+export function draftFromInstance(
+  instance: WidgetInstance,
+  type: WidgetTypeInfo | undefined,
+): WidgetDraft {
   const values: Record<string, string> = {};
   for (const field of type?.fields ?? []) {
     const value = instance.settings[field.name];
@@ -45,7 +48,8 @@ export function draftFromInstance(instance: WidgetInstance, type: WidgetTypeInfo
 export function newDraft(type: WidgetTypeInfo, id: string): WidgetDraft {
   const values: Record<string, string> = {};
   for (const field of type.fields) {
-    values[field.name] = field.type === 'number' && field.min !== undefined ? String(field.min) : '';
+    values[field.name] =
+      field.type === 'number' && field.min !== undefined ? String(field.min) : '';
   }
   return { id, type: type.type, values };
 }
@@ -67,7 +71,11 @@ export function removeWidget(list: readonly WidgetDraft[], index: number): Widge
   return list.filter((_, i) => i !== index);
 }
 
-export function canMove(list: readonly unknown[], index: number, direction: 'up' | 'down'): boolean {
+export function canMove(
+  list: readonly unknown[],
+  index: number,
+  direction: 'up' | 'down',
+): boolean {
   return direction === 'up' ? index > 0 : index >= 0 && index < list.length - 1;
 }
 
@@ -107,7 +115,11 @@ export function draftProblem(draft: WidgetDraft, type: WidgetTypeInfo | undefine
     }
     if (field.type === 'number') {
       const n = Number(raw);
-      if (!Number.isInteger(n) || (field.min !== undefined && n < field.min) || (field.max !== undefined && n > field.max)) {
+      if (
+        !Number.isInteger(n) ||
+        (field.min !== undefined && n < field.min) ||
+        (field.max !== undefined && n > field.max)
+      ) {
         return `${type.title}: ${field.label} must be a whole number from ${field.min ?? 0} to ${field.max ?? 100}.`;
       }
     }
@@ -121,7 +133,10 @@ export function listProblem(
   types: readonly WidgetTypeInfo[],
 ): string | null {
   for (const draft of list) {
-    const problem = draftProblem(draft, types.find((t) => t.type === draft.type));
+    const problem = draftProblem(
+      draft,
+      types.find((t) => t.type === draft.type),
+    );
     if (problem) return problem;
   }
   return null;

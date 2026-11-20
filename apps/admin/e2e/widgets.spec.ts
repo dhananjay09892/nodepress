@@ -33,8 +33,14 @@ test('add a text widget to the sidebar and see it on the front page', async ({ p
 
   const added = area.getByRole('group', { name: /^Arrange Text widget/ }).last();
   await expect(added).toBeVisible();
-  await area.getByLabel(/^Title of Text widget/).last().fill(title);
-  await area.getByLabel(/^Text of Text widget/).last().fill(body);
+  await area
+    .getByLabel(/^Title of Text widget/)
+    .last()
+    .fill(title);
+  await area
+    .getByLabel(/^Text of Text widget/)
+    .last()
+    .fill(body);
   await area.getByRole('button', { name: 'Save Sidebar widgets' }).click();
   await expect(area.getByRole('status')).toHaveText('Sidebar widgets saved.');
 

@@ -62,7 +62,12 @@ function FieldInput(props: {
   }
   if (field.type === 'menu') {
     return (
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={fieldClass}
+      >
         <option value="">Choose a menu</option>
         {menus.map((m) => (
           <option key={m.id} value={m.id}>
@@ -177,7 +182,11 @@ function AreaEditor(props: {
                     );
                   })}
                 </fieldset>
-                <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={`Arrange ${name}`}>
+                <div
+                  className="mt-2 flex flex-wrap gap-2"
+                  role="group"
+                  aria-label={`Arrange ${name}`}
+                >
                   <button
                     type="button"
                     className={smallButtonClass}
