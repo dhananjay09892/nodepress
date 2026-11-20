@@ -47,6 +47,7 @@ import {
   createUsersStore,
 } from '@nodepress/db';
 import helloPlugin from '@nodepress/plugin-hello';
+import seoPlugin from '@nodepress/plugin-seo';
 import { createApp } from './app.js';
 import { createBodyRenderer } from './body.js';
 import { ThemeSettingsService } from './theme-settings.js';
@@ -61,7 +62,7 @@ const database = createDatabase({
 
 const np = createNodePress({
   config: { siteName: process.env.SITE_NAME ?? 'My NodePress Site' },
-  plugins: [helloPlugin],
+  plugins: [helloPlugin, seoPlugin],
 });
 
 try {
@@ -322,6 +323,7 @@ const app = createApp(np, database, {
     tagline: () => options.get('tagline', ''),
     siteUrl: process.env.SITE_URL,
     // The featured image (the id of a media item, kept as a custom field) becomes `og:image`.
+    customFields: (item) => contentMeta.getMeta(item.id),
     featuredImage: async (item) => {
       const id = (await contentMeta.getMeta(item.id)).featured_image;
       if (typeof id !== 'number') return undefined;

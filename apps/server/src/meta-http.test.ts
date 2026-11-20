@@ -153,6 +153,20 @@ describe('the meta template prop', () => {
     expect(meta.description).toBe('Filtered /');
   });
 
+  it('tells the meta:tags filter about the item and its custom fields', async () => {
+    await content.create({ type: 'post', title: 'Three', slug: 'three', status: 'published' });
+    let seen: unknown;
+    np.hooks.addFilter('meta:tags', (meta, context) => {
+      seen = { title: context.content?.title, fields: context.fields };
+      return meta;
+    });
+    const app = build({
+      themes: { service: themes, customFields: async () => ({ seo_title: 'Custom' }) },
+    });
+    await metaOf(app, '/blog/three');
+    expect(seen).toEqual({ title: 'Three', fields: { seo_title: 'Custom' } });
+  });
+
   it('still draws the page when the featured image lookup fails', async () => {
     await content.create({ type: 'post', title: 'Two', slug: 'two', status: 'published' });
     const app = build({
