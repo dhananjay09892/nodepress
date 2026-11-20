@@ -41,7 +41,7 @@ export function Layout(props: {
             </nav>
           </div>
         </header>
-        <main id="main" class="np-aurora-wrap np-aurora-main" tabindex="-1">
+        <main id="main" class="np-aurora-wrap np-aurora-main" tabindex={-1}>
           {children}
         </main>
         <footer class="np-aurora-footer">
