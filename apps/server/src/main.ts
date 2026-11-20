@@ -256,7 +256,10 @@ const app = createApp(np, database, {
     settings: async () => ({
       ...themeSettings,
       ...(themes.active
-        ? await themeSettingsService.saved(themes.active.manifest.name, themes.active.manifest.settings)
+        ? await themeSettingsService.saved(
+            themes.active.manifest.name,
+            themes.active.manifest.settings,
+          )
         : {}),
     }),
     renderBody: createBodyRenderer({ hooks: np.hooks, logger: np.logger.child('render') }),

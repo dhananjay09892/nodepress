@@ -353,10 +353,10 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
             )
           : undefined;
       const tagline = themes.tagline ? await themes.tagline() : '';
-      const settings = resolveThemeSettings(
-        theme.manifest.settings,
-        { ...(themes.settings ? await themes.settings() : {}), ...preview },
-      );
+      const settings = resolveThemeSettings(theme.manifest.settings, {
+        ...(themes.settings ? await themes.settings() : {}),
+        ...preview,
+      });
       // Menus are optional: a failure here shows the page without them.
       const menus = options.menus
         ? await options.menus.service

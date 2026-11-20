@@ -23,9 +23,9 @@ test('change the accent color and see it in the live preview, then save and rese
 
   const frame = page.frameLocator('iframe[title="Live preview of the site"]');
   const accentInPreview = () =>
-    frame.locator('html').evaluate((el) =>
-      getComputedStyle(el).getPropertyValue('--link').trim().toLowerCase(),
-    );
+    frame
+      .locator('html')
+      .evaluate((el) => getComputedStyle(el).getPropertyValue('--link').trim().toLowerCase());
   await expect.poll(accentInPreview).toBe('#0b5cad');
 
   await page.getByLabel('Accent color').fill('#aa0000');

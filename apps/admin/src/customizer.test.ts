@@ -63,8 +63,14 @@ describe('colour helpers', () => {
 
 describe('describeThemeSettingsError', () => {
   it('describes refusals and falls back for anything else', () => {
-    expect(describeThemeSettingsError(new ThemeSettingsApiError(403, 'forbidden'))).toContain('permission');
-    expect(describeThemeSettingsError(new ThemeSettingsApiError(400, 'invalid_request', 'accent does not accept that value'))).toBe('accent does not accept that value');
+    expect(describeThemeSettingsError(new ThemeSettingsApiError(403, 'forbidden'))).toContain(
+      'permission',
+    );
+    expect(
+      describeThemeSettingsError(
+        new ThemeSettingsApiError(400, 'invalid_request', 'accent does not accept that value'),
+      ),
+    ).toBe('accent does not accept that value');
     expect(describeThemeSettingsError(new Error('x'))).toContain('Something went wrong');
   });
 });

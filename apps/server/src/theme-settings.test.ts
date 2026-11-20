@@ -97,7 +97,9 @@ beforeEach(async () => {
     permalinks,
     themes: {
       service: themes,
-      settings: async () => ({ ...(await settings.saved('demo', themes.active!.manifest.settings)) }),
+      settings: async () => ({
+        ...(await settings.saved('demo', themes.active!.manifest.settings)),
+      }),
     },
     themeSettings: { service: settings, capabilities: createCapabilities(np.hooks) },
   });
@@ -141,7 +143,13 @@ describe('/api/v1/theme-settings', () => {
     expect(body.theme).toEqual({ name: 'demo', title: 'demo' });
     expect(body.settings).toEqual([
       { key: 'accent', type: 'color', label: 'Accent', default: '#0b5cad' },
-      { key: 'layout', type: 'select', label: 'layout', options: ['blog', 'business'], default: 'blog' },
+      {
+        key: 'layout',
+        type: 'select',
+        label: 'layout',
+        options: ['blog', 'business'],
+        default: 'blog',
+      },
     ]);
     expect(body.saved).toEqual({});
     expect(body.values).toEqual({ accent: '#0b5cad', layout: 'blog' });
@@ -153,7 +161,10 @@ describe('/api/v1/theme-settings', () => {
       values: { accent: '#aa0000', layout: 'business' },
     });
     expect(saved.status).toBe(200);
-    expect(((await saved.json()) as Json).values).toEqual({ accent: '#aa0000', layout: 'business' });
+    expect(((await saved.json()) as Json).values).toEqual({
+      accent: '#aa0000',
+      layout: 'business',
+    });
     expect(shown(await (await app.request(`${BASE}/`)).text())).toEqual({
       accent: '#aa0000',
       layout: 'business',
@@ -184,9 +195,14 @@ describe('/api/v1/theme-settings', () => {
     expect((await call('theme-settings', 'GET', {})).status).toBe(401);
     const editor = await signIn('editor');
     expect((await call('theme-settings', 'GET', editor)).status).toBe(403);
-    expect((await call('theme-settings', 'PATCH', editor, { values: { layout: 'business' } })).status).toBe(403);
+    expect(
+      (await call('theme-settings', 'PATCH', editor, { values: { layout: 'business' } })).status,
+    ).toBe(403);
     const { cookie } = await signIn('admin');
-    expect((await call('theme-settings', 'PATCH', { cookie }, { values: { layout: 'business' } })).status).toBe(403);
+    expect(
+      (await call('theme-settings', 'PATCH', { cookie }, { values: { layout: 'business' } }))
+        .status,
+    ).toBe(403);
     expect(await settings.saved('demo', themes.active!.manifest.settings)).toEqual({});
   });
 
@@ -209,7 +225,9 @@ describe('preview with ?np_preview', () => {
     expect(res.headers.get('x-robots-tag')).toBe('noindex');
     // The bad layout value falls back to the schema default, the valid accent is shown.
     expect(shown(await res.text())).toEqual({ accent: '#00aa00', layout: 'blog' });
-    expect(await settings.saved('demo', themes.active!.manifest.settings)).toEqual({ layout: 'business' });
+    expect(await settings.saved('demo', themes.active!.manifest.settings)).toEqual({
+      layout: 'business',
+    });
   });
 
   it('is ignored for visitors and for users without edit_theme_options', async () => {
@@ -222,9 +240,14 @@ describe('preview with ?np_preview', () => {
 
   it('ignores a broken or oversized preview value', async () => {
     const admin = await signIn('admin');
-    const broken = await app.request(`${BASE}/?np_preview=%7B`, { headers: { cookie: admin.cookie } });
+    const broken = await app.request(`${BASE}/?np_preview=%7B`, {
+      headers: { cookie: admin.cookie },
+    });
     expect(shown(await broken.text())).toEqual({ accent: '#0b5cad', layout: 'blog' });
-    const big = await preview({ accent: '#00aa00', pad: 'x'.repeat(5000) }, { cookie: admin.cookie });
+    const big = await preview(
+      { accent: '#00aa00', pad: 'x'.repeat(5000) },
+      { cookie: admin.cookie },
+    );
     expect(shown(await big.text())).toEqual({ accent: '#0b5cad', layout: 'blog' });
     const array = await preview([1], { cookie: admin.cookie });
     expect(shown(await array.text())).toEqual({ accent: '#0b5cad', layout: 'blog' });

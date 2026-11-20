@@ -110,7 +110,10 @@ export function contrastRatio(a: string, b: string): number | null {
   const first = parseHex(a);
   const second = parseHex(b);
   if (!first || !second) return null;
-  const [light, dark] = [luminance(first), luminance(second)].sort((x, y) => y - x) as [number, number];
+  const [light, dark] = [luminance(first), luminance(second)].sort((x, y) => y - x) as [
+    number,
+    number,
+  ];
   return (light + 0.05) / (dark + 0.05);
 }
 

@@ -29,7 +29,12 @@ function SettingField(props: {
   let input;
   if (setting.type === 'select') {
     input = (
-      <select id={id} value={text} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
+      <select
+        id={id}
+        value={text}
+        onChange={(e) => onChange(e.target.value)}
+        className={fieldClass}
+      >
         {(setting.options ?? []).map((option) => (
           <option key={String(option)} value={String(option)}>
             {String(option)}

@@ -69,7 +69,11 @@ export class ThemeSettingsService {
     const raw = (await this.#all())[theme] ?? {};
     const kept: Record<string, unknown> = {};
     for (const [key, spec] of Object.entries(schema)) {
-      if (typeof spec === 'object' && spec !== null && settingFits(spec as Record<string, unknown>, raw[key])) {
+      if (
+        typeof spec === 'object' &&
+        spec !== null &&
+        settingFits(spec as Record<string, unknown>, raw[key])
+      ) {
         kept[key] = raw[key];
       }
     }
@@ -148,13 +152,23 @@ export function createThemeSettingsRoutes(
     if (body instanceof Response) return body;
     const values = body['values'];
     if (typeof values !== 'object' || values === null || Array.isArray(values)) {
-      return c.json({ error: 'invalid_request', field: 'values', message: 'values must be an object' }, 400);
+      return c.json(
+        { error: 'invalid_request', field: 'values', message: 'values must be an object' },
+        400,
+      );
     }
     try {
-      await options.settings.update(theme.manifest.name, theme.manifest.settings, values as Record<string, unknown>);
+      await options.settings.update(
+        theme.manifest.name,
+        theme.manifest.settings,
+        values as Record<string, unknown>,
+      );
     } catch (error) {
       if (error instanceof ThemeSettingsError) {
-        return c.json({ error: 'invalid_request', field: error.field, message: error.message }, 400);
+        return c.json(
+          { error: 'invalid_request', field: error.field, message: error.message },
+          400,
+        );
       }
       throw error;
     }
