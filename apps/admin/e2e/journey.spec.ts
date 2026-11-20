@@ -89,7 +89,11 @@ test('install, write and publish a post, add a plugin and change the theme', asy
   await page
     .getByRole('form', { name: 'Upload a plugin' })
     .getByLabel('Plugin package (.zip)')
-    .setInputFiles({ name: `${plugin}.zip`, mimeType: 'application/zip', buffer: Buffer.from(zip) });
+    .setInputFiles({
+      name: `${plugin}.zip`,
+      mimeType: 'application/zip',
+      buffer: Buffer.from(zip),
+    });
   await page.getByRole('button', { name: 'Upload plugin' }).click();
   await expect(page.getByRole('status')).toHaveText(
     'Plugin uploaded. It is off until you enable it.',
