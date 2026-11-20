@@ -164,8 +164,6 @@ function MenuEditor({ menu }: { menu: MenuRecord }) {
   useEffect(() => {
     setName(menu.name);
     setItems(menu.items);
-    setConfirmDelete(false);
-    setMessage(null);
   }, [menu]);
 
   const dirty = name.trim() !== menu.name || !sameItems(items, menu.items);
