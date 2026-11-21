@@ -268,6 +268,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          # This job never installs, so there is no pnpm store to cache; the automatic cache would
+          # fail the job in its post step ("Path Validation Error") even when the audit passes.
+          package-manager-cache: false
       - run: pnpm audit --prod --audit-level=high
 
   admin-e2e:
