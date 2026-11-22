@@ -44,3 +44,15 @@ export type {
   RelationField,
 } from '@nodepress/core';
 export type { Content, MetaTags, MetaTagsContext } from '@nodepress/core';
+export type {
+  ParameterizedSqlRunner,
+  PluginDatabase,
+  PluginRouteDefinition,
+  PluginRouteHandler,
+  PluginRouteMethod,
+  PluginRouteRequest,
+  PluginRouteResponse,
+  ScopedPluginRoutes,
+  SqlRow,
+  SqlValue,
+} from '@nodepress/core';
