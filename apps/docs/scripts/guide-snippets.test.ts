@@ -7,7 +7,15 @@ const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 const guide = readFileSync(resolve(root, 'apps/docs/src/content/docs/guides/plugins.md'), 'utf8');
 
 /** Prettier may wrap lines differently in the guide and the source, so compare without layout. */
-const squash = (text: string) => text.replace(/\s+/g, ' ').replace(/\( /g, '(').replace(/ \)/g, ')').replace(/, \]/g, ' ]').replace(/\[ /g, '[').replace(/ \]/g, ']').trim();
+const squash = (text: string) =>
+  text
+    .replace(/\s+/g, ' ')
+    .replace(/\( /g, '(')
+    .replace(/ \)/g, ')')
+    .replace(/, \]/g, ' ]')
+    .replace(/\[ /g, '[')
+    .replace(/ \]/g, ']')
+    .trim();
 
 /** Code fences with a `title="path"`: their text must be an exact excerpt of that file. */
 function titledBlocks(markdown: string): Array<{ path: string; code: string }> {
