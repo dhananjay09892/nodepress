@@ -482,7 +482,8 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
       const theme = themes.service.active;
       const css = theme ? await themeStyle(await currentThemeSettings(theme, preview)) : '';
       c.header('Content-Type', 'text/css; charset=utf-8');
-      if (c.req.query('np_preview') === undefined) c.header('Cache-Control', 'public, max-age=3600');
+      if (c.req.query('np_preview') === undefined)
+        c.header('Cache-Control', 'public, max-age=3600');
       return c.body(css);
     });
   }
