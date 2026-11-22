@@ -41,6 +41,11 @@ test('a message sent from a page with the contact form shows in the admin', asyn
   await expect(front.locator('.np-contact-success')).toBeVisible({ timeout: 15_000 });
   await visitor.close();
 
+  // The API has stored it (checked first so a failure names the layer that broke).
+  const stored = await page.request.get('/api/v1/contact/submissions');
+  expect(stored.status()).toBe(200);
+  expect(JSON.stringify(await stored.json())).toContain(text);
+
   // The admin lists it.
   await page
     .getByRole('navigation', { name: 'Main' })
