@@ -4,6 +4,7 @@ import NotFound from './404.js';
 import Front from './front.js';
 import Index from './index.js';
 import { customCss, jsonLdScript } from './layout.js';
+import style from './style.js';
 import Page from './page.js';
 import Single from './single.js';
 
@@ -193,23 +194,34 @@ describe('Aurora customizer settings', () => {
     expect(css).toContain('body.np-aurora{font-family:Georgia');
   });
 
+  it('has a style template that returns the same CSS', () => {
+    expect(style({ settings: { accent: '#aa0000', font: 'serif' } })).toBe(
+      customCss({ accent: '#aa0000', font: 'serif' }),
+    );
+    expect(style({})).toBe('');
+  });
+
   it('never lets anything but a hex colour or a known font into the stylesheet', () => {
     expect(customCss({ accent: 'red;}</style><script>', font: 'x;}body{' })).toBe('');
     expect(customCss({ accent: 5, font: 5 })).toBe('');
   });
 
-  it('puts the CSS and the logo in the page', async () => {
+  it('links the stylesheet the server made, and puts the logo in the page', async () => {
     const html = await render(
       Single({
         ...base,
         content: post('Hello'),
+        settingsCssUrl: '/np/theme.css?v=abc123',
         settings: { accent: '#aa0000', font: 'mono', logo: '/media/logo.png' },
       }),
     );
-    expect(html).toContain('<style>:root{--link:#aa0000');
+    expect(html).toContain('<link rel="stylesheet" href="/np/theme.css?v=abc123"');
+    // Inline styles are blocked by the default Content-Security-Policy.
+    expect(html).not.toContain('<style');
+    expect(html).not.toContain('style=');
     expect(html).toContain('<img class="np-aurora-logo" src="/media/logo.png" alt=""');
     const plain = await render(Single({ ...base, content: post('Hello'), settings: { logo: '' } }));
-    expect(plain).not.toContain('<style>');
+    expect(plain).not.toContain('/np/theme.css');
     expect(plain).not.toContain('np-aurora-logo');
   });
 });

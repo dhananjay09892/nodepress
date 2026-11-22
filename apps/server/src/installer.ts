@@ -14,6 +14,8 @@ import {
   INSTALL_PAGE,
   INSTALL_SCRIPT,
   INSTALL_SCRIPT_PATH,
+  INSTALL_STYLE,
+  INSTALL_STYLE_PATH,
   MIN_ADMIN_PASSWORD,
 } from './installer-page.js';
 
@@ -97,6 +99,11 @@ export function createInstaller(options: InstallerOptions): Installer {
   routes.get(INSTALL_SCRIPT_PATH, (c) => {
     c.header('Content-Type', 'text/javascript; charset=utf-8');
     return c.body(INSTALL_SCRIPT);
+  });
+
+  routes.get(INSTALL_STYLE_PATH, (c) => {
+    c.header('Content-Type', 'text/css; charset=utf-8');
+    return c.body(INSTALL_STYLE);
   });
 
   routes.get('/api/v1/install/status', async (c) => {

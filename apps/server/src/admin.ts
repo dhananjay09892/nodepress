@@ -30,7 +30,7 @@ const SECURITY_HEADERS = {
 
 // The admin is a same-origin SPA: no inline scripts, no third-party hosts.
 const INDEX_CSP =
-  "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+  "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
 export interface AdminHandlerOptions {
   /** Directory with the built admin app (`apps/admin/dist`). */

@@ -258,6 +258,19 @@ describe('ThemeService', () => {
   const file = (name: string) => `/themes/demo/templates/${name}.js`;
   const component = () => 'x';
 
+  it('finds a template by its exact name, not as a page', async () => {
+    const { service } = setup({
+      [file('index')]: { default: component },
+      [file('style')]: { default: () => ':root{}' },
+      [file('broken')]: { default: 'nope' },
+    });
+    expect(await service.named('style')).toBeTypeOf('function');
+    expect(await service.named('missing')).toBeUndefined();
+    expect(await service.named('broken')).toBeUndefined();
+    // `style` is never picked as the page for a request.
+    expect((await service.resolve({ kind: 'not_found' }))?.name).toBe('index');
+  });
+
   it('picks the most specific template that exists', async () => {
     const { service } = setup({
       [file('index')]: { default: component },

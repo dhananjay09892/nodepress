@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type {
   Capabilities,
   Content,
@@ -15,6 +16,7 @@ import type {
   StorageAdapter,
   TaxonomyService,
   TemplateTarget,
+  Theme,
   ThemeService,
   UsersService,
   WebhookService,
@@ -63,6 +65,9 @@ declare module '@nodepress/core' {
 }
 
 /** Build the HTTP app. Kept separate from `main.ts` so it can be tested without a port. */
+/** Largest stylesheet a theme's `style` template may make; anything bigger is dropped. */
+const MAX_THEME_CSS_BYTES = 64 * 1024;
+
 export interface AppOptions {
   /** Enables `/api/v1/auth/*` (login, logout, me) and, with `apiTokens`, `/api/v1/tokens`. */
   auth?: AuthOptions;
@@ -445,6 +450,57 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
     }
   }
 
+  /** The theme's saved settings with the defaults filled in, and unsaved customizer values on top. */
+  async function currentThemeSettings(
+    theme: Theme,
+    preview?: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return resolveThemeSettings(theme.manifest.settings, {
+      ...(themes?.settings ? await themes.settings() : {}),
+      ...preview,
+    });
+  }
+
+  /** The CSS the active theme's `style` template makes from `settings` ('' when there is none). */
+  async function themeStyle(settings: Record<string, unknown>): Promise<string> {
+    const component = await themes?.service.named('style');
+    const theme = themes?.service.active;
+    if (!component || !theme) return '';
+    try {
+      const out = await component({
+        siteName: '',
+        path: '/',
+        status: 200,
+        settings,
+        theme: {
+          name: theme.manifest.name,
+          version: theme.manifest.version,
+          assetsUrl: themeAssetsUrl(theme.manifest.name),
+        },
+      });
+      const css = typeof out === 'string' ? out : String(out ?? '');
+      return css.length <= MAX_THEME_CSS_BYTES ? css : '';
+    } catch (error) {
+      np.logger.warn(`Theme style template failed: ${String(error)}`);
+      return '';
+    }
+  }
+
+  // The stylesheet made from the active theme's settings (`style` template). It is a file, not a
+  // `<style>` tag, because the default Content-Security-Policy blocks inline styles. Unsaved
+  // customizer values (`np_preview`) are only used for a user who may edit theme options.
+  if (themes) {
+    app.get('/np/theme.css', async (c) => {
+      const preview = await previewOverrides(c);
+      const theme = themes.service.active;
+      const css = theme ? await themeStyle(await currentThemeSettings(theme, preview)) : '';
+      c.header('Content-Type', 'text/css; charset=utf-8');
+      if (c.req.query('np_preview') === undefined)
+        c.header('Cache-Control', 'public, max-age=3600');
+      return c.body(css);
+    });
+  }
+
   async function buildPageMeta(
     route: { kind: 'content'; content: Content } | { kind: 'not_found' } | { kind: 'front' },
     path: string,
@@ -514,10 +570,13 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
             )
           : undefined;
       const tagline = themes.tagline ? await themes.tagline() : '';
-      const settings = resolveThemeSettings(theme.manifest.settings, {
-        ...(themes.settings ? await themes.settings() : {}),
-        ...preview,
-      });
+      const settings = await currentThemeSettings(theme, preview);
+      const css = await themeStyle(settings);
+      const settingsCssUrl = css
+        ? `/np/theme.css?v=${createHash('sha256').update(css).digest('hex').slice(0, 12)}${
+            preview ? `&np_preview=${encodeURIComponent(JSON.stringify(preview))}` : ''
+          }`
+        : undefined;
       // Menus are optional: a failure here shows the page without them.
       const menus = options.menus
         ? await options.menus.service
@@ -556,6 +615,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         ...(posts ? { posts } : {}),
         tagline,
         settings,
+        ...(settingsCssUrl ? { settingsCssUrl } : {}),
         menus,
         widgets,
         theme: {

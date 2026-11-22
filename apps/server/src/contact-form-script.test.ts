@@ -28,12 +28,14 @@ function fakeDom() {
   }
   const status = { hidden: true, textContent: '', className: '' };
   const button = { disabled: false };
+  const trap = { hidden: true, style: { cssText: '' } };
   const form = {
     elements: inputs,
     reset: vi.fn(),
     getAttribute: (k: string) =>
       k === 'data-form' ? 'sales' : k === 'data-success' ? 'Thanks!' : null,
-    querySelector: (selector: string) => (selector === '.np-contact-status' ? status : button),
+    querySelector: (selector: string) =>
+      selector === '.np-contact-status' ? status : selector === '.np-field-trap' ? trap : button,
     addEventListener: (type: string, fn: (event: { preventDefault(): void }) => void) => {
       listeners[type] = fn;
     },
@@ -42,7 +44,7 @@ function fakeDom() {
     querySelectorAll: () => [form],
     getElementById: (id: string) => errors[id],
   };
-  return { document, form, status, button, errors, inputs, listeners };
+  return { document, form, status, button, trap, errors, inputs, listeners };
 }
 
 async function run(
@@ -75,6 +77,13 @@ async function run(
 }
 
 describe('contact form script', () => {
+  it('moves the honeypot off screen through the style object, not a style attribute', async () => {
+    const dom = fakeDom();
+    await run(dom, [{ status: 201, body: { ok: true } }]);
+    expect(dom.trap.hidden).toBe(false);
+    expect(dom.trap.style.cssText).toContain('left:-10000px');
+  });
+
   it('fetches a token, posts the JSON and shows the success text', async () => {
     const dom = fakeDom();
     const calls = await run(dom, [{ status: 201, body: { ok: true } }]);

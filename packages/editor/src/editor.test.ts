@@ -170,6 +170,10 @@ describe('contact form block', () => {
     expect(html).toContain('tabindex="-1"');
     expect(html).toContain('<noscript>');
     expect(html).toContain('<script src="/np/contact-form.js" defer></script>');
+    // No style attribute (the default Content-Security-Policy blocks them): the honeypot is hidden
+    // with the hidden attribute and moved off screen by the script.
+    expect(html).toContain('<p class="np-field-trap" aria-hidden="true" hidden>');
+    expect(html).not.toContain('style=');
     expect(html).toContain('data-form="contact"');
   });
   it('escapes the texts and ignores a bad form id', () => {

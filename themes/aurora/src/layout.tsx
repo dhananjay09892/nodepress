@@ -72,7 +72,6 @@ export function Layout(props: {
   const primary = page.menus?.primary;
   const footer = page.menus?.footer;
   const sidebar = page.widgets?.sidebar;
-  const css = customCss(page.settings);
   const logo = typeof page.settings?.logo === 'string' ? page.settings.logo : '';
   const meta = page.meta;
   const description = meta?.description ?? page.tagline;
@@ -106,7 +105,7 @@ export function Layout(props: {
           </>
         ) : null}
         <link rel="stylesheet" href={`${page.theme.assetsUrl}/style.css`} />
-        {css ? <style>{raw(css)}</style> : null}
+        {page.settingsCssUrl ? <link rel="stylesheet" href={page.settingsCssUrl} /> : null}
         {(meta?.jsonLd ?? []).map((data) => (
           <script type="application/ld+json">{raw(jsonLdScript(data))}</script>
         ))}

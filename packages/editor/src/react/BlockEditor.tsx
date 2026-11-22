@@ -179,6 +179,9 @@ export function BlockEditor({ value, onChange, label = 'Content' }: BlockEditorP
     extensions,
     content: envelopeToTiptap(value),
     shouldRerenderOnTransaction: true,
+    // Tiptap would add a <style> tag, which the default Content-Security-Policy blocks; the same
+    // rules are in the admin's styles.css instead.
+    injectCSS: false,
     editorProps: {
       attributes: {
         role: 'textbox',
