@@ -93,6 +93,11 @@ describe('web installer', () => {
     for (const id of ['code', 'siteName', 'email', 'password', 'confirm']) {
       expect(html).toContain(`<label for="${id}">`);
     }
+    expect(html).toContain('<link rel="stylesheet" href="/install/install.css">');
+    expect(html).not.toContain('<style');
+    const css = await app.request(`${BASE}/install/install.css`);
+    expect(css.headers.get('content-type')).toContain('text/css');
+    expect(await css.text()).toContain('--accent');
     const script = await app.request(`${BASE}/install/install.js`);
     expect(script.headers.get('content-type')).toContain('text/javascript');
     const source = await script.text();

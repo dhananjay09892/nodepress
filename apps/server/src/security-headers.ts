@@ -10,7 +10,7 @@ import type { MiddlewareHandler } from 'hono';
 export const DEFAULT_CSP = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "connect-src 'self'",

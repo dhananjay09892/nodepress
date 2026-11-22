@@ -270,11 +270,29 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: plugins screen (list, activate, deactivate, upload .zip, show declared permissions before activation).
 - Done when: Playwright test uploads and activates a plugin.
 
+### N74 · ADR: how plugins are installed from a registry
+
+- Depends on: N28
+- Scope: write `docs/adr/0003-plugin-registry.md` with the options (a static JSON index on GitHub Pages or a CDN; npm packages with a `nodepress-plugin` keyword; GitHub releases; a hosted NodePress registry service), the trade-offs (trust and signing, hosting cost, review workload, offline installs, what N28's permission review needs) and a recommendation. Leave the `Decision:` line empty. In the same PR add a follow-up task right after this one, "Install plugins from a registry", with a `Needs you:` line asking the owner to fill in the ADR's `Decision:` line, because the build task depends on it.
+- Done when: the ADR is in the PR with an empty `Decision:` line and the blocked follow-up task is in this file.
+
 ### N29 · `nodepress` CLI and plugin scaffolder
 
 - Depends on: N27
 - Scope: `packages/cli` with `dev`, `migrate`, `plugin create`, `theme create`.
 - Done when: CI scaffolds a plugin and builds it.
+
+### N67 · Plugin routes and database access
+
+- Depends on: N27
+- Scope: today a plugin can use hooks and SQL migrations but cannot register HTTP routes or read its own tables (the first-party plugins live in core for that reason). Add to the plugin API: `api.routes` to mount a small Hono-compatible router under `/api/v1/plugins/<name>/`, with a `capability` option per route (checked by the server, `401`/`403` before the handler runs) and CSRF checks for session writes, and `api.db` to run parameterized queries on the plugin's own tables only (names prefixed with the plugin name; no access to core tables). A throwing handler returns a `500` and never affects other routes or the site. Mounted routes appear in the plugin's permission review (N28).
+- Done when: tests cover capability checks, CSRF, error isolation, table-name scoping (a query on a core table is refused) and removal of the routes when the plugin is deactivated; the example plugin `plugins/hello-nodepress` gains one route.
+
+### N68 · Plugin author guide and example repository
+
+- Depends on: N67, N42
+- Scope: a plugin guide in `apps/docs` (hooks, settings, routes, database, admin pages, packaging with `nodepress plugin pack`, permissions) written against the real API, a hooks reference page generated from the typed hook maps, and a complete example plugin under `plugins/` with tests that the guide's snippets are taken from.
+- Done when: the docs build in CI and a test runs the example plugin's code from the guide; the "Plugin author docs + example repo" item in PLAN.md is ticked.
 
 ### N30 · SEO plugin
 
@@ -300,6 +318,18 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Depends on: N56, N57
 - Scope: split from N56. Add the admin "Messages" screen as a self-registering screen (`apps/admin/src/screens/Messages.screen.tsx`, see `docs/features/redirects-screen.md`): list `GET /api/v1/contact/submissions` with paging (name, email, form, mail status, date, message), shown with `manage_options`.
 - Done when: a Playwright test sends a message from a page that has the contact form block and sees it in the admin.
+
+### N69 · Analytics plugin
+
+- Depends on: N67
+- Scope: first-party privacy-friendly analytics as a real plugin (`plugins/analytics`): a small script-free beacon (an image or `navigator.sendBeacon` from a served script, honoring Do Not Track and `Sec-GPC`), no cookies, no IP stored, visitors counted with a daily-rotating salted hash that is never stored beyond the day, page views per path, referrer host and day kept in the plugin's own tables, bots filtered by user agent, and a summary route (`GET /api/v1/plugins/analytics/summary?from=&to=`, `manage_options`). Old rows are pruned after a configurable retention (default 90 days) by a scheduled job.
+- Done when: tests cover counting, daily salt rotation, DNT/GPC, bot filtering, retention pruning and the capability check; a test proves no IP or cookie is stored.
+
+### N70 · Analytics screen in the admin
+
+- Depends on: N69
+- Scope: an admin page contributed by the analytics plugin through the admin extension points (N21): page views and visitors per day (chart with a text table alternative), top pages and referrers, a date range picker, hidden without `manage_options`.
+- Done when: a Playwright test visits a page twice and sees the counts on the screen; unit tests cover the date-range helpers.
 
 ### N32 · Redirects plugin
 
@@ -360,6 +390,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: Dockerfile, docker-compose (with Postgres), templates for Railway, Render and Fly.io.
 - Done when: CI builds the image and runs the smoke test inside it.
 
+### N76 · S3-compatible media storage
+
+- Depends on: N11, N35
+- Scope: container hosts (Railway, Render, Fly.io) have disks that disappear on redeploy, so uploads need somewhere else. Add a `StorageAdapter` for S3-compatible services (AWS S3, Cloudflare R2, MinIO, Backblaze B2) selected with `MEDIA_STORAGE=s3` plus `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT` (optional), `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` and `S3_PUBLIC_URL` (optional). Implement it with `fetch` and AWS Signature V4 using `node:crypto` (no SDK dependency), including path-style addressing for MinIO. Files are served through the existing `/uploads` route unless `S3_PUBLIC_URL` is set. Secrets are never logged.
+- Done when: tests with a fake `fetch` cover the signature (against AWS's published example vectors), put, get, delete and a missing key; the Docker docs list the new variables.
+
 ### N63 · Docker: publish and slim the image, one-click deploy buttons
 
 - Depends on: N35
@@ -394,6 +430,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: check for and apply core, plugin and theme updates from the admin.
 - Done when: tests cover version check and update flow with a mock registry.
 
+### N75 · ADR: where the built-in updater gets updates
+
+- Depends on: none
+- Scope: N38 waits for a decision. Write `docs/adr/0004-updater.md` with the options (npm registry, GitHub releases with checksums, a NodePress update server), the trade-offs (signature and checksum checks, rollback, database migrations during an update, Docker installs where the image is the update, offline sites) and a recommendation. Leave the `Decision:` line empty.
+- Done when: the ADR is in the PR with an empty `Decision:` line; the `Needs you:` line on N38 points to it.
+
 ## Phase 6: Beta → 1.0
 
 ### N39 · Security hardening pass
@@ -415,6 +457,18 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: split from N62. The default policy allows inline styles because the Aurora customizer writes its settings into a `<style>` tag and style attributes, the admin editor and React components set `style` attributes, and the contact form block hides its honeypot with one. Find every inline style (admin build, Aurora, the starter theme, blocks), move them to served stylesheets, classes or CSS variables set from script (`element.style.setProperty` is allowed under CSP), or give the customizer a per-response nonce, then remove `'unsafe-inline'` from `DEFAULT_CSP` and test the admin and both themes with a strict policy.
 - Done when: the default policy has no `'unsafe-inline'`, Playwright and Lighthouse pass with it, and the page cache keeps working with the nonce (if one is used).
 
+### N71 · Accessibility audit of the admin
+
+- Depends on: none
+- Scope: add `@axe-core/playwright` to the admin end-to-end suite and run it (WCAG 2.1 A and AA rules) on every admin screen in its main states (empty list, filled list, form with errors, dialogs, the editor with a selection), then fix what it finds: names and labels, focus order and visible focus, color contrast, landmarks, live regions for status messages, keyboard operation of the media grid and menu tree. Write what was fixed and what remains to `docs/accessibility.md`.
+- Done when: the axe run is part of the Playwright job and passes with no serious or critical violations; remaining minor ones are listed in the doc with a reason.
+
+### N72 · Accessibility audit of the default theme
+
+- Depends on: N23
+- Scope: run axe on Aurora's front page (blog and business layouts), a post, a page, the 404 page and a page with the contact form, in light and dark mode and at 320 px width; check keyboard navigation, the skip link, heading order, reduced motion and zoom to 200 %. Fix what it finds.
+- Done when: the Lighthouse job's accessibility score stays at 95+ and a Playwright axe run over those pages passes with no serious or critical violations.
+
 ### N40 · End-to-end test suite
 
 - Depends on: N34
@@ -433,6 +487,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: `apps/docs` with Starlight: getting started, plugin guide, theme guide, hooks reference generated from types.
 - Done when: docs build in CI.
 - Status: built (see `docs/features/docs-site.md`); publishing the site is not done.
+
+### N73 · Landing page
+
+- Depends on: N42
+- Scope: a landing page for the docs site (`apps/docs`, Starlight splash page): what NodePress is, why it exists, the three-step quick start, feature highlights taken from PLAN.md, links to the docs, the plugin guide and GitHub. Accessible, no tracking, no external fonts. Launch posts are the owner's to write; add a `docs/launch-checklist.md` with the items that need the owner (domain, announcement text, screenshots).
+- Done when: the docs build in CI and the page passes the Lighthouse accessibility check; `docs/launch-checklist.md` lists what the owner must provide.
 
 ### N99 · Plan the next tasks
 

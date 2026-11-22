@@ -514,6 +514,6 @@ describe('/api/v1/backup', () => {
     const admin = await signIn(site, 'admin@example.com');
     const res = await site.app.request(`${BASE}/api/v1/backup`, { headers: admin });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ maxBytes: 256 * 1024 * 1024 });
+    expect(await res.json()).toEqual({ maxBytes: 256 * 1024 * 1024, media: false });
   });
 });

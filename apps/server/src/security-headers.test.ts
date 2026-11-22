@@ -40,6 +40,8 @@ describe('securityHeaders', () => {
   it('the default policy blocks inline and foreign scripts, plugins and framing by others', () => {
     expect(DEFAULT_CSP).toContain("script-src 'self'");
     expect(DEFAULT_CSP).not.toMatch(/script-src[^;]*unsafe/);
+    expect(DEFAULT_CSP).not.toMatch(/unsafe-inline/);
+    expect(DEFAULT_CSP).toContain("style-src 'self';");
     expect(DEFAULT_CSP).toContain("object-src 'none'");
     expect(DEFAULT_CSP).toContain("base-uri 'self'");
     expect(DEFAULT_CSP).toContain("frame-ancestors 'self'");
