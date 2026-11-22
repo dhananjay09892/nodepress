@@ -1,0 +1,23 @@
+{
+  "name": "@nodepress/plugin-example-notes",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Example plugin: private notes for editors, with HTTP routes, a database table and a migration",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nodepress/sdk": "workspace:*"
+  }
+}

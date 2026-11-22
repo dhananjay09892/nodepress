@@ -1,0 +1,8 @@
+{
+  "name": "example-notes",
+  "version": "0.1.0",
+  "title": "Example notes",
+  "description": "Private notes for editors: HTTP routes, a database table and a migration.",
+  "permissions": ["database"],
+  "entry": "dist/index.js"
+}
