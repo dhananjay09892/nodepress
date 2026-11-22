@@ -159,6 +159,56 @@ export function createSqlRunner(handle: DatabaseHandle): SqlStatementRunner {
     },
   };
 }
+/** Runs one statement with values bound to its `?` placeholders (what plugins get through `context.db`). */
+export interface ParameterizedStatementRunner {
+  readonly dialect: Dialect;
+  query(statement: string, values: readonly unknown[]): Promise<Array<Record<string, unknown>>>;
+  execute(statement: string, values: readonly unknown[]): Promise<void>;
+}
+
+/**
+ * Put the values of a statement written with `?` placeholders into a drizzle query as bound
+ * parameters (`$1`, `$2`… on PostgreSQL); they never become part of the SQL text. The text itself
+ * must not contain a `?` that is not a placeholder, which is the caller's check (plugin SQL has no
+ * string literals, so every `?` is a placeholder).
+ */
+function bind(statement: string, values: readonly unknown[], dialect: Dialect) {
+  const chunks = statement.split('?');
+  if (chunks.length - 1 !== values.length) {
+    throw new Error(`The statement has ${chunks.length - 1} placeholder(s) but ${values.length} value(s).`);
+  }
+  let query = sql.raw(chunks[0] ?? '');
+  values.forEach((value, index) => {
+    query = sql`${query}${dialect === 'sqlite' ? sqliteValue(value) : value}${sql.raw(chunks[index + 1] ?? '')}`;
+  });
+  return query;
+}
+
+/** SQLite binds numbers, strings, bytes and null: dates become ISO text and booleans 1 or 0. */
+function sqliteValue(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'boolean') return value ? 1 : 0;
+  return value;
+}
+
+/** A runner for statements with bound values on whichever dialect the handle uses. */
+export function createParameterizedRunner(handle: DatabaseHandle): ParameterizedStatementRunner {
+  return {
+    dialect: handle.dialect,
+    async query(statement, values) {
+      const query = bind(statement, values, handle.dialect);
+      if (handle.dialect === 'postgres') {
+        return Array.from(await handle.db.execute(query)) as Array<Record<string, unknown>>;
+      }
+      return (await handle.db.all(query)) as Array<Record<string, unknown>>;
+    },
+    async execute(statement, values) {
+      const query = bind(statement, values, handle.dialect);
+      if (handle.dialect === 'postgres') await handle.db.execute(query);
+      else await handle.db.run(query);
+    },
+  };
+}
 export {
   createUsersStore,
   type UserRow,

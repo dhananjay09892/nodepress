@@ -3,6 +3,8 @@ import type { WidgetTypeDefinition } from './widgets.js';
 import { scopeHooks, type HookRegistry, type ScopedHooks } from './hooks.js';
 import type { JobQueue, ScopedJobs } from './jobs.js';
 import type { Logger } from './logger.js';
+import { createPluginDatabase, type ParameterizedSqlRunner, type PluginDatabase } from './plugin-db.js';
+import { PluginRouteRegistry, type ScopedPluginRoutes } from './plugin-routes.js';
 
 export interface PluginContext {
   /** Hooks scoped to this plugin: everything added here is removed on deactivation. */
@@ -26,6 +28,18 @@ export interface PluginContext {
    * plugin is deactivated.
    */
   registerWidget(definition: WidgetTypeDefinition): void;
+  /**
+   * HTTP routes under `/api/v1/plugins/<your plugin name>/`, each with the capability a caller
+   * needs (or `'public'`). Removed when the plugin is deactivated; a handler that throws answers
+   * `500` and nothing else is affected.
+   */
+  routes: ScopedPluginRoutes;
+  /**
+   * Parameterized queries on your own tables (names starting with your plugin name and `_`).
+   * Only present when `plugin.json` declares the `database` permission and the site has a
+   * database to give. See `plugin-db.ts` for what is allowed.
+   */
+  db?: PluginDatabase;
 }
 
 export interface PluginDefinition {
@@ -52,6 +66,8 @@ export interface PluginInfo {
   description: string | undefined;
   status: PluginStatus;
   error: string | undefined;
+  /** The HTTP routes the plugin added (for the permission review). */
+  routes?: Array<{ method: string; path: string; capability: string }>;
 }
 
 interface PluginRecord {
@@ -71,6 +87,10 @@ export class PluginManager {
   #config: Readonly<Record<string, unknown>>;
   #jobs: JobQueue | undefined;
   #admin: AdminExtensions;
+  #routes = new PluginRouteRegistry();
+  #runner: ParameterizedSqlRunner | undefined;
+  /** Permissions declared in `plugin.json`, for plugins that came from a package. */
+  #permissions = new Map<string, readonly string[]>();
 
   constructor(hooks: HookRegistry, logger: Logger, config: Readonly<Record<string, unknown>>) {
     this.#hooks = hooks;
@@ -84,12 +104,26 @@ export class PluginManager {
     return this.#admin;
   }
 
+  /** The HTTP routes plugins added; the server mounts them under `/api/v1/plugins/<name>/`. */
+  get routes(): PluginRouteRegistry {
+    return this.#routes;
+  }
+
+  /** Give plugins that declare the `database` permission a way to run queries (`context.db`). */
+  useDatabase(runner: ParameterizedSqlRunner): void {
+    this.#runner = runner;
+  }
+
   /** Give plugins activated from now on a job queue (`context.jobs`). */
   useJobs(queue: JobQueue): void {
     this.#jobs = queue;
   }
 
-  register(definition: PluginDefinition): void {
+  /**
+   * Add a plugin. `options.permissions` are the ones its `plugin.json` declares; without them a
+   * plugin gets no `context.db` (built-in plugins do not need one).
+   */
+  register(definition: PluginDefinition, options: { permissions?: readonly string[] } = {}): void {
     if (!definition || typeof definition.setup !== 'function') {
       throw new TypeError('A plugin must be an object with a setup() function');
     }
@@ -102,6 +136,7 @@ export class PluginManager {
     if (this.#plugins.has(name)) {
       throw new Error(`Plugin "${name}" is already registered`);
     }
+    if (options.permissions) this.#permissions.set(name, options.permissions);
     this.#plugins.set(name, {
       definition,
       status: 'registered',
@@ -126,6 +161,10 @@ export class PluginManager {
       registerWidget: (definition) => {
         scopeHooks(this.#hooks, name).addFilter('widget:types', (types) => [...types, definition]);
       },
+      routes: { add: (definition) => this.#routes.add(name, definition) },
+      ...(this.#runner && this.#permissions.get(name)?.includes('database')
+        ? { db: createPluginDatabase(name, this.#runner) }
+        : {}),
       ...(this.#jobs ? { jobs: this.#jobs.scoped(name) } : {}),
     };
 
@@ -135,6 +174,7 @@ export class PluginManager {
       this.#hooks.removeAllFromSource(name);
       this.#jobs?.removeAllFromSource(name);
       this.#admin.removeAllFromSource(name);
+      this.#routes.removeAllFromSource(name);
       record.status = 'failed';
       record.error = error instanceof Error ? error.message : String(error);
       record.context = undefined;
@@ -158,6 +198,7 @@ export class PluginManager {
     this.#hooks.removeAllFromSource(name);
     this.#jobs?.removeAllFromSource(name);
     this.#admin.removeAllFromSource(name);
+    this.#routes.removeAllFromSource(name);
     try {
       await record.definition.teardown?.(record.context);
     } catch (error) {
@@ -191,6 +232,9 @@ export class PluginManager {
       description: r.definition.description,
       status: r.status,
       error: r.error,
+      routes: this.#routes
+        .list(r.definition.name)
+        .map(({ method, path, capability }) => ({ method, path, capability })),
     }));
   }
 

@@ -3,6 +3,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { sessionQuery } from '../session.js';
 import {
   describePluginError,
+  describeRoute,
   fetchPlugins,
   permissionLabel,
   setPluginEnabled,
@@ -72,6 +73,16 @@ function PluginCard(props: {
             plugins you trust.
           </p>
         </div>
+        {plugin.routes && plugin.routes.length > 0 ? (
+          <div className="mt-3">
+            <h3 className="text-sm font-medium text-slate-700">Web addresses it added</h3>
+            <ul className="list-disc pl-5 font-mono text-xs text-slate-800">
+              {plugin.routes.map((route) => (
+                <li key={`${route.method} ${route.path}`}>{describeRoute(plugin.name, route)}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="mt-3">
           {plugin.enabled ? (
             <button

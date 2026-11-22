@@ -41,6 +41,29 @@ export {
   type PluginStatus,
 } from './plugins.js';
 export {
+  PluginRouteRegistry,
+  PluginRouteBodyError,
+  PLUGIN_ROUTE_METHODS,
+  checkRouteDefinition,
+  type MatchedPluginRoute,
+  type PluginRouteDefinition,
+  type PluginRouteHandler,
+  type PluginRouteMethod,
+  type PluginRouteRequest,
+  type PluginRouteResponse,
+  type ScopedPluginRoutes,
+} from './plugin-routes.js';
+export {
+  PluginSqlError,
+  checkPluginSql,
+  createPluginDatabase,
+  pluginTablePrefix,
+  type ParameterizedSqlRunner,
+  type PluginDatabase,
+  type SqlRow,
+  type SqlValue,
+} from './plugin-db.js';
+export {
   createNodePress,
   type NodePress,
   type NodePressOptions,
