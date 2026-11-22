@@ -38,7 +38,8 @@ test('a message sent from a page with the contact form shows in the admin', asyn
   await front.getByLabel('Email').fill('ada@example.test');
   await front.getByLabel('Message').fill(text);
   await front.getByRole('button', { name: /send/i }).click();
-  await expect(front.locator('.np-contact-success')).toBeVisible({ timeout: 15_000 });
+  // "Sending…" also uses the success class, so wait for the thank-you text.
+  await expect(front.locator('.np-contact-success')).toHaveText(/Thank you/, { timeout: 15_000 });
   await visitor.close();
 
   // The API has stored it (checked first so a failure names the layer that broke).
