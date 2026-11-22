@@ -26,7 +26,8 @@ describe('plugin routes and database in the plugin manager', () => {
     const manager = new PluginManager(new HookRegistry(), silentLogger, {});
     manager.register({
       name: 'shop',
-      setup: ({ routes }) => routes.add({ method: 'GET', path: '/items', capability: 'public', handler }),
+      setup: ({ routes }) =>
+        routes.add({ method: 'GET', path: '/items', capability: 'public', handler }),
     });
     await manager.activateAll();
     expect(manager.routes.match('shop', 'GET', '/items')).toBeDefined();
@@ -49,7 +50,8 @@ describe('plugin routes and database in the plugin manager', () => {
     });
     manager.register({
       name: 'fine',
-      setup: ({ routes }) => routes.add({ method: 'GET', path: '/a', capability: 'public', handler }),
+      setup: ({ routes }) =>
+        routes.add({ method: 'GET', path: '/a', capability: 'public', handler }),
     });
     await manager.activateAll();
     expect(manager.routes.match('broken', 'GET', '/a')).toBeUndefined();
@@ -92,7 +94,10 @@ describe('plugin routes and database in the plugin manager', () => {
         { permissions },
       );
     }
-    manager.register({ name: 'built-in', setup: ({ db }) => void (seen['built-in'] = db !== undefined) });
+    manager.register({
+      name: 'built-in',
+      setup: ({ db }) => void (seen['built-in'] = db !== undefined),
+    });
     await manager.activateAll();
     expect(seen).toEqual({ 'with-db': true, 'without-db': false, 'built-in': false });
     expect(calls).toEqual(['SELECT id FROM with_db_items WHERE id = ?']);
@@ -101,7 +106,10 @@ describe('plugin routes and database in the plugin manager', () => {
   it('gives no context.db without a database on the site', async () => {
     const manager = new PluginManager(new HookRegistry(), silentLogger, {});
     let present: boolean | undefined;
-    manager.register({ name: 'p', setup: ({ db }) => void (present = db !== undefined) }, { permissions: ['database'] });
+    manager.register(
+      { name: 'p', setup: ({ db }) => void (present = db !== undefined) },
+      { permissions: ['database'] },
+    );
     await manager.activateAll();
     expect(present).toBe(false);
   });

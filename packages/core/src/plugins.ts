@@ -3,7 +3,11 @@ import type { WidgetTypeDefinition } from './widgets.js';
 import { scopeHooks, type HookRegistry, type ScopedHooks } from './hooks.js';
 import type { JobQueue, ScopedJobs } from './jobs.js';
 import type { Logger } from './logger.js';
-import { createPluginDatabase, type ParameterizedSqlRunner, type PluginDatabase } from './plugin-db.js';
+import {
+  createPluginDatabase,
+  type ParameterizedSqlRunner,
+  type PluginDatabase,
+} from './plugin-db.js';
 import { PluginRouteRegistry, type ScopedPluginRoutes } from './plugin-routes.js';
 
 export interface PluginContext {

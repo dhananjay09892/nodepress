@@ -175,7 +175,9 @@ export interface ParameterizedStatementRunner {
 function bind(statement: string, values: readonly unknown[], dialect: Dialect) {
   const chunks = statement.split('?');
   if (chunks.length - 1 !== values.length) {
-    throw new Error(`The statement has ${chunks.length - 1} placeholder(s) but ${values.length} value(s).`);
+    throw new Error(
+      `The statement has ${chunks.length - 1} placeholder(s) but ${values.length} value(s).`,
+    );
   }
   let query = sql.raw(chunks[0] ?? '');
   values.forEach((value, index) => {

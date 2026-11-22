@@ -33,10 +33,7 @@ import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
 import { createImportRoutes, type ImportRoutesOptions } from './import-api.js';
 import { createRedirectsRoutes, type RedirectsRoutesOptions } from './redirects-api.js';
-import {
-  createPluginRouteDispatcher,
-  type PluginRoutesApiOptions,
-} from './plugin-routes-api.js';
+import { createPluginRouteDispatcher, type PluginRoutesApiOptions } from './plugin-routes-api.js';
 import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
 import { buildMeta, filterMeta } from './meta.js';

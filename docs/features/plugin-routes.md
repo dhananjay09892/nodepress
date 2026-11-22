@@ -28,7 +28,10 @@ The routes are described in a small framework-independent shape (`PluginRouteDef
 A plugin whose `plugin.json` declares the `database` permission gets `context.db` (when the site has a database to give). It owns the tables whose names start with its name and `_` (`my-plugin` → `my_plugin_`); create them in a migration (see `plugin-packages.md`).
 
 ```ts
-const rows = await db.query('SELECT id, title FROM my_plugin_notes WHERE owner = ? LIMIT ?', [userId, 20]);
+const rows = await db.query('SELECT id, title FROM my_plugin_notes WHERE owner = ? LIMIT ?', [
+  userId,
+  20,
+]);
 await db.execute('INSERT INTO my_plugin_notes (owner, title) VALUES (?, ?)', [userId, title]);
 ```
 

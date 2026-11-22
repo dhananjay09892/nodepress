@@ -123,7 +123,9 @@ export class PluginRouteRegistry {
         r.definition.path.replace(/:[^/]+/g, ':') === definition.path.replace(/:[^/]+/g, ':'),
     );
     if (clash) {
-      throw new Error(`Plugin "${source}" already has a ${definition.method} route for ${definition.path}`);
+      throw new Error(
+        `Plugin "${source}" already has a ${definition.method} route for ${definition.path}`,
+      );
     }
     this.#routes.push({ source, definition, keys, pattern });
   }
@@ -164,7 +166,9 @@ export class PluginRouteRegistry {
   }
 
   /** The routes of a plugin, for the permission review in the admin. */
-  list(source?: string): Array<{ source: string; method: PluginRouteMethod; path: string; capability: string }> {
+  list(
+    source?: string,
+  ): Array<{ source: string; method: PluginRouteMethod; path: string; capability: string }> {
     return this.#routes
       .filter((r) => source === undefined || r.source === source)
       .map((r) => ({

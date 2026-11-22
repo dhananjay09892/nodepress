@@ -148,7 +148,11 @@ function respond(c: Context<AuthEnv>, result: PluginRouteResponse): Response {
       ? (result.status as 200)
       : 200;
   for (const [key, value] of Object.entries(result.headers ?? {})) {
-    if (!FORBIDDEN_HEADERS.has(key.toLowerCase()) && typeof value === 'string' && !/[\r\n]/.test(value)) {
+    if (
+      !FORBIDDEN_HEADERS.has(key.toLowerCase()) &&
+      typeof value === 'string' &&
+      !/[\r\n]/.test(value)
+    ) {
       c.header(key, value);
     }
   }

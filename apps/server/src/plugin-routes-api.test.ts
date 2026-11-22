@@ -80,7 +80,10 @@ async function makeSite() {
     capability: 'edit_posts',
     handler: async (request) => {
       ran.push('items');
-      return { status: 201, json: { id: request.params['id'], body: await request.json(), q: request.query } };
+      return {
+        status: 201,
+        json: { id: request.params['id'], body: await request.json(), q: request.query },
+      };
     },
   });
   registry.add('shop', {

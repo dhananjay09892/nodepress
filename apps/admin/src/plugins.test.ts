@@ -96,9 +96,9 @@ describe('plugins client', () => {
 
 describe('describeRoute', () => {
   it('says who can call a route', () => {
-    expect(describeRoute('shop', { method: 'GET', path: '/items/:id', capability: 'edit_posts' })).toBe(
-      'GET /api/v1/plugins/shop/items/:id (users with edit_posts)',
-    );
+    expect(
+      describeRoute('shop', { method: 'GET', path: '/items/:id', capability: 'edit_posts' }),
+    ).toBe('GET /api/v1/plugins/shop/items/:id (users with edit_posts)');
     expect(describeRoute('stats', { method: 'POST', path: '/', capability: 'public' })).toBe(
       'POST /api/v1/plugins/stats (anyone)',
     );

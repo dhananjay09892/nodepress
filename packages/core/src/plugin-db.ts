@@ -59,7 +59,8 @@ export function checkPluginSql(
   if (typeof statement !== 'string' || statement.trim() === '') {
     throw new PluginSqlError('The statement is empty.');
   }
-  if (statement.length > MAX_STATEMENT_LENGTH) throw new PluginSqlError('The statement is too long.');
+  if (statement.length > MAX_STATEMENT_LENGTH)
+    throw new PluginSqlError('The statement is too long.');
   if (/['"`[\]\\]/.test(statement)) {
     throw new PluginSqlError(
       'Quotes, brackets and backslashes are not allowed: pass values as ? parameters and use plain table names.',
@@ -82,8 +83,14 @@ export function checkPluginSql(
   }
 
   const first = /^[a-z]+/i.exec(text)?.[0]?.toLowerCase();
-  const kind = first === 'select' ? 'select' : first && ['insert', 'update', 'delete'].includes(first) ? 'write' : null;
-  if (!kind) throw new PluginSqlError('Only SELECT, INSERT, UPDATE and DELETE statements are allowed.');
+  const kind =
+    first === 'select'
+      ? 'select'
+      : first && ['insert', 'update', 'delete'].includes(first)
+        ? 'write'
+        : null;
+  if (!kind)
+    throw new PluginSqlError('Only SELECT, INSERT, UPDATE and DELETE statements are allowed.');
   if (!kinds.includes(kind)) {
     throw new PluginSqlError(
       kind === 'write'
@@ -124,9 +131,21 @@ export function checkPluginSql(
             if (tokens[j + 1] !== '(') checkName(tokens[j + 1]);
             j += 2;
           } else if (
-            ['where', 'group', 'order', 'limit', 'having', 'union', 'join', 'left', 'right', 'inner', 'cross', 'on', ')'].includes(
-              tokens[j]!.toLowerCase(),
-            )
+            [
+              'where',
+              'group',
+              'order',
+              'limit',
+              'having',
+              'union',
+              'join',
+              'left',
+              'right',
+              'inner',
+              'cross',
+              'on',
+              ')',
+            ].includes(tokens[j]!.toLowerCase())
           ) {
             break;
           } else {
