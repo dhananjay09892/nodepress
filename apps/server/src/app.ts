@@ -35,6 +35,7 @@ import { createMediaRoutes, createUploadsHandler } from './media.js';
 import { createMenuLocationsRoutes, createMenusRoutes } from './menus-api.js';
 import { createImportRoutes, type ImportRoutesOptions } from './import-api.js';
 import { createRedirectsRoutes, type RedirectsRoutesOptions } from './redirects-api.js';
+import { createPluginRouteDispatcher, type PluginRoutesApiOptions } from './plugin-routes-api.js';
 import { createPluginRoutes, type PluginRoutesOptions } from './plugins-api.js';
 import { createWidgetsRoutes } from './widgets-api.js';
 import { buildMeta, filterMeta } from './meta.js';
@@ -198,6 +199,11 @@ export interface AppOptions {
    * packages; `manage_plugins` only. See `createPluginRoutes`.
    */
   plugins?: PluginRoutesOptions;
+  /**
+   * Enables the routes plugins add with `context.routes.add()` under `/api/v1/plugins/<name>/`
+   * (needs `auth`). Each route says which capability its callers need, or that it is `public`.
+   */
+  pluginRoutes?: PluginRoutesApiOptions;
   /**
    * Enables `/api/v1/admin-extensions` (needs `auth`): the menu items, pages and settings
    * panels plugins add to the admin (`np.admin`). Each page needs the capability its plugin
@@ -385,6 +391,11 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
         c.header('Cache-Control', 'public, max-age=3600');
         return c.body(CONTACT_FORM_SCRIPT);
       });
+    }
+    // Routes added by plugins go before the management routes, which would otherwise ask every
+    // caller for `manage_plugins`.
+    if (options.pluginRoutes) {
+      app.route('/api/v1/plugins', createPluginRouteDispatcher(auth, options.pluginRoutes));
     }
     if (options.plugins) app.route('/api/v1/plugins', createPluginRoutes(auth, options.plugins));
     if (options.media) {

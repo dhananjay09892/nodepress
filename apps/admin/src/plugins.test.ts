@@ -8,6 +8,7 @@ import {
   statusLabel,
   uploadPlugin,
   type PluginPackage,
+  describeRoute,
 } from './plugins.js';
 
 const plugin = (extra: Partial<PluginPackage> = {}): PluginPackage => ({
@@ -90,5 +91,16 @@ describe('plugins client', () => {
     const fetchMock = stubFetch(404, { error: 'not_found' });
     await expect(setPluginEnabled('a b', true, 't')).rejects.toMatchObject({ code: 'not_found' });
     expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe('/api/v1/plugins/a%20b');
+  });
+});
+
+describe('describeRoute', () => {
+  it('says who can call a route', () => {
+    expect(
+      describeRoute('shop', { method: 'GET', path: '/items/:id', capability: 'edit_posts' }),
+    ).toBe('GET /api/v1/plugins/shop/items/:id (users with edit_posts)');
+    expect(describeRoute('stats', { method: 'POST', path: '/', capability: 'public' })).toBe(
+      'POST /api/v1/plugins/stats (anyone)',
+    );
   });
 });

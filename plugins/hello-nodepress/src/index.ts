@@ -11,12 +11,14 @@ export const DEFAULT_CLOSING_LINE = 'Thanks for reading!';
  * - Adds a "Subtitle" field to the post edit screen (an admin extension point).
  * - Adds a "Hello" page to the admin where that line can be changed (an admin extension point:
  *   a page made of a settings panel, plus a sidebar menu item that opens it).
+ * - Answers `GET /api/v1/plugins/hello-nodepress/greeting` (an HTTP route; `capability: 'public'`
+ *   means anyone may call it, use a capability name such as `manage_options` to restrict it).
  */
 export default definePlugin({
   name: 'hello-nodepress',
   version: '0.0.0',
   description: 'Example plugin showing actions, filters and an admin settings page',
-  setup({ hooks, logger, admin }) {
+  setup({ hooks, logger, admin, routes }) {
     hooks.addAction('core:ready', () => {
       logger.info('Hello from hello-nodepress 👋');
     });
@@ -64,6 +66,24 @@ export default definePlugin({
       contentTypes: ['post'],
     });
     admin.addMenuItem({ id: 'hello', label: 'Hello', page: 'settings', order: 90 });
+
+    // A route under /api/v1/plugins/hello-nodepress/. The server checks the capability (and, for
+    // writes, the CSRF token) before the handler runs, and a handler that throws answers 500.
+    routes.add({
+      method: 'GET',
+      path: '/greeting',
+      capability: 'public',
+      handler: async () => {
+        let line = DEFAULT_CLOSING_LINE;
+        try {
+          const settings = await admin.getSettings('settings', 'closing');
+          if (typeof settings['closing_line'] === 'string') line = settings['closing_line'];
+        } catch {
+          // Settings are optional: without them the default line is used.
+        }
+        return { json: { message: line } };
+      },
+    });
 
     hooks.addFilter(
       'post:content',

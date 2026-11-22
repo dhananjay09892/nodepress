@@ -12,6 +12,21 @@ export interface PluginPackage {
   /** How the running site treats it (absent when it was not loaded). */
   status?: 'registered' | 'active' | 'inactive' | 'failed' | undefined;
   error?: string | undefined;
+  /** Web addresses the running plugin added under `/api/v1/plugins/<name>/`. */
+  routes?: PluginRoute[] | undefined;
+}
+
+export interface PluginRoute {
+  method: string;
+  path: string;
+  /** A capability name, or `public` for anyone. */
+  capability: string;
+}
+
+/** One line for the review of a route: who can call it. */
+export function describeRoute(name: string, route: PluginRoute): string {
+  const who = route.capability === 'public' ? 'anyone' : `users with ${route.capability}`;
+  return `${route.method} /api/v1/plugins/${name}${route.path === '/' ? '' : route.path} (${who})`;
 }
 
 export interface PluginsOverview {

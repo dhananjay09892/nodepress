@@ -47,6 +47,7 @@ import {
   createPluginsStore,
   createSessionsStore,
   createSlugRedirectsStore,
+  createParameterizedRunner,
   createSqlRunner,
   createTaxonomyStore,
   createUsersStore,
@@ -93,6 +94,8 @@ const options = createOptionsService({ store: createOptionsStore(database), hook
 const pluginsDir =
   process.env.PLUGINS_DIR ?? fileURLToPath(new URL('../../../plugins-installed', import.meta.url));
 const pluginState = new PluginStateService(createPluginsStore(database));
+// Plugins that declare the `database` permission get parameterized queries on their own tables.
+np.plugins.useDatabase(createParameterizedRunner(database));
 let loadedPackages: string[] = [];
 try {
   await cleanIncomingFolders(pluginsDir);
@@ -441,6 +444,11 @@ const app = createApp(np, database, {
   widgets: { service: widgetService, capabilities },
   themeSettings: { service: themeSettingsService, capabilities },
   ...(webhooks ? { webhooks: { service: webhooks, capabilities } } : {}),
+  pluginRoutes: {
+    registry: np.plugins.routes,
+    capabilities,
+    logger: np.logger.child('plugin-routes'),
+  },
   plugins: {
     dir: pluginsDir,
     state: pluginState,

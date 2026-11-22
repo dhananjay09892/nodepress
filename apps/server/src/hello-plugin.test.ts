@@ -72,3 +72,21 @@ describe('the hello example plugin adds an admin settings page', () => {
     ).rejects.toThrow(/closing_line/);
   });
 });
+
+describe('the hello example plugin adds an HTTP route', () => {
+  it('answers /greeting with the closing line, for anyone', async () => {
+    const np = await boot();
+    const found = np.plugins.routes.match('hello-nodepress', 'GET', '/greeting');
+    expect(found?.definition.capability).toBe('public');
+    const reply = await found!.definition.handler({
+      method: 'GET',
+      path: '/greeting',
+      params: {},
+      query: {},
+      headers: {},
+      user: null,
+      json: async () => ({}),
+    });
+    expect(reply).toEqual({ json: { message: DEFAULT_CLOSING_LINE } });
+  });
+});

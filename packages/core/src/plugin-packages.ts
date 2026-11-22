@@ -425,7 +425,9 @@ export async function loadPluginPackages(
         });
         if (applied.length > 0) logger.info(`Plugin "${name}": applied ${applied.join(', ')}`);
       }
-      config.plugins.register(await loadPluginDefinition(plugin, config.importer));
+      config.plugins.register(await loadPluginDefinition(plugin, config.importer), {
+        permissions: plugin.manifest.permissions,
+      });
       result.registered.push(name);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

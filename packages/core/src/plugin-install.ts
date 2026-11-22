@@ -110,6 +110,8 @@ export interface PluginPackageInfo {
   /** What the running site did with it: absent when it was not loaded. */
   status: PluginInfo['status'] | undefined;
   error: string | undefined;
+  /** HTTP routes the running plugin added under `/api/v1/plugins/<name>/` (empty when it is off). */
+  routes: NonNullable<PluginInfo['routes']>;
 }
 
 export interface BrokenPluginPackage {
@@ -139,6 +141,7 @@ export async function listPluginPackages(options: {
         enabled: enabled.has(manifest.name),
         status: live?.status,
         error: live?.error,
+        routes: live?.routes ?? [],
       };
     }),
     broken: found.errors.map(({ dir, message }) => ({ folder: dir, message })),
