@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BackupApiError,
   checkBackupFile,
+  checkMediaFile,
   describeBackupError,
   fetchBackupLimit,
   importBackup,
+  restoreMedia,
   summarizeBackup,
+  summarizeMediaRestore,
   type BackupSummary,
 } from './backup.js';
 
@@ -38,7 +41,9 @@ const summary = (over: Partial<BackupSummary> = {}): BackupSummary => ({
 describe('fetchBackupLimit', () => {
   it('returns the limit, or null when not allowed or switched off', async () => {
     stubFetch(200, { maxBytes: 1000 });
-    expect(await fetchBackupLimit()).toEqual({ maxBytes: 1000 });
+    expect(await fetchBackupLimit()).toEqual({ maxBytes: 1000, media: false });
+    stubFetch(200, { maxBytes: 1000, media: true });
+    expect(await fetchBackupLimit()).toEqual({ maxBytes: 1000, media: true });
     stubFetch(403);
     expect(await fetchBackupLimit()).toBeNull();
     stubFetch(404);
@@ -101,5 +106,54 @@ describe('summarizeBackup', () => {
       'Also added 1 menu, 3 redirects.',
       'Settings restored: site_title, tagline.',
     ]);
+  });
+});
+
+describe('media restore helpers', () => {
+  it('checks the chosen zip', () => {
+    expect(checkMediaFile({ name: 'media.zip', size: 10 }, 100)).toBeNull();
+    expect(checkMediaFile({ name: 'MEDIA.ZIP', size: 10 }, 100)).toBeNull();
+    expect(checkMediaFile({ name: 'media.json', size: 10 }, 100)).toMatch(/\.zip/);
+    expect(checkMediaFile({ name: 'media.zip', size: 0 }, 100)).toMatch(/empty/);
+    expect(checkMediaFile({ name: 'media.zip', size: 101 }, 100)).toMatch(/too large/);
+  });
+
+  it('posts the zip with the CSRF token and returns the result', async () => {
+    const fn = stubFetch(200, { imported: 2, failed: [] });
+    const result = await restoreMedia(new Blob(['zip']), 'tok');
+    expect(result).toEqual({ imported: 2, failed: [] });
+    const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('/api/v1/backup/media');
+    expect(init.method).toBe('POST');
+    const headers = new Headers(init.headers);
+    expect(headers.get('content-type')).toBe('application/zip');
+    expect(headers.get('x-csrf-token')).toBe('tok');
+  });
+
+  it('turns a refusal into an error carrying the server message', async () => {
+    stubFetch(400, { error: 'invalid_media_backup', message: 'Not a usable zip' });
+    await expect(restoreMedia(new Blob(['x']), 't')).rejects.toMatchObject({
+      status: 400,
+      detail: 'Not a usable zip',
+    });
+  });
+
+  it('summarizes the result', () => {
+    expect(summarizeMediaRestore({ imported: 1, failed: [] })).toEqual(['Restored 1 file.']);
+    expect(
+      summarizeMediaRestore({
+        imported: 3,
+        failed: [{ id: 1, file: 'media/1.png', reason: 'x' }],
+      }),
+    ).toEqual(['Restored 3 files.', '1 file was not restored.']);
+  });
+
+  it('mentions restored theme settings in the summary', () => {
+    expect(
+      summarizeBackup(summary({ themeSettings: { applied: true } })).join(' '),
+    ).toContain('Theme settings restored.');
+    expect(
+      summarizeBackup(summary({ themeSettings: { applied: false, reason: 'x' } })).join(' '),
+    ).not.toContain('Theme settings restored.');
   });
 });

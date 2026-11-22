@@ -17,4 +17,4 @@ The summary gains `menus`, `widgets` and `redirects` counts.
 
 ## Not yet
 
-Uploaded media files and theme settings are not in the backup; that is N65.
+Uploaded media files and theme settings are covered in [backup-media-theme.md](./backup-media-theme.md) (N65).

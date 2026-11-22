@@ -40,7 +40,11 @@ import { cleanSiteUrl, createFeedRoutes, type FeedRoutesOptions } from './feeds.
 import type { Installer } from './installer.js';
 import { securityHeaders, type SecurityHeadersOptions } from './security-headers.js';
 import { createPageCacheMiddleware } from './page-cache.js';
-import { createThemeSettingsRoutes, type ThemeSettingsService } from './theme-settings.js';
+import {
+  backupThemeSettings,
+  createThemeSettingsRoutes,
+  type ThemeSettingsService,
+} from './theme-settings.js';
 import { createSettingsRoutes } from './settings-api.js';
 import {
   createThemeAssetsHandler,
@@ -355,6 +359,15 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           menuLocations: () => Object.keys(options.themes?.service.active?.manifest.menus ?? {}),
           widgetAreas: () =>
             Object.keys(options.themes?.service.active?.manifest.widgetAreas ?? {}),
+          // The customizer values of the active theme go into the backup when both are enabled.
+          ...(options.themeSettings && options.themes
+            ? {
+                themeSettings: backupThemeSettings(
+                  options.themeSettings.service,
+                  options.themes.service,
+                ),
+              }
+            : {}),
           ...options.backup,
         }),
       );

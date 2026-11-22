@@ -3,6 +3,7 @@ import type { ContentService, Content, ContentStatusName } from './content.js';
 import { CONTENT_STATUSES } from './content.js';
 import { silentLogger, type Logger } from './logger.js';
 import type { Menu, MenuItem, MenuService } from './menus.js';
+import { remapBlockMedia } from './backup-media.js';
 import type { RedirectsService } from './redirects.js';
 import type { SettingsService } from './settings.js';
 import type { TaxonomyService } from './taxonomies.js';
@@ -60,6 +61,13 @@ export interface SiteExport {
   widgets?: Record<string, ExportedWidget[]>;
   /** Redirect rules. */
   redirects?: ExportedRedirect[];
+  /** The saved settings of the active theme (the customizer's values). */
+  themeSettings?: ExportedThemeSettings;
+}
+
+export interface ExportedThemeSettings {
+  theme: string;
+  values: Record<string, unknown>;
 }
 
 export interface ExportedMenu {
@@ -79,6 +87,10 @@ export interface ExportedRedirect {
   to: string;
   status: number;
 }
+
+export type ThemeSettingsApplyResult =
+  | { applied: true; keys: string[] }
+  | { applied: false; reason: string };
 
 export interface BackupDeps {
   content: Pick<ContentService, 'list' | 'create' | 'update'>;
@@ -106,6 +118,14 @@ export interface BackupDeps {
   widgetAreas?: () => readonly string[];
   /** Redirect rules: exported, and added on import. */
   redirects?: Pick<RedirectsService, 'list' | 'addMany'>;
+  /**
+   * The customizer values of the active theme. `export` returns them (or `null` without a theme);
+   * `apply` validates them against the active theme's settings and saves what fits.
+   */
+  themeSettings?: {
+    export(): Promise<ExportedThemeSettings | null>;
+    apply(settings: ExportedThemeSettings): Promise<ThemeSettingsApplyResult>;
+  };
   /** Users, only to name the authors in an export. */
   users?: { list(): Promise<Array<{ id: number; email: string; displayName: string }>> };
   logger?: Logger;
@@ -205,6 +225,10 @@ export async function exportSite(deps: BackupDeps): Promise<SiteExport> {
       status: r.status,
     }));
   }
+  if (deps.themeSettings) {
+    const theme = await deps.themeSettings.export();
+    if (theme && Object.keys(theme.values).length > 0) result.themeSettings = theme;
+  }
   return result;
 }
 
@@ -277,6 +301,9 @@ const exportSchema = z.object({
     .array(z.object({ from: text(1000), to: text(4000), status: z.number().int() }))
     .max(10_000)
     .optional(),
+  themeSettings: z
+    .object({ theme: text(100), values: z.record(z.string(), z.unknown()) })
+    .optional(),
 });
 
 type ParsedExport = z.infer<typeof exportSchema>;
@@ -294,6 +321,12 @@ export interface ImportOptions {
   defaultAuthorId?: number | null;
   /** Custom field names to leave out (for example `featured_image` while media is not restored). */
   skipMeta?: string[];
+  /**
+   * Old media id → new media id, from restoring a media zip. When given, `featured_image` and the
+   * `mediaId` of image blocks are pointed at the new files (an id with no entry is left out of the
+   * custom field, or kept in the block, with a warning); `featured_image` is no longer skipped.
+   */
+  mediaMap?: Readonly<Record<string, number>>;
 }
 
 export interface ImportSummary {
@@ -306,6 +339,8 @@ export interface ImportSummary {
   menus: number;
   widgets: number;
   redirects: number;
+  /** Whether the theme settings of the file were applied (absent when the file has none). */
+  themeSettings?: { applied: boolean; reason?: string };
   skipped: Array<{ id: number; title: string; reason: string }>;
   warnings: string[];
 }
@@ -396,6 +431,8 @@ export async function importSite(
   const authorCache = new Map<number, number | null>();
   const ordered = orderParentsFirst(file.content);
   const skipMeta = new Set(options.skipMeta ?? []);
+  const mediaMap = options.mediaMap;
+  let unmappedMedia = 0;
   for (const item of ordered) {
     try {
       let authorId = options.defaultAuthorId ?? null;
@@ -422,7 +459,13 @@ export async function importSite(
           title: item.title,
           slug: item.slug,
           status: item.status,
-          body: item.body as never,
+          body: (mediaMap
+            ? (() => {
+                const mapped = remapBlockMedia(item.body, mediaMap);
+                unmappedMedia += mapped.unmapped;
+                return mapped.blocks;
+              })()
+            : item.body) as never,
           excerpt: item.excerpt,
           authorId,
           parentId,
@@ -436,6 +479,15 @@ export async function importSite(
       const values = Object.fromEntries(
         Object.entries(item.meta).filter(([key]) => !skipMeta.has(key)),
       );
+      if (mediaMap && 'featured_image' in values) {
+        const old = values['featured_image'];
+        const mapped =
+          typeof old === 'number' || typeof old === 'string' ? mediaMap[String(old)] : undefined;
+        if (mapped === undefined) {
+          delete values['featured_image'];
+          unmappedMedia++;
+        } else values['featured_image'] = mapped;
+      }
       if (deps.meta && Object.keys(values).length > 0) await deps.meta.setMeta(created.id, values);
       for (const [taxonomy, slugs] of Object.entries(item.terms)) {
         const ids: number[] = [];
@@ -449,6 +501,12 @@ export async function importSite(
       logger.warn(`Import skipped "${item.title}": ${errorText(error)}`);
       summary.skipped.push({ id: item.id, title: item.title, reason: errorText(error) });
     }
+  }
+
+  if (unmappedMedia > 0) {
+    summary.warnings.push(
+      `${unmappedMedia} image reference(s) point at media that was not restored; they were left out or kept as they were.`,
+    );
   }
 
   // Settings.
@@ -471,6 +529,7 @@ export async function importSite(
   const menuIds = await importMenus(file, deps, summary);
   await importWidgets(file, deps, summary, menuIds);
   await importRedirects(file, deps, summary);
+  await importThemeSettings(file, deps, summary);
   return summary;
 }
 
@@ -593,6 +652,31 @@ async function importRedirects(
   summary.redirects = result.created;
   for (const skipped of result.skipped) {
     summary.warnings.push(`Redirect from "${skipped.from}" skipped: ${skipped.message}`);
+  }
+}
+
+/** The customizer values of the active theme, checked by the theme settings service. */
+async function importThemeSettings(
+  file: ParsedExport,
+  deps: BackupDeps,
+  summary: ImportSummary,
+): Promise<void> {
+  if (!file.themeSettings) return;
+  if (!deps.themeSettings) {
+    summary.warnings.push(
+      'Theme settings in the file were not restored: this site cannot manage theme settings.',
+    );
+    return;
+  }
+  try {
+    const result = await deps.themeSettings.apply(file.themeSettings);
+    summary.themeSettings = result.applied
+      ? { applied: true }
+      : { applied: false, reason: result.reason };
+    if (!result.applied) summary.warnings.push(`Theme settings skipped: ${result.reason}`);
+  } catch (error) {
+    summary.themeSettings = { applied: false, reason: errorText(error) };
+    summary.warnings.push(`Theme settings skipped: ${errorText(error)}`);
   }
 }
 

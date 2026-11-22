@@ -1,4 +1,9 @@
-import type { Capabilities, OptionsService, ThemeService } from '@nodepress/core';
+import type {
+  BackupDeps,
+  Capabilities,
+  OptionsService,
+  ThemeService,
+} from '@nodepress/core';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import type { Auth, AuthEnv } from './auth.js';
@@ -33,6 +38,42 @@ export function describeSettings(schema: Record<string, unknown>): ThemeSettingI
     });
   }
   return out;
+}
+
+/**
+ * How a backup reads and restores the customizer values of the active theme. Restoring only
+ * applies to the same theme and goes through `update`, so every key and value is checked against
+ * the theme's settings first; a file that does not fit changes nothing.
+ */
+export function backupThemeSettings(
+  settings: ThemeSettingsService,
+  themes: Pick<ThemeService, 'active'>,
+): NonNullable<BackupDeps['themeSettings']> {
+  return {
+    async export() {
+      const theme = themes.active;
+      if (!theme) return null;
+      const name = theme.manifest.name;
+      return { theme: name, values: await settings.saved(name, theme.manifest.settings) };
+    },
+    async apply(file) {
+      const theme = themes.active;
+      if (!theme) return { applied: false, reason: 'this site has no active theme' };
+      if (theme.manifest.name !== file.theme) {
+        return {
+          applied: false,
+          reason: `the file is for the theme "${file.theme}", and "${theme.manifest.name}" is active`,
+        };
+      }
+      try {
+        await settings.update(theme.manifest.name, theme.manifest.settings, file.values);
+      } catch (error) {
+        if (error instanceof ThemeSettingsError) return { applied: false, reason: error.message };
+        throw error;
+      }
+      return { applied: true, keys: Object.keys(file.values) };
+    },
+  };
 }
 
 export class ThemeSettingsError extends Error {

@@ -432,6 +432,8 @@ const app = createApp(np, database, {
     widgets: widgetService,
     redirects,
     users,
+    media: { service: media, storage: mediaStorage },
+    options,
     capabilities,
     logger: np.logger.child('backup'),
   },

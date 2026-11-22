@@ -2,11 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import {
   checkBackupFile,
+  checkMediaFile,
   describeBackupError,
   fetchBackupLimit,
   importBackup,
+  restoreMedia,
   summarizeBackup,
+  summarizeMediaRestore,
   type BackupSummary,
+  type MediaRestoreResult,
 } from '../backup.js';
 import { defineScreen } from '../screen-types.js';
 import { sessionQuery } from '../session.js';
@@ -49,6 +53,101 @@ function Result({ summary }: { summary: BackupSummary }) {
               <li key={`${index}-${warning}`}>{warning}</li>
             ))}
           </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MediaRestore({ maxBytes }: { maxBytes: number }) {
+  const queryClient = useQueryClient();
+  const [file, setFile] = useState<File | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [result, setResult] = useState<MediaRestoreResult | null>(null);
+  const run = useMutation({
+    mutationFn: async () => {
+      const session = queryClient.getQueryData(sessionQuery.queryKey);
+      if (!session) throw new Error('signed out');
+      if (!file) throw new Error('no file');
+      return restoreMedia(file, session.csrfToken);
+    },
+    onMutate: () => setResult(null),
+    onSuccess: async (done) => {
+      setResult(done);
+      await queryClient.invalidateQueries({ queryKey: ['media'] });
+    },
+  });
+  return (
+    <section aria-labelledby="backup-media" className="space-y-4 rounded bg-white p-4 shadow">
+      <h2 id="backup-media" className="text-lg font-semibold text-slate-900">
+        Media files
+      </h2>
+      <p className="max-w-2xl text-sm text-slate-700">
+        The uploaded files (originals only; sizes are made again) with their alt text, as a zip. To
+        restore a site, restore the media zip first and then the backup file above, so featured
+        images and images in posts point at the restored files.
+      </p>
+      <a href="/api/v1/backup/media" download className={buttonClass}>
+        Download media zip
+      </a>
+      <form
+        aria-label="Restore media"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (file && !problem) run.mutate();
+        }}
+        className="space-y-3"
+      >
+        <div>
+          <label htmlFor="media-zip-file" className="block text-sm font-medium text-slate-700">
+            Media zip
+          </label>
+          <input
+            id="media-zip-file"
+            type="file"
+            accept=".zip,application/zip"
+            disabled={run.isPending}
+            onChange={(e) => {
+              const chosen = e.target.files?.[0] ?? null;
+              setFile(chosen);
+              setProblem(chosen ? checkMediaFile(chosen, maxBytes) : null);
+              setResult(null);
+            }}
+            className="text-sm"
+          />
+          {problem && (
+            <p role="alert" className="mt-1 text-sm text-red-800">
+              {problem}
+            </p>
+          )}
+        </div>
+        <button
+          type="submit"
+          className={buttonClass}
+          disabled={!file || !!problem || run.isPending}
+        >
+          {run.isPending ? 'Restoring…' : 'Restore media'}
+        </button>
+        {run.isError && (
+          <p role="alert" className="rounded bg-red-50 px-3 py-2 text-sm text-red-800">
+            {describeBackupError(run.error)}
+          </p>
+        )}
+      </form>
+      {result && (
+        <div role="status" aria-label="Media restore result" className="space-y-1 text-sm">
+          {summarizeMediaRestore(result).map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+          {result.failed.length > 0 && (
+            <ul className="list-disc pl-5">
+              {result.failed.map((f) => (
+                <li key={f.id}>
+                  {f.file}: {f.reason}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </section>
@@ -100,8 +199,9 @@ function Backup() {
             </h2>
             <p className="max-w-2xl text-sm text-slate-700">
               One file with all posts and pages (drafts and trash too), their custom fields,
-              categories and tags, the site settings, menus, widgets and redirects. It has no users,
-              passwords or secrets, and no uploaded media files yet.
+              categories and tags, the site settings, the settings of the active theme, menus,
+              widgets and redirects. It has no users, passwords or secrets, and no uploaded media
+              files (see Media files below).
             </p>
             <a href="/api/v1/backup/export" download className={buttonClass}>
               Download backup
@@ -155,6 +255,7 @@ function Backup() {
               </p>
             )}
           </form>
+          {limit.data.media && <MediaRestore maxBytes={maxBytes} />}
         </>
       )}
       {summary && <Result summary={summary} />}
