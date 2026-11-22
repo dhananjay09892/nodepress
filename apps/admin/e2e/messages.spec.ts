@@ -47,7 +47,8 @@ test('a message sent from a page with the contact form shows in the admin', asyn
     .getByRole('link', { name: 'Messages' })
     .click();
   await expect(page.getByRole('heading', { name: 'Messages', level: 1 })).toBeVisible();
-  const row = page.getByRole('row', { name: new RegExp(text) });
+  await expect(page.getByText(text)).toBeVisible();
+  const row = page.getByRole('row').filter({ hasText: text });
   await expect(row).toBeVisible();
   await expect(row).toContainText('Ada Visitor');
   await expect(row).toContainText('ada@example.test');
