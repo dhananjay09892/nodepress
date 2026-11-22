@@ -140,3 +140,86 @@ export function readZip(bytes: Uint8Array, limits: ZipLimits = DEFAULT_ZIP_LIMIT
   }
   return files;
 }
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(data: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const byte of data) crc = (CRC_TABLE[(crc ^ byte) & 0xff] as number) ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+/**
+ * Build a .zip from files, storing them without compression (the media in a backup are already
+ * compressed). Paths are checked with `safeZipPath`; the archive is limited to what the plain
+ * (non-zip64) format can hold. Throws `ZipError`.
+ */
+export function writeZip(files: readonly ZipFile[]): Uint8Array {
+  if (files.length > 0xfffe) throw new ZipError('too many files for a zip archive');
+  const encoder = new TextEncoder();
+  const chunks: Uint8Array[] = [];
+  const central: Uint8Array[] = [];
+  const seen = new Set<string>();
+  let offset = 0;
+  const push = (chunk: Uint8Array) => {
+    chunks.push(chunk);
+    offset += chunk.byteLength;
+  };
+  for (const file of files) {
+    const path = safeZipPath(file.path);
+    if (seen.has(path)) throw new ZipError(`duplicate file name ${JSON.stringify(path)}`);
+    seen.add(path);
+    const name = encoder.encode(path);
+    const crc = crc32(file.data);
+    const localOffset = offset;
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, LOCAL_SIGNATURE, true);
+    local.setUint16(4, 20, true);
+    local.setUint16(6, 0x0800, true); // UTF-8 names
+    local.setUint32(14, crc, true);
+    local.setUint32(18, file.data.byteLength, true);
+    local.setUint32(22, file.data.byteLength, true);
+    local.setUint16(26, name.byteLength, true);
+    push(new Uint8Array(local.buffer));
+    push(name);
+    push(file.data);
+    const header = new DataView(new ArrayBuffer(46));
+    header.setUint32(0, CENTRAL_SIGNATURE, true);
+    header.setUint16(4, 0x031e, true);
+    header.setUint16(6, 20, true);
+    header.setUint16(8, 0x0800, true);
+    header.setUint32(16, crc, true);
+    header.setUint32(20, file.data.byteLength, true);
+    header.setUint32(24, file.data.byteLength, true);
+    header.setUint16(28, name.byteLength, true);
+    header.setUint32(38, (0o100644 << 16) >>> 0, true);
+    header.setUint32(42, localOffset, true);
+    central.push(new Uint8Array(header.buffer), name);
+  }
+  const centralOffset = offset;
+  for (const chunk of central) push(chunk);
+  const centralSize = offset - centralOffset;
+  if (offset > 0xffffffff) throw new ZipError('archive too large for a zip file');
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, EOCD_SIGNATURE, true);
+  end.setUint16(8, files.length, true);
+  end.setUint16(10, files.length, true);
+  end.setUint32(12, centralSize, true);
+  end.setUint32(16, centralOffset, true);
+  push(new Uint8Array(end.buffer));
+  const out = new Uint8Array(offset);
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.byteLength;
+  }
+  return out;
+}
