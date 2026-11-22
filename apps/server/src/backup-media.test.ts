@@ -217,7 +217,7 @@ describe('media zip through /api/v1/backup', () => {
   it('refuses a wrong type, a file that is not a media backup, and non-administrators', async () => {
     const site = await makeSite();
     const admin = await site.signIn();
-    const post = (body: BodyInit, type: string) =>
+    const post = (body: string | Uint8Array, type: string) =>
       site.app.request(`${BASE}/api/v1/backup/media`, {
         method: 'POST',
         headers: { ...admin, 'content-type': type },
