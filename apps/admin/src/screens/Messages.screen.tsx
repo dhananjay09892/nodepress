@@ -24,7 +24,9 @@ function Messages() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-slate-900">Messages</h1>
-      <p className="text-sm text-slate-700">Messages sent through the contact form, newest first.</p>
+      <p className="text-sm text-slate-700">
+        Messages sent through the contact form, newest first.
+      </p>
       {query.isPending && <p className="text-sm text-slate-700">Loading…</p>}
       {query.isError && (
         <p role="alert" className="rounded bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -66,7 +68,10 @@ function Messages() {
                   <td className="whitespace-nowrap px-3 py-2">{formatMessageDate(m.createdAt)}</td>
                   <td className="px-3 py-2">{m.name}</td>
                   <td className="px-3 py-2">
-                    <a className="text-blue-800 underline" href={`mailto:${encodeURIComponent(m.email)}`}>
+                    <a
+                      className="text-blue-800 underline"
+                      href={`mailto:${encodeURIComponent(m.email)}`}
+                    >
                       {m.email}
                     </a>
                   </td>

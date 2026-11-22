@@ -42,7 +42,10 @@ test('a message sent from a page with the contact form shows in the admin', asyn
   await visitor.close();
 
   // The admin lists it.
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Messages' }).click();
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .getByRole('link', { name: 'Messages' })
+    .click();
   await expect(page.getByRole('heading', { name: 'Messages', level: 1 })).toBeVisible();
   const row = page.getByRole('row', { name: new RegExp(text) });
   await expect(row).toBeVisible();
