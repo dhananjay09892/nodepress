@@ -69,6 +69,7 @@ export function checkPluginSql(
   if (statement.includes('--') || statement.includes('/*') || statement.includes('*/')) {
     throw new PluginSqlError('Comments are not allowed in a statement.');
   }
+  // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(statement)) {
     throw new PluginSqlError('Control characters are not allowed in a statement.');
   }
