@@ -355,6 +355,12 @@ export interface TemplateProps {
   widgets?: Record<string, Array<{ id: string; type: string; title?: string; html: string }>>;
   /** The theme's settings: defaults from `theme.json` `settings`, with any overrides applied. */
   settings?: Record<string, unknown>;
+  /**
+   * Address of the stylesheet the theme's `style` template made from `settings`, or unset when
+   * that template does not exist or made no CSS. Link it from `<head>`: the default
+   * Content-Security-Policy blocks inline `<style>` and `style=` attributes.
+   */
+  settingsCssUrl?: string;
   theme: {
     name: string;
     version: string;
@@ -453,6 +459,16 @@ export class ThemeService {
       if (component) return { name, component };
     }
     return undefined;
+  }
+
+  /**
+   * The template of the active theme with exactly this name, or `undefined` when there is none or
+   * it fails to load. Used for templates that are not pages, such as `style`.
+   */
+  async named(name: string): Promise<TemplateComponent | undefined> {
+    const theme = this.active;
+    if (!theme || !Object.hasOwn(theme.templates, name)) return undefined;
+    return this.#load(theme, name);
   }
 
   #load(theme: Theme, name: string): Promise<TemplateComponent | undefined> {

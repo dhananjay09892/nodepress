@@ -11,6 +11,13 @@ async function signIn(page: Page) {
   await expect(page).toHaveURL(/\/admin\/$/);
 }
 
+/** The CSS the front page links for the theme settings ('' when it links none). */
+async function frontCss(page: Page): Promise<string> {
+  const html = await (await page.request.get('/')).text();
+  const href = /href="(\/np\/theme\.css[^"]*)"/.exec(html)?.[1];
+  return href ? await (await page.request.get(href)).text() : '';
+}
+
 test('change the accent color and see it in the live preview, then save and reset', async ({
   page,
 }) => {
@@ -31,14 +38,15 @@ test('change the accent color and see it in the live preview, then save and rese
   await page.getByLabel('Accent color').fill('#aa0000');
   await expect.poll(accentInPreview).toBe('#aa0000');
   // Nothing is saved yet: the public front page still has the default.
-  const front = await page.request.get('/');
-  expect(await front.text()).not.toContain('--link:#aa0000');
+  expect(await frontCss(page)).not.toContain('--link:#aa0000');
 
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('status')).toHaveText('Customizations saved.');
   await page.reload();
   await expect(page.getByLabel('Accent color')).toHaveValue('#aa0000');
-  expect(await (await page.request.get('/')).text()).toContain('--link:#aa0000');
+  expect(await frontCss(page)).toContain('--link:#aa0000');
+  // The CSS is a stylesheet, not an inline <style> (the default policy blocks those).
+  expect(await (await page.request.get('/')).text()).not.toContain('<style');
 
   // Put the default back so other tests see the stock theme.
   await page.getByRole('button', { name: 'Reset to defaults' }).click();

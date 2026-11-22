@@ -1,16 +1,11 @@
-/** The setup wizard page and its script (inline scripts are blocked by the default CSP). */
+/** The setup wizard page, its script and its stylesheet (inline scripts and styles are blocked by the default CSP). */
 
 export const INSTALL_SCRIPT_PATH = '/install/install.js';
+export const INSTALL_STYLE_PATH = '/install/install.css';
 export const MIN_ADMIN_PASSWORD = 10;
 
-export const INSTALL_PAGE = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Set up NodePress</title>
-<style>
+/** The wizard's styles, served from `INSTALL_STYLE_PATH`. */
+export const INSTALL_STYLE = `
   :root { color-scheme: light dark; --bg:#f6f7f9; --card:#fff; --text:#16181d; --muted:#4b5260; --line:#c9cfda; --accent:#2f4fd8; --error:#b3261e; --ok:#1b6e3c; }
   @media (prefers-color-scheme: dark) { :root { --bg:#14161b; --card:#1d2027; --text:#eef0f4; --muted:#aab1be; --line:#3a404c; --accent:#8fa6ff; --error:#ff9d94; --ok:#7fd69e; } }
   * { box-sizing: border-box; }
@@ -32,7 +27,16 @@ export const INSTALL_PAGE = `<!doctype html>
   button.secondary { background:transparent; color:var(--accent); }
   button[disabled] { opacity:.6; cursor:default; }
   [hidden] { display:none !important; }
-</style>
+`;
+
+export const INSTALL_PAGE = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Set up NodePress</title>
+<link rel="stylesheet" href="${INSTALL_STYLE_PATH}">
 </head>
 <body>
 <main>

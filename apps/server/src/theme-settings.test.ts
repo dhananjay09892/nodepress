@@ -57,7 +57,12 @@ beforeEach(async () => {
   );
   await writeFile(
     join(root, 'demo', 'templates', 'index.mjs'),
-    `export default (p) => '<i>' + JSON.stringify(p.settings) + '</i>';`,
+    `export default (p) => '<i>' + JSON.stringify(p.settings) + '</i>' + (p.settingsCssUrl ? '<link rel="stylesheet" href="' + p.settingsCssUrl + '">' : '');`,
+  );
+  // A `style` template turns the settings into a stylesheet (inline styles are blocked by the CSP).
+  await writeFile(
+    join(root, 'demo', 'templates', 'style.mjs'),
+    `export default (p) => p.settings.accent === '#0b5cad' ? '' : ':root{--accent:' + p.settings.accent + '}';`,
   );
 
   database = createDatabase({ url: ':memory:' });
@@ -251,5 +256,51 @@ describe('preview with ?np_preview', () => {
     expect(shown(await big.text())).toEqual({ accent: '#0b5cad', layout: 'blog' });
     const array = await preview([1], { cookie: admin.cookie });
     expect(shown(await array.text())).toEqual({ accent: '#0b5cad', layout: 'blog' });
+  });
+});
+
+describe('the stylesheet made from the settings', () => {
+  const cssUrl = (html: string) => /href="(\/np\/theme\.css[^"]*)"/.exec(html)?.[1];
+
+  it('adds no link while the settings make no CSS', async () => {
+    const html = await (await app.request(`${BASE}/`)).text();
+    expect(cssUrl(html)).toBeUndefined();
+    const css = await app.request(`${BASE}/np/theme.css`);
+    expect(css.status).toBe(200);
+    expect(css.headers.get('content-type')).toContain('text/css');
+    expect(await css.text()).toBe('');
+  });
+
+  it('links a stylesheet whose address changes with its content and serves the CSS', async () => {
+    await settings.update('demo', themes.active!.manifest.settings, { accent: '#aa0000' });
+    const first = cssUrl(await (await app.request(`${BASE}/`)).text());
+    expect(first).toMatch(/^\/np\/theme\.css\?v=[0-9a-f]{12}$/);
+    const res = await app.request(`${BASE}${first}`);
+    expect(res.headers.get('content-type')).toContain('text/css');
+    expect(res.headers.get('cache-control')).toBe('public, max-age=3600');
+    expect(await res.text()).toBe(':root{--accent:#aa0000}');
+
+    await settings.update('demo', themes.active!.manifest.settings, { accent: '#00aa00' });
+    const second = cssUrl(await (await app.request(`${BASE}/`)).text());
+    expect(second).not.toBe(first);
+    expect(await (await app.request(`${BASE}${second}`)).text()).toBe(':root{--accent:#00aa00}');
+  });
+
+  it('serves unsaved values only to someone who may edit theme options, and never caches them', async () => {
+    const admin = await signIn('admin');
+    const editor = await signIn('editor');
+    const url = `${BASE}/np/theme.css?np_preview=${encodeURIComponent(JSON.stringify({ accent: '#123456' }))}`;
+    const forAdmin = await app.request(url, { headers: { cookie: admin.cookie } });
+    expect(forAdmin.headers.get('cache-control')).toBe('no-store');
+    expect(await forAdmin.text()).toBe(':root{--accent:#123456}');
+    for (const headers of [{}, { cookie: editor.cookie }]) {
+      expect(await (await app.request(url, { headers })).text()).toBe('');
+    }
+    // The preview page links the preview stylesheet so the frame shows the unsaved look.
+    const page = await app.request(
+      `${BASE}/?np_preview=${encodeURIComponent(JSON.stringify({ accent: '#123456' }))}`,
+      { headers: { cookie: admin.cookie } },
+    );
+    expect(cssUrl(await page.text())).toContain('np_preview=');
   });
 });

@@ -269,7 +269,7 @@ const contactForm: BlockDefinition = {
         'Message',
         `<textarea id="${id}-message" name="message" rows="6" required maxlength="5000" ${describe('message')}></textarea>`,
       ) +
-      `<p class="np-field-trap" aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">` +
+      `<p class="np-field-trap" aria-hidden="true" hidden>` +
       `<label for="${id}-website">Leave this field empty</label>` +
       `<input id="${id}-website" name="website" type="text" tabindex="-1" autocomplete="off"></p>` +
       `<p class="np-contact-actions"><button type="submit" class="np-button np-button-fill">${escapeHtml(label)}</button></p>` +

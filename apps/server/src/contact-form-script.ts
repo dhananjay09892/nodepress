@@ -19,6 +19,14 @@ export const CONTACT_FORM_SCRIPT = `(function () {
     var token = null;
     var issuedAt = 0;
 
+    // The honeypot is in the markup with the hidden attribute (a style attribute would be blocked
+    // by the Content-Security-Policy); with the script running it is moved off screen instead.
+    var trap = form.querySelector('.np-field-trap');
+    if (trap) {
+      trap.hidden = false;
+      trap.style.cssText = 'position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden';
+    }
+
     function fetchToken() {
       return fetch('/api/v1/contact/token', { headers: { accept: 'application/json' } })
         .then(function (r) { return r.json(); })
