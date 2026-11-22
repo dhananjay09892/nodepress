@@ -85,7 +85,7 @@ CREATE INDEX example_notes_items_owner ON example_notes_items (owner_id);
 Routes are added in `setup` and appear under `/api/v1/plugins/example-notes/`. Each names the capability a caller needs; the server answers 401 or 403 before your handler runs.
 
 ```ts title="plugins/example-notes/src/index.ts"
-    routes.add({ method: 'GET', path: '/notes', capability: 'edit_posts', handler: handlers.list });
+routes.add({ method: 'GET', path: '/notes', capability: 'edit_posts', handler: handlers.list });
 ```
 
 ### Database access
@@ -93,10 +93,10 @@ Routes are added in `setup` and appear under `/api/v1/plugins/example-notes/`. E
 `context.db` takes one statement with `?` placeholders and a list of values. Values never become part of the SQL text, and the statement may only name the plugin's own tables. String literals and quotes are not allowed in the statement, so pass text as values.
 
 ```ts title="plugins/example-notes/src/index.ts"
-    await db.execute('DELETE FROM example_notes_items WHERE id = ? AND owner_id = ?', [
-      id,
-      owner(request),
-    ]);
+await db.execute('DELETE FROM example_notes_items WHERE id = ? AND owner_id = ?', [
+  id,
+  owner(request),
+]);
 ```
 
 ### Try it

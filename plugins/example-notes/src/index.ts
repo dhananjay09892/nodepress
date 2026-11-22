@@ -9,7 +9,9 @@ import {
 export const MAX_NOTE_LENGTH = 500;
 
 /** Check the JSON body of a "new note" request: `{ "body": "text" }`. */
-export function parseNote(input: unknown): { ok: true; body: string } | { ok: false; message: string } {
+export function parseNote(
+  input: unknown,
+): { ok: true; body: string } | { ok: false; message: string } {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     return { ok: false, message: 'Send a JSON object like {"body": "text"}.' };
   }
@@ -41,11 +43,10 @@ export function createHandlers(db: PluginDatabase) {
   const create: PluginRouteHandler = async (request) => {
     const note = parseNote(await request.json());
     if (!note.ok) return { status: 400, json: { error: 'invalid_request', message: note.message } };
-    await db.execute('INSERT INTO example_notes_items (owner_id, body, created_at) VALUES (?, ?, ?)', [
-      owner(request),
-      note.body,
-      new Date().toISOString(),
-    ]);
+    await db.execute(
+      'INSERT INTO example_notes_items (owner_id, body, created_at) VALUES (?, ?, ?)',
+      [owner(request), note.body, new Date().toISOString()],
+    );
     return { status: 201, json: { ok: true } };
   };
 
@@ -76,7 +77,12 @@ export default definePlugin({
     // `edit_posts` is held by authors, editors and administrators; the server answers 401 or 403
     // before these handlers run.
     routes.add({ method: 'GET', path: '/notes', capability: 'edit_posts', handler: handlers.list });
-    routes.add({ method: 'POST', path: '/notes', capability: 'edit_posts', handler: handlers.create });
+    routes.add({
+      method: 'POST',
+      path: '/notes',
+      capability: 'edit_posts',
+      handler: handlers.create,
+    });
     routes.add({
       method: 'DELETE',
       path: '/notes/:id',

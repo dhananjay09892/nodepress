@@ -4,10 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
-const guide = readFileSync(
-  resolve(root, 'apps/docs/src/content/docs/guides/plugins.md'),
-  'utf8',
-);
+const guide = readFileSync(resolve(root, 'apps/docs/src/content/docs/guides/plugins.md'), 'utf8');
 
 /** Code fences with a `title="path"`: their text must be an exact excerpt of that file. */
 function titledBlocks(markdown: string): Array<{ path: string; code: string }> {

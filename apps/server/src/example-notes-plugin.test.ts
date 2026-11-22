@@ -81,9 +81,13 @@ describe('the example-notes plugin', () => {
     const listed = (await call(manager, 'GET', '/notes', 1)).json as { notes: { id: number }[] };
     const id = listed.notes[0]!.id;
     expect((await call(manager, 'DELETE', `/notes/${id}`, 2)).status).toBe(204);
-    expect(((await call(manager, 'GET', '/notes', 1)).json as { notes: unknown[] }).notes).toHaveLength(1);
+    expect(
+      ((await call(manager, 'GET', '/notes', 1)).json as { notes: unknown[] }).notes,
+    ).toHaveLength(1);
     await call(manager, 'DELETE', `/notes/${id}`, 1);
-    expect(((await call(manager, 'GET', '/notes', 1)).json as { notes: unknown[] }).notes).toHaveLength(0);
+    expect(
+      ((await call(manager, 'GET', '/notes', 1)).json as { notes: unknown[] }).notes,
+    ).toHaveLength(0);
   });
 
   it('adds no routes without the database permission', async () => {
