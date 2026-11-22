@@ -78,10 +78,9 @@ test('the public front page and the contact form run without violations', async 
   await page.goto(`/${slug}`);
   await expect(page.getByLabel('Name')).toBeVisible();
   await page.waitForLoadState('networkidle');
-  // The honeypot is moved off screen by the script, not hidden by a style attribute.
+  // The honeypot is moved off screen by the script (CSSOM is allowed), not by markup.
   const trap = page.locator('.np-field-trap');
   await expect(trap).not.toHaveAttribute('hidden', /.*/);
-  expect(await trap.evaluate((el) => el.getAttribute('style'))).toBeNull();
   expect(await trap.evaluate((el) => (el as HTMLElement).style.left)).toBe('-10000px');
 
   expect(violations).toEqual([]);
