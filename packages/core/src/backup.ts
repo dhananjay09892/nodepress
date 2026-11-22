@@ -89,8 +89,7 @@ export interface ExportedRedirect {
 }
 
 export type ThemeSettingsApplyResult =
-  | { applied: true; keys: string[] }
-  | { applied: false; reason: string };
+  { applied: true; keys: string[] } | { applied: false; reason: string };
 
 export interface BackupDeps {
   content: Pick<ContentService, 'list' | 'create' | 'update'>;

@@ -67,7 +67,9 @@ export function createBackupRoutes(auth: Auth, options: BackupRoutesOptions): Ho
   });
 
   // For the admin screen: whether the user may use backups, and the largest file an import takes.
-  routes.get('/', (c) => c.json({ maxBytes: MAX_EXPORT_BYTES, media: options.media !== undefined }));
+  routes.get('/', (c) =>
+    c.json({ maxBytes: MAX_EXPORT_BYTES, media: options.media !== undefined }),
+  );
 
   routes.get('/media', async (c) => {
     if (!options.media) return c.json({ error: 'not_found' }, 404);
@@ -104,7 +106,8 @@ export function createBackupRoutes(auth: Auth, options: BackupRoutesOptions): Ho
           },
           { uploadedBy: c.get('principal')!.user.id },
         );
-        if (options.options) await options.options.set(BACKUP_MEDIA_MAP_OPTION, summary.idMap, { autoload: false });
+        if (options.options)
+          await options.options.set(BACKUP_MEDIA_MAP_OPTION, summary.idMap, { autoload: false });
         return c.json({ imported: summary.imported, failed: summary.failed });
       } catch (error) {
         if (error instanceof MediaBackupError) {

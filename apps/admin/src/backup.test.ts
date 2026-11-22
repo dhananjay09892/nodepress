@@ -149,9 +149,9 @@ describe('media restore helpers', () => {
   });
 
   it('mentions restored theme settings in the summary', () => {
-    expect(
-      summarizeBackup(summary({ themeSettings: { applied: true } })).join(' '),
-    ).toContain('Theme settings restored.');
+    expect(summarizeBackup(summary({ themeSettings: { applied: true } })).join(' ')).toContain(
+      'Theme settings restored.',
+    );
     expect(
       summarizeBackup(summary({ themeSettings: { applied: false, reason: 'x' } })).join(' '),
     ).not.toContain('Theme settings restored.');

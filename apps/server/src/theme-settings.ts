@@ -1,9 +1,4 @@
-import type {
-  BackupDeps,
-  Capabilities,
-  OptionsService,
-  ThemeService,
-} from '@nodepress/core';
+import type { BackupDeps, Capabilities, OptionsService, ThemeService } from '@nodepress/core';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import type { Auth, AuthEnv } from './auth.js';

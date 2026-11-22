@@ -50,7 +50,12 @@ export interface MediaExportResult {
 function extensionOf(path: string): string {
   const leaf = path.split('/').pop() ?? '';
   const dot = leaf.lastIndexOf('.');
-  return dot > 0 ? leaf.slice(dot).toLowerCase().replace(/[^a-z0-9.]/g, '') : '';
+  return dot > 0
+    ? leaf
+        .slice(dot)
+        .toLowerCase()
+        .replace(/[^a-z0-9.]/g, '')
+    : '';
 }
 
 /**
