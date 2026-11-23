@@ -54,7 +54,7 @@ A plugin is a GitHub repository; installing means giving `owner/repo`, and the s
 - Review workload: none unless combined with a list.
 - Offline installs: same as an upload once the asset is downloaded.
 - Fit with N28: the permissions are inside the asset, so the same review-after-download problem as B, though a small `plugin.json` can also be fetched raw.
-- Best as a *source* behind another index (the index entry points at a release asset) rather than as the registry itself.
+- Best as a _source_ behind another index (the index entry points at a release asset) rather than as the registry itself.
 
 ### Option D: A hosted NodePress registry service
 
@@ -69,14 +69,14 @@ An API with accounts, publishing, search, ratings, download counts, automated ch
 
 ## Trade-off summary
 
-| | A: static index | B: npm | C: GitHub releases | D: hosted service |
-| --- | --- | --- | --- | --- |
-| Reviewed listings | yes (pull requests) | no | no | yes (queue) |
-| Integrity | SHA-256 and optional signature | npm signatures, provenance | checksum file | server-side signing |
-| Permissions visible before download | yes | no | partly | yes |
-| Running cost | about zero | none | none | real |
-| Works offline or private | yes (mirror the files) | with a mirror | after download | needs mirror |
-| Build effort | small | medium (and install-time risk) | small | large |
+|                                     | A: static index                | B: npm                         | C: GitHub releases | D: hosted service   |
+| ----------------------------------- | ------------------------------ | ------------------------------ | ------------------ | ------------------- |
+| Reviewed listings                   | yes (pull requests)            | no                             | no                 | yes (queue)         |
+| Integrity                           | SHA-256 and optional signature | npm signatures, provenance     | checksum file      | server-side signing |
+| Permissions visible before download | yes                            | no                             | partly             | yes                 |
+| Running cost                        | about zero                     | none                           | none               | real                |
+| Works offline or private            | yes (mirror the files)         | with a mirror                  | after download     | needs mirror        |
+| Build effort                        | small                          | medium (and install-time risk) | small              | large               |
 
 ## Recommendation
 
