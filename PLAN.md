@@ -266,7 +266,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 ### Phase 4: Plugin system (weeks 15–18)
 
 - [ ] Plugin manifest, loader, lifecycle, plugin migrations — packages with `plugin.json`, discovery, enabled state in the `plugins` table and SQL migrations done (N27); activation from the admin comes with N28
-- [ ] Install/activate/deactivate from admin (upload .zip or from registry) — admin Plugins screen with .zip upload, permission review and enable/disable done (N28); installing from a registry is not built
+- [ ] Install/activate/deactivate from admin (upload .zip or from registry) — admin Plugins screen with .zip upload, permission review and enable/disable done (N28); installing from a registry is not built (options in ADR 0003, build task N77)
 - [x] `nodepress` CLI and plugin scaffolder — `@nodepress/cli` has `migrate`, `dev`, `plugin create|check|pack` and `theme create` (N29)
 - [x] First-party plugin: SEO (N30)
 - [x] First-party plugin: Contact Form (service and API N31; block and SMTP N56; Messages screen N64)
