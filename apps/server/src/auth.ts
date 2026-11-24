@@ -327,7 +327,8 @@ function originAllowed(c: Context<AuthEnv>, origin: string, allowed: Set<string>
   return parsed.host.toLowerCase() === host.toLowerCase();
 }
 
-function clientIp(c: Context<AuthEnv>, trustProxy: boolean): string {
+/** The address a request came from; `X-Forwarded-For` counts only when the proxy is trusted. */
+export function clientIp(c: Context<AuthEnv>, trustProxy: boolean): string {
   if (trustProxy) {
     const forwarded = c.req.header('x-forwarded-for')?.split(',').pop()?.trim();
     if (forwarded) return forwarded;

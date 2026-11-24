@@ -115,10 +115,29 @@ async function makeSite() {
       },
     }),
   });
+  registry.add('shop', {
+    method: 'GET',
+    path: '/image',
+    capability: 'public',
+    handler: () => ({ bytes: Uint8Array.from([71, 73, 70]), headers: { 'Content-Type': 'image/gif' } }),
+  });
+  registry.add('shop', {
+    method: 'GET',
+    path: '/script.js',
+    capability: 'public',
+    handler: () => ({ text: 'ok();', headers: { 'Content-Type': 'text/javascript' } }),
+  });
+  registry.add('shop', {
+    method: 'GET',
+    path: '/who',
+    capability: 'public',
+    handler: ({ clientIp, headers }) => ({ json: { clientIp, host: headers['host'] } }),
+  });
   const app = createApp(np, database, {
     auth: { users, sessions, apiTokens },
     pluginRoutes: {
       registry,
+      trustProxy: true,
       capabilities: createCapabilities(np.hooks),
       timeoutMs: 50,
     },
@@ -222,5 +241,21 @@ describe('routes added by plugins', () => {
     expect((await app.request(`${BASE}/api/v1/plugins/other/hello`)).status).toBe(404);
     registry.removeAllFromSource('shop');
     expect((await app.request(url('/hello'))).status).toBe(404);
+  });
+
+  it('lets a plugin answer with bytes or a script and choose the content type', async () => {
+    const { app } = await makeSite();
+    const image = await app.request(url('/image'));
+    expect(image.headers.get('content-type')).toBe('image/gif');
+    expect(new Uint8Array(await image.arrayBuffer())).toEqual(Uint8Array.from([71, 73, 70]));
+    const script = await app.request(url('/script.js'));
+    expect(script.headers.get('content-type')).toBe('text/javascript');
+    expect(await script.text()).toBe('ok();');
+  });
+
+  it('tells the handler the client address (from the proxy header when trusted) and host', async () => {
+    const { app } = await makeSite();
+    const res = await app.request(url('/who'), { headers: { 'x-forwarded-for': '198.51.100.9' } });
+    expect(await res.json()).toEqual({ clientIp: '198.51.100.9', host: 'localhost' });
   });
 });

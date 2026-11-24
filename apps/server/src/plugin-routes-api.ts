@@ -7,7 +7,7 @@ import {
   type PluginRouteResponse,
 } from '@nodepress/core';
 import { Hono, type Context } from 'hono';
-import type { Auth, AuthEnv } from './auth.js';
+import { clientIp, type Auth, type AuthEnv } from './auth.js';
 
 export interface PluginRoutesApiOptions {
   registry: Pick<PluginRouteRegistry, 'match'>;
@@ -15,6 +15,8 @@ export interface PluginRoutesApiOptions {
   logger?: Logger;
   /** Longest a handler may run before the request answers 504. Default 30 s. */
   timeoutMs?: number;
+  /** Believe `X-Forwarded-For` for `request.clientIp` (set when a trusted proxy is in front). */
+  trustProxy?: boolean;
 }
 
 /** Largest request body a plugin route reads. */
@@ -84,6 +86,7 @@ export function createPluginRouteDispatcher(
     c.req.raw.headers.forEach((value, key) => {
       headers[key.toLowerCase()] = value;
     });
+    headers['host'] ??= new URL(c.req.url).host;
     const query: Record<string, string> = {};
     for (const [key, value] of new URL(c.req.url).searchParams) query[key] ??= value;
 
@@ -95,6 +98,7 @@ export function createPluginRouteDispatcher(
       query,
       headers,
       user,
+      clientIp: clientIp(c, options.trustProxy ?? false),
       json: () => {
         parsed ??= (async () => {
           const text = await c.req.text();
@@ -159,7 +163,14 @@ function respond(c: Context<AuthEnv>, result: PluginRouteResponse): Response {
   if (!c.res.headers.has('cache-control')) c.header('Cache-Control', 'no-store');
   if (result.json !== undefined) return c.json(result.json as never, status);
   if (result.text !== undefined) {
-    return c.body(result.text, status, { 'Content-Type': 'text/plain; charset=utf-8' });
+    const type = c.res.headers.get('content-type');
+    return c.body(result.text, status, { 'Content-Type': type ?? 'text/plain; charset=utf-8' });
+  }
+  if (result.bytes instanceof Uint8Array) {
+    const type = c.res.headers.get('content-type');
+    return c.body(result.bytes as unknown as ArrayBuffer, status, {
+      'Content-Type': type ?? 'application/octet-stream',
+    });
   }
   return c.body(null, status === 200 ? 204 : status);
 }
