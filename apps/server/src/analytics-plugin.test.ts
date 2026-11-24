@@ -105,7 +105,10 @@ async function login(name: string) {
   return { cookie: (res.headers.get('set-cookie') ?? '').split(';')[0]! };
 }
 
-function hit(path: string, init: { agent?: string; referrer?: string; headers?: Record<string, string> } = {}) {
+function hit(
+  path: string,
+  init: { agent?: string; referrer?: string; headers?: Record<string, string> } = {},
+) {
   const query = new URLSearchParams({ p: path });
   if (init.referrer) query.set('r', init.referrer);
   return app.request(`${API}/hit.gif?${query}`, {
@@ -173,9 +176,7 @@ describe('counting', () => {
     await hit('/one-too-many');
     const { body } = await summary();
     expect(body.pages.some((p) => p.path === '/other')).toBe(true);
-    expect(body.pages.some((p) => p.path === '/one-too-many')).toBe(
-      false,
-    );
+    expect(body.pages.some((p) => p.path === '/one-too-many')).toBe(false);
   });
 });
 
@@ -187,7 +188,9 @@ describe('who is not counted', () => {
   });
 
   it('skips bots and requests without a user agent', async () => {
-    await hit('/a', { agent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' });
+    await hit('/a', {
+      agent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    });
     await hit('/a', { agent: 'curl/8.5.0' });
     await hit('/a', { agent: '' });
     expect((await summary()).body.totals).toEqual({ views: 0, visitors: 0 });
@@ -211,16 +214,18 @@ describe('privacy: nothing identifying is stored or set', () => {
     const res = await hit('/a', { headers: { 'x-forwarded-for': IP, referer: `${BASE}/a` } });
     expect(res.headers.get('set-cookie')).toBeNull();
     // A request that really carries an address (the server fills it in when it trusts its proxy).
-    const beacon = await np.plugins.routes.match('analytics', 'GET', '/hit.gif')!.definition.handler({
-      method: 'GET',
-      path: '/hit.gif',
-      params: {},
-      query: { p: '/a' },
-      headers: { 'user-agent': CHROME, host: 'blog.test' },
-      user: null,
-      clientIp: IP,
-      json: async () => null,
-    });
+    const beacon = await np.plugins.routes
+      .match('analytics', 'GET', '/hit.gif')!
+      .definition.handler({
+        method: 'GET',
+        path: '/hit.gif',
+        params: {},
+        query: { p: '/a' },
+        headers: { 'user-agent': CHROME, host: 'blog.test' },
+        user: null,
+        clientIp: IP,
+        json: async () => null,
+      });
     expect(beacon.headers?.['Set-Cookie']).toBeUndefined();
     const runner = createParameterizedRunner(database);
     const dump = JSON.stringify([
@@ -258,7 +263,9 @@ describe('privacy: nothing identifying is stored or set', () => {
     // The pruning job is scheduled a minute after start.
     now = new Date(now.getTime() + 61_000);
     await jobs.runDue();
-    const days = (await runner.query('SELECT day FROM analytics_visitors', [])).map((r) => r['day']);
+    const days = (await runner.query('SELECT day FROM analytics_visitors', [])).map(
+      (r) => r['day'],
+    );
     expect(days).toEqual([today()]);
   });
 });
@@ -299,19 +306,22 @@ describe('retention', () => {
     const old = new Date(now.getTime() - 120 * 86_400_000).toISOString().slice(0, 10);
     const recent = new Date(now.getTime() - 10 * 86_400_000).toISOString().slice(0, 10);
     for (const day of [old, recent]) {
-      await runner.execute('INSERT INTO analytics_views (day, path, referrer, views) VALUES (?, ?, ?, ?)', [day, '/a', '', 3]);
+      await runner.execute(
+        'INSERT INTO analytics_views (day, path, referrer, views) VALUES (?, ?, ?, ?)',
+        [day, '/a', '', 3],
+      );
       await runner.execute('INSERT INTO analytics_days (day, visitors) VALUES (?, ?)', [day, 2]);
     }
     await np.admin.writePanel('analytics', 'settings', 'retention', { retention_days: 30 });
     // The job is scheduled a minute after start; run it once.
     now = new Date(now.getTime() + 61_000);
     await jobs.runDue();
-    expect((await runner.query('SELECT day FROM analytics_views', [])).map((r) => r['day'])).toEqual([
-      recent,
-    ]);
-    expect((await runner.query('SELECT day FROM analytics_days', [])).map((r) => r['day'])).toEqual([
-      recent,
-    ]);
+    expect(
+      (await runner.query('SELECT day FROM analytics_views', [])).map((r) => r['day']),
+    ).toEqual([recent]);
+    expect((await runner.query('SELECT day FROM analytics_days', [])).map((r) => r['day'])).toEqual(
+      [recent],
+    );
   });
 
   it('defaults to 90 days', async () => {
@@ -319,23 +329,24 @@ describe('retention', () => {
     const eighty = new Date(now.getTime() - 80 * 86_400_000).toISOString().slice(0, 10);
     const hundred = new Date(now.getTime() - 100 * 86_400_000).toISOString().slice(0, 10);
     for (const day of [eighty, hundred]) {
-      await runner.execute('INSERT INTO analytics_views (day, path, referrer, views) VALUES (?, ?, ?, ?)', [day, '/a', '', 1]);
+      await runner.execute(
+        'INSERT INTO analytics_views (day, path, referrer, views) VALUES (?, ?, ?, ?)',
+        [day, '/a', '', 1],
+      );
     }
     now = new Date(now.getTime() + 61_000);
     await jobs.runDue();
-    expect((await runner.query('SELECT day FROM analytics_views', [])).map((r) => r['day'])).toEqual([
-      eighty,
-    ]);
+    expect(
+      (await runner.query('SELECT day FROM analytics_views', [])).map((r) => r['day']),
+    ).toEqual([eighty]);
   });
 });
 
 describe('the pages', () => {
   it('adds the script and the pixel fallback to rendered pages, not to the admin', async () => {
-    const page = await np.hooks.applyFilters(
-      'render:html',
-      '<html><body><p>Hi</p></body></html>',
-      { path: '/hello/' },
-    );
+    const page = await np.hooks.applyFilters('render:html', '<html><body><p>Hi</p></body></html>', {
+      path: '/hello/',
+    });
     expect(page).toContain('<script src="/api/v1/plugins/analytics/script.js" defer></script>');
     expect(page).toContain('hit.gif?p=%2Fhello');
     expect(page.indexOf('script.js')).toBeLessThan(page.indexOf('</body>'));

@@ -86,7 +86,13 @@ export class DailySalt {
 
 /** A hash of salt, address and browser that is only ever stored under the day it was made on. */
 export function hashVisitor(salt: Buffer, ip: string, userAgent: string): string {
-  return createHash('sha256').update(salt).update('\0').update(ip).update('\0').update(userAgent).digest('hex');
+  return createHash('sha256')
+    .update(salt)
+    .update('\0')
+    .update(ip)
+    .update('\0')
+    .update(userAgent)
+    .digest('hex');
 }
 
 // ── What is counted ─────────────────────────────────────────────────────────────────────────
@@ -119,7 +125,10 @@ export function referrerHost(value: unknown, siteHost: string | undefined): stri
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
   const host = url.hostname.toLowerCase().replace(/^www\./, '');
-  const own = (siteHost ?? '').toLowerCase().replace(/:\d+$/, '').replace(/^www\./, '');
+  const own = (siteHost ?? '')
+    .toLowerCase()
+    .replace(/:\d+$/, '')
+    .replace(/^www\./, '');
   if (host === '' || host.length > 100 || host === own) return '';
   return host;
 }
@@ -189,10 +198,10 @@ export function createAnalytics(
         [day, path, referrer, 1],
       );
 
-      const seen = await db.query('SELECT visitor FROM analytics_visitors WHERE day = ? AND visitor = ?', [
-        day,
-        visitor,
-      ]);
+      const seen = await db.query(
+        'SELECT visitor FROM analytics_visitors WHERE day = ? AND visitor = ?',
+        [day, visitor],
+      );
       if (seen.length === 0) {
         await db.execute(
           'INSERT INTO analytics_visitors (day, visitor) VALUES (?, ?) ON CONFLICT (day, visitor) DO NOTHING',

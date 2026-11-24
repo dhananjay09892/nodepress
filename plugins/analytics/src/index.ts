@@ -127,7 +127,10 @@ export default definePlugin({
       capability: 'public',
       handler: async (request) => {
         await hit(request);
-        return { bytes: PIXEL, headers: { 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' } };
+        return {
+          bytes: PIXEL,
+          headers: { 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' },
+        };
       },
     });
     routes.add({
@@ -160,10 +163,17 @@ export default definePlugin({
         const to = query['to'] === undefined ? today : parseDay(query['to']);
         const from = query['from'] === undefined ? undefined : parseDay(query['from']);
         if (to === undefined || (query['from'] !== undefined && from === undefined)) {
-          return { status: 400, json: { error: 'invalid_range', message: 'Use dates like 2026-11-24.' } };
+          return {
+            status: 400,
+            json: { error: 'invalid_range', message: 'Use dates like 2026-11-24.' },
+          };
         }
         const start = from ?? shiftDay(to, 29);
-        if (start > to || Date.parse(`${to}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`) > (MAX_RANGE_DAYS - 1) * DAY_MS) {
+        if (
+          start > to ||
+          Date.parse(`${to}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`) >
+            (MAX_RANGE_DAYS - 1) * DAY_MS
+        ) {
           return {
             status: 400,
             json: {

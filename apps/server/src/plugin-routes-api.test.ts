@@ -119,7 +119,10 @@ async function makeSite() {
     method: 'GET',
     path: '/image',
     capability: 'public',
-    handler: () => ({ bytes: Uint8Array.from([71, 73, 70]), headers: { 'Content-Type': 'image/gif' } }),
+    handler: () => ({
+      bytes: Uint8Array.from([71, 73, 70]),
+      headers: { 'Content-Type': 'image/gif' },
+    }),
   });
   registry.add('shop', {
     method: 'GET',

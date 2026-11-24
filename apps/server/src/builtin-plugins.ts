@@ -36,7 +36,8 @@ export async function registerBuiltInDatabasePlugins(options: {
       runner: options.runner,
       options: options.options,
     });
-    if (applied.length > 0) options.logger.info(`Plugin "analytics": applied ${applied.join(', ')}`);
+    if (applied.length > 0)
+      options.logger.info(`Plugin "analytics": applied ${applied.join(', ')}`);
     options.plugins.register(analyticsPlugin, { permissions: manifest.permissions });
     registered.push(manifest.name);
   } catch (error) {

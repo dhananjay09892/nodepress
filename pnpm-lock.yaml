@@ -110,6 +110,9 @@ importers:
       '@nodepress/editor':
         specifier: workspace:*
         version: link:../../packages/editor
+      '@nodepress/plugin-analytics':
+        specifier: workspace:*
+        version: link:../../plugins/analytics
       '@nodepress/plugin-hello':
         specifier: workspace:*
         version: link:../../plugins/hello-nodepress
@@ -199,6 +202,12 @@ importers:
       '@nodepress/core':
         specifier: workspace:*
         version: link:../core
+
+  plugins/analytics:
+    dependencies:
+      '@nodepress/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
 
   plugins/hello-nodepress:
     dependencies:
