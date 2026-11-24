@@ -55,6 +55,7 @@ import {
 import helloPlugin from '@nodepress/plugin-hello';
 import seoPlugin from '@nodepress/plugin-seo';
 import { createApp } from './app.js';
+import { registerBuiltInDatabasePlugins } from './builtin-plugins.js';
 import { createBodyRenderer } from './body.js';
 import { createInstaller, type Installer } from './installer.js';
 import { createMailFromEnv } from './mail-setup.js';
@@ -96,6 +97,13 @@ const pluginsDir =
 const pluginState = new PluginStateService(createPluginsStore(database));
 // Plugins that declare the `database` permission get parameterized queries on their own tables.
 np.plugins.useDatabase(createParameterizedRunner(database));
+// Built-in plugins with their own tables (analytics) migrate first and register only on success.
+await registerBuiltInDatabasePlugins({
+  plugins: np.plugins,
+  runner: createSqlRunner(database),
+  options,
+  logger: np.logger.child('plugins'),
+});
 let loadedPackages: string[] = [];
 try {
   await cleanIncomingFolders(pluginsDir);
@@ -448,6 +456,7 @@ const app = createApp(np, database, {
     registry: np.plugins.routes,
     capabilities,
     logger: np.logger.child('plugin-routes'),
+    trustProxy: process.env.TRUST_PROXY === 'true',
   },
   plugins: {
     dir: pluginsDir,

@@ -1,0 +1,8 @@
+{
+  "name": "analytics",
+  "version": "0.0.0",
+  "title": "Analytics",
+  "description": "Privacy-friendly page view and visitor counts: no cookies, no IP addresses stored.",
+  "permissions": ["database", "jobs", "admin"],
+  "entry": "dist/index.js"
+}

@@ -19,15 +19,26 @@ export interface PluginRouteRequest {
   headers: Readonly<Record<string, string>>;
   /** The signed-in user, or `null` on a `public` route without credentials. */
   user: { id: number; email: string; role: string } | null;
+  /**
+   * The address the request came from (the proxy's `X-Forwarded-For` only when the site trusts its
+   * proxy), or `'unknown'`. Use it for decisions made on the spot, such as a hash that is thrown
+   * away the same day; storing it is a privacy decision that belongs in the plugin's description.
+   */
+  clientIp?: string | undefined;
   /** The body parsed as JSON (up to 1 MB). Rejects with a `PluginRouteBodyError` when it is not JSON. */
   json(): Promise<unknown>;
 }
 
-/** What a handler returns. `json` wins over `text`; with neither the body is empty. */
+/**
+ * What a handler returns. `json` wins over `text`, and `text` over `bytes`; with none of them the
+ * body is empty. `text` is `text/plain` and `bytes` is `application/octet-stream` unless the
+ * handler sets `Content-Type` in `headers` (for a script or an image).
+ */
 export interface PluginRouteResponse {
   status?: number;
   json?: unknown;
   text?: string;
+  bytes?: Uint8Array;
   headers?: Record<string, string>;
 }
 

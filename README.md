@@ -76,6 +76,7 @@ Feature documentation lives in [`docs/features/`](./docs/features/README.md), on
 | `packages/create-nodepress` | Installer: `create-nodepress <folder>` writes a ready-to-run site folder |
 | `plugins/hello-nodepress`   | Minimal example plugin — copy it to start your own                       |
 | `plugins/seo`               | SEO plugin: per-post title, description, social image, robots, JSON-LD   |
+| `plugins/analytics`         | Analytics plugin: page views and visitors, no cookies, no IPs stored     |
 
 ## Writing a plugin
 

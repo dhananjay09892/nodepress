@@ -271,7 +271,7 @@ Timeline assumes 1–2 developers part-time; adjust as the team grows.
 - [x] First-party plugin: SEO (N30)
 - [x] First-party plugin: Contact Form (service and API N31; block and SMTP N56; Messages screen N64)
 - [x] First-party plugin: Redirects (service, CSV and API N32; admin screen N57)
-- [ ] First-party plugin: Analytics (privacy-friendly)
+- [ ] First-party plugin: Analytics (privacy-friendly) — counting, summary API and retention N69; admin screen N70
 - [ ] Plugin author docs + example repo
 
 **Exit:** a third-party developer can build and install a plugin in under an hour using the docs.
