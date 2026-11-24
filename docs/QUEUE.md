@@ -276,6 +276,13 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: write `docs/adr/0003-plugin-registry.md` with the options (a static JSON index on GitHub Pages or a CDN; npm packages with a `nodepress-plugin` keyword; GitHub releases; a hosted NodePress registry service), the trade-offs (trust and signing, hosting cost, review workload, offline installs, what N28's permission review needs) and a recommendation. Leave the `Decision:` line empty. In the same PR add a follow-up task right after this one, "Install plugins from a registry", with a `Needs you:` line asking the owner to fill in the ADR's `Decision:` line, because the build task depends on it.
 - Done when: the ADR is in the PR with an empty `Decision:` line and the blocked follow-up task is in this file.
 
+### N77 · Install plugins from a registry
+
+- Depends on: N74, N28
+- Needs you: fill in the `Decision:` line of `docs/adr/0003-plugin-registry.md` (A, B, C, D or another option), check that this task's scope still matches the choice, then delete this line.
+- Scope: build the install-from-registry flow chosen in ADR 0003. If the recommended option A is chosen: a registry `index.json` format with validation, fetch with caching and timeouts (`PLUGIN_REGISTRY_URL` to override or disable), SHA-256 check (and signature check if the owner asked for it) before unpacking, a "Registry" tab on the Plugins screen that shows the declared permissions before download, install through the existing strict unpacker (new plugins stay off until enabled), and `nodepress plugin install <name>` in the CLI.
+- Done when: tests with a fake registry cover a good install, a checksum mismatch, a malformed index, an unreachable registry (the site and Plugins screen still work) and a plugin that declares `database` without migrations; a Playwright test installs a plugin from a local registry.
+
 ### N29 · `nodepress` CLI and plugin scaffolder
 
 - Depends on: N27
