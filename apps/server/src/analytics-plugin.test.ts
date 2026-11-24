@@ -174,9 +174,12 @@ describe('counting', () => {
       );
     }
     await hit('/one-too-many');
-    const { body } = await summary();
-    expect(body.pages.some((p) => p.path === '/other')).toBe(true);
-    expect(body.pages.some((p) => p.path === '/one-too-many')).toBe(false);
+    const rows = await runner.query('SELECT path FROM analytics_views WHERE day = ? AND path IN (?, ?)', [
+      today(),
+      '/other',
+      '/one-too-many',
+    ]);
+    expect(rows.map((r) => r['path'])).toEqual(['/other']);
   });
 });
 
