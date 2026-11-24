@@ -174,11 +174,10 @@ describe('counting', () => {
       );
     }
     await hit('/one-too-many');
-    const rows = await runner.query('SELECT path FROM analytics_views WHERE day = ? AND path IN (?, ?)', [
-      today(),
-      '/other',
-      '/one-too-many',
-    ]);
+    const rows = await runner.query(
+      'SELECT path FROM analytics_views WHERE day = ? AND path IN (?, ?)',
+      [today(), '/other', '/one-too-many'],
+    );
     expect(rows.map((r) => r['path'])).toEqual(['/other']);
   });
 });
