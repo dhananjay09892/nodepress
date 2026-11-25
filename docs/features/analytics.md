@@ -17,9 +17,13 @@ The **analytics plugin** (`plugins/analytics`, on by default) counts page views 
 - The address comes from the socket (or `X-Forwarded-For` when `TRUST_PROXY=true`); the plugin routes now pass it to handlers as `request.clientIp`.
 - The hit routes are public, so anyone can send fake hits; the counts are for a rough picture, not for billing.
 
+## The Analytics screen
+
+The **Analytics** item in the admin menu opens a report page contributed by the plugin through the admin extension points (see `admin-reports.md`; hidden without `manage_options`): totals for page views and visitors, a bar chart per day with a table of the same numbers under "Show per day as a table", the top pages and the top referrers. It covers the last 30 days; the **From** and **To** fields (UTC days, not in the future, at most 366 days) and the **Last 7/30/90 days** buttons change the range, and a range the route would refuse is explained next to the fields before anything is requested. A day's views and visitors are the counts of that UTC day, so today's numbers keep growing until midnight UTC.
+
 ## Settings and retention
 
-The **Analytics** item in the admin menu opens a page (administrators, `manage_options`) with one setting, **Keep data for (days)**, default 90, at most 3650. A scheduled job (`analytics:prune`, first run a minute after start, then every 24 hours) deletes older rows. A job left over from an earlier start ends without running, so restarts never start two chains.
+The **Analytics settings** item in the admin menu opens a page (administrators, `manage_options`) with one setting, **Keep data for (days)**, default 90, at most 3650. A scheduled job (`analytics:prune`, first run a minute after start, then every 24 hours) deletes older rows. A job left over from an earlier start ends without running, so restarts never start two chains.
 
 ## API
 
@@ -43,7 +47,3 @@ The public routes are `GET /hit.gif?p=<path>[&r=<referrer>]` (answers the GIF) a
 ## Plugin API additions
 
 Written for this plugin and available to every plugin: `request.clientIp`, a route answer with `bytes` (binary body), and a `Content-Type` set in a route's `headers` is honored for `text` and `bytes` answers (see `plugin-routes.md`).
-
-## Not built yet
-
-The admin screen with the chart, top pages and referrers (N70).

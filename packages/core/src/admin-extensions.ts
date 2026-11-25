@@ -25,7 +25,56 @@ export interface AdminPanelDefinition {
   fields: PanelField[];
 }
 
-/** A page a plugin adds to the admin. Today a page is made of settings panels. */
+/** A number shown above a report, read from `data.totals[key]` of the report route's answer. */
+export interface AdminReportTotal {
+  key: string;
+  label: string;
+}
+
+/** A column of a report table: a key of each row. */
+export interface AdminReportColumn {
+  key: string;
+  label: string;
+  /** Right-aligned, shown with thousands separators. */
+  numeric?: boolean;
+}
+
+/** A table drawn from an array in the report route's answer. */
+export interface AdminReportTable {
+  /** Key of an array of rows in the answer. */
+  rows: string;
+  title: string;
+  columns: AdminReportColumn[];
+}
+
+/** A bar chart of one or more series over time, always with a table as a text alternative. */
+export interface AdminReportChart {
+  title: string;
+  /** Key of an array of rows in the answer. */
+  rows: string;
+  /** Key of the row's label (a `YYYY-MM-DD` day). */
+  x: string;
+  series: { key: string; label: string }[];
+}
+
+/**
+ * A read-only page of numbers a plugin serves from one of its own routes. The admin asks
+ * `GET /api/v1/plugins/<plugin><route>?from=YYYY-MM-DD&to=YYYY-MM-DD` and draws the answer, so
+ * the plugin describes the report and never runs code in the browser.
+ */
+export interface AdminReportDefinition {
+  /** The plugin route that answers JSON, for example `/summary`. */
+  route: string;
+  /** Days the date range covers when the page opens. Default 30. */
+  defaultDays?: number;
+  /** Longest range the route accepts; the date picker keeps to it. Default 366. */
+  maxDays?: number;
+  totals?: AdminReportTotal[];
+  chart?: AdminReportChart;
+  tables?: AdminReportTable[];
+}
+
+/** A page a plugin adds to the admin: settings panels, a report, or both. */
 export interface AdminPageDefinition {
   /** Lower-case id, unique within the plugin; part of the page's URL. */
   id: string;
@@ -36,7 +85,9 @@ export interface AdminPageDefinition {
    * is administrator-only unless the plugin says otherwise.
    */
   capability?: string;
+  /** Settings panels. May be empty when the page has a `report`. */
   panels: AdminPanelDefinition[];
+  report?: AdminReportDefinition;
 }
 
 /** A link in the admin sidebar that opens one of the plugin's pages. */
@@ -89,6 +140,7 @@ export interface AdminExtensionsView {
     title: string;
     description?: string;
     panels: AdminPanelDefinition[];
+    report?: AdminReportDefinition;
   }[];
 }
 
@@ -123,6 +175,111 @@ function optionalText(kind: string, value: unknown, max: number): string | undef
   return value;
 }
 
+const KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]{0,49}$/;
+const ROUTE_PATTERN = /^\/[A-Za-z0-9][A-Za-z0-9/_.-]{0,99}$/;
+
+function checkKey(kind: string, value: unknown): string {
+  if (typeof value !== 'string' || !KEY_PATTERN.test(value)) {
+    throw new AdminExtensionError(`${kind} must be a plain key such as "views"`);
+  }
+  return value;
+}
+
+function checkList<T>(kind: string, value: unknown, max: number): T[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > max) {
+    throw new AdminExtensionError(`${kind} needs between 1 and ${max} entries`);
+  }
+  return value as T[];
+}
+
+function checkObject(kind: string, value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new AdminExtensionError(`${kind} must be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function checkDays(kind: string, value: unknown, fallback: number): number {
+  if (value === undefined) return fallback;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 3650) {
+    throw new AdminExtensionError(`${kind} must be a whole number of days between 1 and 3650`);
+  }
+  return value;
+}
+
+/** Validate and copy a report definition; the page's data comes from a route of the plugin. */
+function parseReport(input: unknown): AdminReportDefinition {
+  const report = checkObject('report', input);
+  const route = report['route'];
+  if (typeof route !== 'string' || !ROUTE_PATTERN.test(route) || route.includes('..')) {
+    throw new AdminExtensionError(
+      'report.route must be a path of the plugin such as "/summary" (no query, no "..")',
+    );
+  }
+  const maxDays = checkDays('report.maxDays', report['maxDays'], 366);
+  const defaultDays = checkDays('report.defaultDays', report['defaultDays'], 30);
+  if (defaultDays > maxDays) {
+    throw new AdminExtensionError('report.defaultDays cannot be more than report.maxDays');
+  }
+  const parseColumns = (kind: string, value: unknown): AdminReportColumn[] =>
+    checkList<unknown>(kind, value, 10).map((c) => {
+      const column = checkObject(kind, c);
+      return {
+        key: checkKey(`${kind} key`, column['key']),
+        label: checkText(`${kind} label`, column['label'], 60),
+        ...(column['numeric'] === true ? { numeric: true } : {}),
+      };
+    });
+  const totals =
+    report['totals'] === undefined
+      ? undefined
+      : checkList<unknown>('report.totals', report['totals'], 6).map((t) => {
+          const total = checkObject('report.totals entry', t);
+          return {
+            key: checkKey('report.totals key', total['key']),
+            label: checkText('report.totals label', total['label'], 60),
+          };
+        });
+  let chart: AdminReportChart | undefined;
+  if (report['chart'] !== undefined) {
+    const c = checkObject('report.chart', report['chart']);
+    chart = {
+      title: checkText('report.chart title', c['title'], 100),
+      rows: checkKey('report.chart rows', c['rows']),
+      x: checkKey('report.chart x', c['x']),
+      series: checkList<unknown>('report.chart series', c['series'], 3).map((s) => {
+        const series = checkObject('report.chart series entry', s);
+        return {
+          key: checkKey('report.chart series key', series['key']),
+          label: checkText('report.chart series label', series['label'], 60),
+        };
+      }),
+    };
+  }
+  const tables =
+    report['tables'] === undefined
+      ? undefined
+      : checkList<unknown>('report.tables', report['tables'], 6).map((t): AdminReportTable => {
+          const table = checkObject('report.tables entry', t);
+          return {
+            rows: checkKey('report.tables rows', table['rows']),
+            title: checkText('report.tables title', table['title'], 100),
+            columns: parseColumns('report.tables column', table['columns']),
+          };
+        });
+  if (!totals && !chart && !tables) {
+    throw new AdminExtensionError('A report needs totals, a chart or tables');
+  }
+  return {
+    route,
+    defaultDays,
+    maxDays,
+    ...(totals ? { totals } : {}),
+    ...(chart ? { chart } : {}),
+    ...(tables ? { tables } : {}),
+  };
+}
+
 /** Validate and copy a page definition so later changes by the plugin cannot alter it. */
 function parsePage(input: AdminPageDefinition): AdminPageDefinition {
   if (typeof input !== 'object' || input === null) {
@@ -135,8 +292,9 @@ function parsePage(input: AdminPageDefinition): AdminPageDefinition {
   if (capability !== undefined && capability === '') {
     throw new AdminExtensionError('Page capability cannot be empty');
   }
-  if (!Array.isArray(input.panels) || input.panels.length === 0) {
-    throw new AdminExtensionError(`Page "${id}" needs at least one panel`);
+  const report = input.report === undefined ? undefined : parseReport(input.report);
+  if (!Array.isArray(input.panels) || (input.panels.length === 0 && !report)) {
+    throw new AdminExtensionError(`Page "${id}" needs at least one panel or a report`);
   }
   if (input.panels.length > MAX_PANELS_PER_PAGE) {
     throw new AdminExtensionError(`Page "${id}" has more than ${MAX_PANELS_PER_PAGE} panels`);
@@ -193,6 +351,7 @@ function parsePage(input: AdminPageDefinition): AdminPageDefinition {
     ...(description !== undefined ? { description } : {}),
     ...(capability !== undefined ? { capability } : {}),
     panels,
+    ...(report ? { report } : {}),
   };
 }
 
@@ -257,6 +416,7 @@ export class AdminExtensions {
           title: page.title,
           ...(page.description !== undefined ? { description: page.description } : {}),
           panels: page.panels,
+          ...(page.report ? { report: page.report } : {}),
         });
       }
       for (const item of entry.menu.values()) {
