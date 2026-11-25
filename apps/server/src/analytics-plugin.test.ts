@@ -366,7 +366,10 @@ describe('the pages', () => {
 });
 
 describe('the admin pages', () => {
-  const allow = (...caps: string[]) => async (c: string) => caps.includes(c);
+  const allow =
+    (...caps: string[]) =>
+    async (c: string) =>
+      caps.includes(c);
 
   it('adds an Analytics overview and a settings page for administrators only', async () => {
     const admin = await np.admin.describe(allow('manage_options'));
@@ -396,7 +399,10 @@ describe('the admin pages', () => {
       const rows = answer[list!.rows] as Record<string, unknown>[];
       expect(Array.isArray(rows)).toBe(true);
       expect(rows.length).toBeGreaterThan(0);
-      const keys = 'series' in list! ? [list.x, ...list.series.map((s) => s.key)] : list!.columns.map((c) => c.key);
+      const keys =
+        'series' in list!
+          ? [list.x, ...list.series.map((s) => s.key)]
+          : list!.columns.map((c) => c.key);
       for (const key of keys) expect(Object.keys(rows[0]!)).toContain(key);
     }
   });
@@ -408,4 +414,3 @@ describe('the admin pages', () => {
     expect(values).toEqual({ retention_days: 45 });
   });
 });
-

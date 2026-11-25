@@ -85,7 +85,10 @@ describe('fetching a report', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
-        Response.json({ error: 'invalid_range', message: 'The range is too long.' }, { status: 400 }),
+        Response.json(
+          { error: 'invalid_range', message: 'The range is too long.' },
+          { status: 400 },
+        ),
       ),
     );
     const error = await fetchReport('analytics', { route: '/summary' }, lastDays(NOW, 7)).catch(
@@ -99,7 +102,10 @@ describe('fetching a report', () => {
   });
 
   it('keeps the status when the error body is not JSON', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>', { status: 403 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<html>', { status: 403 })),
+    );
     const error = await fetchReport('analytics', { route: '/summary' }, lastDays(NOW, 7)).catch(
       (e: unknown) => e,
     );

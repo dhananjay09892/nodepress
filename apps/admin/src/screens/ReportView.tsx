@@ -66,7 +66,10 @@ function DataTable({
                     {formatCell(row[column.key], column.numeric)}
                   </th>
                 ) : (
-                  <td key={column.key} className={`px-3 py-2 ${column.numeric ? 'text-right' : ''}`}>
+                  <td
+                    key={column.key}
+                    className={`px-3 py-2 ${column.numeric ? 'text-right' : ''}`}
+                  >
                     {formatCell(row[column.key], column.numeric)}
                   </td>
                 ),
@@ -163,9 +166,7 @@ function Chart({
 /** A report a plugin page declared: date range, totals, a chart with a table, and tables. */
 export function ReportView({ plugin, report }: { plugin: string; report: ReportDefinition }) {
   const maxDays = report.maxDays ?? DEFAULT_MAX_REPORT_DAYS;
-  const [initial] = useState(() =>
-    lastDays(new Date(), report.defaultDays ?? DEFAULT_REPORT_DAYS),
-  );
+  const [initial] = useState(() => lastDays(new Date(), report.defaultDays ?? DEFAULT_REPORT_DAYS));
   const [applied, setApplied] = useState<DateRange>(initial);
   const [draft, setDraft] = useState<DateRange>(initial);
   const problem = checkRange(draft, maxDays);
