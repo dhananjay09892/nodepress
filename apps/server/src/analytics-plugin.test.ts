@@ -375,7 +375,7 @@ describe('the admin pages', () => {
     const admin = await np.admin.describe(allow('manage_options'));
     expect(admin.menu.map((m) => [m.label, m.page])).toEqual([
       ['Analytics', 'overview'],
-      ['Analytics settings', 'settings'],
+      ['Analytics retention', 'settings'],
     ]);
     expect(admin.pages.map((p) => p.id).sort()).toEqual(['overview', 'settings']);
     expect(await np.admin.describe(allow('edit_posts'))).toEqual({ menu: [], pages: [] });

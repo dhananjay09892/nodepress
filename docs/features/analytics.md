@@ -23,7 +23,7 @@ The **Analytics** item in the admin menu opens a report page contributed by the 
 
 ## Settings and retention
 
-The **Analytics settings** item in the admin menu opens a page (administrators, `manage_options`) with one setting, **Keep data for (days)**, default 90, at most 3650. A scheduled job (`analytics:prune`, first run a minute after start, then every 24 hours) deletes older rows. A job left over from an earlier start ends without running, so restarts never start two chains.
+The **Analytics retention** item in the admin menu (its page is titled "Analytics settings"; the menu label avoids the word "Settings" so it is not confused with the core Settings entry) opens a page (administrators, `manage_options`) with one setting, **Keep data for (days)**, default 90, at most 3650. A scheduled job (`analytics:prune`, first run a minute after start, then every 24 hours) deletes older rows. A job left over from an earlier start ends without running, so restarts never start two chains.
 
 ## API
 

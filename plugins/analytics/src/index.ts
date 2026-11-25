@@ -140,7 +140,7 @@ export default definePlugin({
     admin.addMenuItem({ id: 'analytics', label: 'Analytics', page: 'overview', order: 80 });
     admin.addMenuItem({
       id: 'analytics-settings',
-      label: 'Analytics settings',
+      label: 'Analytics retention',
       page: 'settings',
       order: 81,
     });

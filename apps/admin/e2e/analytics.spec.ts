@@ -69,11 +69,11 @@ test('a page visited twice shows its two views on the Analytics screen', async (
   await expect(topPages.getByRole('row', { name: new RegExp(`/${slug}.*2`) })).toBeVisible();
 });
 
-test('the settings page is still reachable from the sidebar', async ({ page }) => {
+test('the retention page is still reachable from the sidebar', async ({ page }) => {
   await signIn(page);
   await page
     .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'Analytics settings' })
+    .getByRole('link', { name: 'Analytics retention' })
     .click();
   await expect(page.getByLabel('Keep data for (days)')).toBeVisible();
 });
