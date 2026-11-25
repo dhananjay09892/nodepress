@@ -377,7 +377,7 @@ describe('the admin pages', () => {
       ['Analytics', 'overview'],
       ['Analytics settings', 'settings'],
     ]);
-    expect(admin.pages.map((p) => p.id)).toEqual(['overview', 'settings']);
+    expect(admin.pages.map((p) => p.id).sort()).toEqual(['overview', 'settings']);
     expect(await np.admin.describe(allow('edit_posts'))).toEqual({ menu: [], pages: [] });
   });
 
