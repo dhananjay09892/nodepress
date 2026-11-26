@@ -27,7 +27,9 @@ describe('signS3Request (AWS example vectors)', () => {
       headers: { Range: 'bytes=0-9' },
       payloadHash: EMPTY,
     });
-    expect(headers.authorization).toContain('SignedHeaders=host;range;x-amz-content-sha256;x-amz-date');
+    expect(headers.authorization).toContain(
+      'SignedHeaders=host;range;x-amz-content-sha256;x-amz-date',
+    );
     expect(signatureOf(headers)).toBe(
       'f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41',
     );
@@ -123,7 +125,9 @@ describe('S3 storage', () => {
     expect(call.headers['x-amz-content-sha256']).toBe(
       createHash('sha256').update('abc').digest('hex'),
     );
-    expect(call.headers.authorization).toContain(`Credential=${ACCESS}/20130524/eu-west-1/s3/aws4_request`);
+    expect(call.headers.authorization).toContain(
+      `Credential=${ACCESS}/20130524/eu-west-1/s3/aws4_request`,
+    );
     expect(call.headers.authorization).toContain('content-type;');
     expect(call.headers.host).toBeUndefined();
   });
@@ -165,7 +169,9 @@ describe('S3 storage', () => {
 
   it('deletes a file and treats a missing key as success', async () => {
     const { fake, calls } = fakeS3((call) =>
-      call.url.endsWith('/gone.png') ? new Response('', { status: 404 }) : new Response(null, { status: 204 }),
+      call.url.endsWith('/gone.png')
+        ? new Response('', { status: 404 })
+        : new Response(null, { status: 204 }),
     );
     const storage = createS3Storage({ ...config, fetch: fake });
     await storage.delete('uploads/a.png');
@@ -175,7 +181,10 @@ describe('S3 storage', () => {
 
   it('reports errors with the status and code, never credentials or signatures', async () => {
     const { fake } = fakeS3(
-      () => new Response('<Error><Code>AccessDenied</Code><Message>nope</Message></Error>', { status: 403 }),
+      () =>
+        new Response('<Error><Code>AccessDenied</Code><Message>nope</Message></Error>', {
+          status: 403,
+        }),
     );
     const storage = createS3Storage({ ...config, fetch: fake });
     const error = await storage.get('uploads/a.png').catch((e: Error) => e);
