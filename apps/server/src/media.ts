@@ -13,6 +13,8 @@ export interface MediaRoutesOptions {
   media: MediaService;
   storage: StorageAdapter;
   capabilities: Capabilities;
+  /** `S3_PUBLIC_URL`: when set, file URLs in API answers point there instead of `/uploads`. */
+  publicUrl?: string | undefined;
 }
 
 /** Multipart framing (boundaries, field headers) allowed on top of the file size limit. */
@@ -36,18 +38,19 @@ const ERROR_STATUS = {
   invalid_alt: 400,
 } as const;
 
-/** The JSON shape of a media item: storage keys become URLs under `/uploads`. */
-export function publicMedia(media: Media) {
+/** The JSON shape of a media item: storage keys become URLs under `/uploads` (or `publicUrl`). */
+export function publicMedia(media: Media, publicUrl?: string) {
+  const base = publicUrl ? publicUrl.replace(/\/+$/, '') : '';
   return {
     id: media.id,
-    url: `/${media.path}`,
+    url: `${base}/${media.path}`,
     mime: media.mime,
     size: media.size,
     width: media.width,
     height: media.height,
     alt: media.alt,
     variants: Object.fromEntries(
-      Object.entries(media.variants).map(([name, key]) => [name, `/${key}`]),
+      Object.entries(media.variants).map(([name, key]) => [name, `${base}/${key}`]),
     ),
     uploadedBy: media.uploadedBy,
     createdAt: media.createdAt.toISOString(),
@@ -79,7 +82,7 @@ export async function readLimited(request: Request, limit: number): Promise<Buff
 
 /** Routes for `/api/v1/media`. Accepts a session (with CSRF token) or a Bearer API token. */
 export function createMediaRoutes(auth: Auth, options: MediaRoutesOptions): Hono<AuthEnv> {
-  const { media, capabilities } = options;
+  const { media, capabilities, publicUrl } = options;
   const routes = new Hono<AuthEnv>();
   routes.use('*', async (c, next) => {
     c.header('Cache-Control', 'no-store');
@@ -139,7 +142,7 @@ export function createMediaRoutes(auth: Auth, options: MediaRoutesOptions): Hono
         alt: alt ?? '',
         uploadedBy: c.get('principal')!.user.id,
       });
-      return c.json({ media: publicMedia(created) }, 201);
+      return c.json({ media: publicMedia(created, publicUrl) }, 201);
     } catch (error) {
       if (error instanceof MediaValidationError) {
         return c.json({ error: error.code, message: error.message }, ERROR_STATUS[error.code]);
@@ -158,14 +161,14 @@ export function createMediaRoutes(auth: Auth, options: MediaRoutesOptions): Hono
       ...(Number.isFinite(offset) ? { offset } : {}),
       ...(all ? {} : { uploadedBy: user.id }),
     });
-    return c.json({ media: items.map(publicMedia) });
+    return c.json({ media: items.map((item) => publicMedia(item, publicUrl)) });
   });
 
   routes.get('/:id', async (c) => {
     const id = parseId(c);
     const item = id === null ? undefined : await media.get(id);
     if (!item || !(await mayManage(c, item))) return c.json({ error: 'not_found' }, 404);
-    return c.json({ media: publicMedia(item) });
+    return c.json({ media: publicMedia(item, publicUrl) });
   });
 
   routes.patch('/:id', async (c) => {
@@ -186,7 +189,7 @@ export function createMediaRoutes(auth: Auth, options: MediaRoutesOptions): Hono
     const { alt } = (body ?? {}) as { alt?: unknown };
     if (typeof alt !== 'string') return c.json({ error: 'invalid_request' }, 400);
     try {
-      return c.json({ media: publicMedia(await media.updateAlt(item.id, alt)) });
+      return c.json({ media: publicMedia(await media.updateAlt(item.id, alt), publicUrl) });
     } catch (error) {
       if (error instanceof MediaValidationError) {
         return c.json({ error: error.code, message: error.message }, 400);

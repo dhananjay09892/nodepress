@@ -9,6 +9,8 @@ import {
   createContentService,
   createContentTypeRegistry,
   createLocalStorage,
+  createS3Storage,
+  s3ConfigFromEnv,
   createMediaService,
   createJobQueue,
   createNodePress,
@@ -213,8 +215,15 @@ const purgeTimer = setInterval(
 );
 purgeTimer.unref();
 
-// Uploaded files live on local disk; MEDIA_DIR moves them (mount a volume there in Docker).
-const mediaStorage = createLocalStorage(process.env.MEDIA_DIR ?? './media');
+// Uploaded files live on local disk (MEDIA_DIR moves them; mount a volume there in Docker), or
+// in an S3-compatible bucket with MEDIA_STORAGE=s3 (see docs/features/s3-storage.md).
+const mediaStorageKind = process.env.MEDIA_STORAGE?.trim() || 'local';
+if (mediaStorageKind !== 'local' && mediaStorageKind !== 's3')
+  throw new Error('MEDIA_STORAGE must be "local" or "s3"');
+const s3 = mediaStorageKind === 's3' ? s3ConfigFromEnv(process.env) : undefined;
+const mediaStorage = s3
+  ? createS3Storage(s3.options)
+  : createLocalStorage(process.env.MEDIA_DIR ?? './media');
 const media = createMediaService({
   store: createMediaStore(database),
   storage: mediaStorage,
@@ -426,7 +435,12 @@ const app = createApp(np, database, {
     taxonomies,
     options,
   },
-  media: { service: media, storage: mediaStorage, capabilities },
+  media: {
+    service: media,
+    storage: mediaStorage,
+    capabilities,
+    ...(s3?.publicUrl ? { publicUrl: s3.publicUrl } : {}),
+  },
   users: {
     service: users,
     capabilities,

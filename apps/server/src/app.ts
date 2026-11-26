@@ -80,7 +80,13 @@ export interface AppOptions {
   /**
    * Enables media uploads: `/api/v1/media` (needs `auth`) and public files at `/uploads/*`.
    */
-  media?: { service: MediaService; storage: StorageAdapter; capabilities: Capabilities };
+  media?: {
+    service: MediaService;
+    storage: StorageAdapter;
+    capabilities: Capabilities;
+    /** Where files are served from when not `/uploads` (the `S3_PUBLIC_URL` setting). */
+    publicUrl?: string;
+  };
   /**
    * Enables the content REST API (needs `auth`): `/api/v1/content/:type`,
    * `/api/v1/content-types` and the OpenAPI document at `/api/v1/openapi.json`.
@@ -405,6 +411,7 @@ export function createApp(np: NodePress, database: DatabaseHandle, options: AppO
           media: options.media.service,
           storage: options.media.storage,
           capabilities: options.media.capabilities,
+          publicUrl: options.media.publicUrl,
         }),
       );
     }
