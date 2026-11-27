@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@nodepress/editor": "workspace:*",
-    "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-query": "^5.108.0",
     "@tanstack/react-router": "^1.95.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
