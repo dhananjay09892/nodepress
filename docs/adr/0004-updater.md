@@ -22,16 +22,16 @@ Facts about the code today: migrations run at server start (`database.migrate()`
 
 ## What every option must handle
 
-| Concern                  | Requirement                                                                                                                                                                            |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Integrity                | The SHA-256 of what is downloaded must match a value obtained separately from the file (index, release notes, signed manifest).                                                        |
-| Authenticity             | Ideally a signature by a maintainer key shipped with NodePress, so a hacked host or CDN cannot push code to every site.                                                                |
+| Concern                  | Requirement                                                                                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Integrity                | The SHA-256 of what is downloaded must match a value obtained separately from the file (index, release notes, signed manifest).                                                                   |
+| Authenticity             | Ideally a signature by a maintainer key shipped with NodePress, so a hacked host or CDN cannot push code to every site.                                                                           |
 | Rollback                 | Keep the previous version on disk, take a database copy (SQLite) or require a backup confirmation (PostgreSQL) before migrating, and start the old version if the new one fails its health check. |
-| Migrations               | Applied once, in order, at the first start of the new version. A failed migration stops the start and leaves the old files in place. Down-migrations are not promised.                   |
-| Docker                   | Show "update available" with the exact image tag to pull; never write into the image.                                                                                                   |
-| Offline or private sites | A check that cannot reach the source must fail quietly (a notice, not an error) and the site must keep working. A manual "upload an update package" path should exist.                  |
-| Privacy                  | The check sends no site identifier. At most the current version in a request, or nothing at all (the client compares against a fetched list).                                           |
-| Major versions           | Never applied automatically; the notice links to release notes.                                                                                                                        |
+| Migrations               | Applied once, in order, at the first start of the new version. A failed migration stops the start and leaves the old files in place. Down-migrations are not promised.                            |
+| Docker                   | Show "update available" with the exact image tag to pull; never write into the image.                                                                                                             |
+| Offline or private sites | A check that cannot reach the source must fail quietly (a notice, not an error) and the site must keep working. A manual "upload an update package" path should exist.                            |
+| Privacy                  | The check sends no site identifier. At most the current version in a request, or nothing at all (the client compares against a fetched list).                                                     |
+| Major versions           | Never applied automatically; the notice links to release notes.                                                                                                                                   |
 
 ## Options
 
@@ -70,16 +70,16 @@ A small service answers "what is the newest version for this channel" with signe
 
 ## Trade-off summary
 
-|                                 | A: npm                    | B: GitHub releases              | C: update server            |
-| ------------------------------- | ------------------------- | ------------------------------- | --------------------------- |
-| Checksum and signature          | npm's, checked via CLI    | ours, checked in-process        | ours, plus revocation       |
-| Install scripts run on the host | yes                       | no (pre-built archive)          | no                          |
-| Rollback                        | weak                      | keep previous folder            | same as B, plus withdrawal  |
-| Docker                          | notice only               | notice only (tag in manifest)   | notice only                 |
-| Offline sites                   | mirror needed             | manual upload                   | mirror needed               |
-| Hosting cost                    | none                      | none                            | real                        |
-| Phone-home                      | registry sees the request | GitHub sees the request         | NodePress sees the request  |
-| Build effort                    | small                     | medium                          | large                       |
+|                                 | A: npm                    | B: GitHub releases            | C: update server           |
+| ------------------------------- | ------------------------- | ----------------------------- | -------------------------- |
+| Checksum and signature          | npm's, checked via CLI    | ours, checked in-process      | ours, plus revocation      |
+| Install scripts run on the host | yes                       | no (pre-built archive)        | no                         |
+| Rollback                        | weak                      | keep previous folder          | same as B, plus withdrawal |
+| Docker                          | notice only               | notice only (tag in manifest) | notice only                |
+| Offline sites                   | mirror needed             | manual upload                 | mirror needed              |
+| Hosting cost                    | none                      | none                          | real                       |
+| Phone-home                      | registry sees the request | GitHub sees the request       | NodePress sees the request |
+| Build effort                    | small                     | medium                        | large                      |
 
 ## Recommendation
 
