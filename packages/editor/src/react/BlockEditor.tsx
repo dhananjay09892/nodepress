@@ -100,7 +100,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           active={editor.isActive('heading', { level })}
           onClick={() => run().toggleHeading({ level }).run()}
         >
-          {`H${level}`}
+          {`Heading ${level}`}
         </ToolbarButton>
       ))}
       <ToolbarButton

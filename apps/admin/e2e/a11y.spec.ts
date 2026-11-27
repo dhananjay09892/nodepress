@@ -100,4 +100,29 @@ test.describe('signed in', () => {
     await page.waitForLoadState('networkidle');
     await expectAccessible(page);
   });
+
+  test('redirects form with a field error', async ({ page }) => {
+    await page.goto('/admin/redirects');
+    const add = page.getByRole('form', { name: 'Add redirect' });
+    await add.getByLabel('From').fill('/admin/secret');
+    await add.getByLabel('To').fill('/somewhere');
+    await add.getByRole('button', { name: 'Add redirect' }).click();
+    await expect(add.getByRole('alert')).toBeVisible();
+    await expectAccessible(page);
+  });
+
+  test('editor with text selected', async ({ page }) => {
+    await page.goto('/admin/editor-preview');
+    const editor = page.getByRole('textbox', { name: 'Preview content' });
+    await expect(editor).toBeVisible();
+    await editor.click();
+    await page.keyboard.type('Selected text for the audit');
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.getByRole('button', { name: 'Bold' }).click();
+    await expect(page.getByRole('button', { name: 'Bold' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expectAccessible(page);
+  });
 });
