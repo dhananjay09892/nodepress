@@ -369,6 +369,14 @@ export {
   type ListMediaOptions,
 } from './media.js';
 export { createLocalStorage, assertStorageKey } from './media-storage.js';
+export {
+  createS3Storage,
+  s3ConfigFromEnv,
+  signS3Request,
+  type S3StorageOptions,
+  type S3EnvConfig,
+  type SignRequestInput,
+} from './s3-storage.js';
 export { createSharpProcessor } from './sharp-processor.js';
 export {
   WebhookService,
