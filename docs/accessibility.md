@@ -27,3 +27,17 @@ Automated rules cannot judge these, and the first slice does not test them:
 - Moderate and minor findings from newer axe rules (`best-practice` tag) are not part of the run.
 
 These remain as a follow-up task in `docs/QUEUE.md`.
+
+## Aurora (the default theme)
+
+`apps/admin/e2e/aurora-a11y.spec.ts` runs against the public site in the same Playwright job:
+
+- axe (WCAG 2.1 A and AA, serious and critical fail) on the front page in the blog layout and in the business layout (previewed with `np_preview`), a post, a page, the 404 page and a page with the contact form block, each in light and dark mode, and again at 320 px width.
+- No sideways scrolling at 320 px, nor in a 640 px window (what 200 % zoom looks like on a 1280 px screen).
+- The skip link is the first tab stop and moves focus to `main`.
+- Every page has one `h1` and no skipped heading levels.
+- With reduced motion requested, no element has a transition or animation.
+
+The first complete run found nothing to fix: all of these passed, and the Lighthouse job (accessibility 100 on all four audits) stays above 95. The Lighthouse performance score is a separate gate that varies on shared runners (see the fix in the warm-up of that job).
+
+Not covered by automation: reading order with a screen reader, and the contact form's error messages after a failed submit (axe sees the form only in its empty state).
