@@ -470,6 +470,12 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: add `@axe-core/playwright` to the admin end-to-end suite and run it (WCAG 2.1 A and AA rules) on every admin screen in its main states (empty list, filled list, form with errors, dialogs, the editor with a selection), then fix what it finds: names and labels, focus order and visible focus, color contrast, landmarks, live regions for status messages, keyboard operation of the media grid and menu tree. Write what was fixed and what remains to `docs/accessibility.md`.
 - Done when: the axe run is part of the Playwright job and passes with no serious or critical violations; remaining minor ones are listed in the doc with a reason.
 
+### N78 · Admin accessibility: dialogs, keyboard and live regions
+
+- Depends on: N71
+- Scope: follow-up to N71, whose axe run (`apps/admin/e2e/a11y.spec.ts`) covers every admin screen in its default states and fixed the editor's heading button names (see `docs/accessibility.md`). Add what automated rules cannot judge: axe runs with dialogs open and the editor with a selection, Playwright keyboard-only tests for the media grid and the menu tree, a check that status messages ("Saved", errors, import progress) are announced (`role="status"` or `role="alert"`), visible focus on every control and focus returned to a sensible place after navigation, saving and closing a dialog; replace the editor's `window.prompt` for links with an accessible dialog; fix what these find and update `docs/accessibility.md`.
+- Done when: the new tests pass in the Playwright job and `docs/accessibility.md` has no open items without a reason.
+
 ### N72 · Accessibility audit of the default theme
 
 - Depends on: N23

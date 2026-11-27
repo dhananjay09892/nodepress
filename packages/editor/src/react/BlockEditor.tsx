@@ -15,6 +15,8 @@ export interface BlockEditorProps {
 const buttonClass =
   'rounded border border-slate-400 bg-white px-2 py-1 text-sm text-slate-900 hover:bg-slate-50 aria-pressed:bg-slate-900 aria-pressed:text-white';
 
+// The accessible name must contain the visible text (WCAG 2.5.3 Label in Name): the heading
+// buttons show "H2", so their label starts with it ("H2 (Heading 2)").
 function ToolbarButton(props: {
   label: string;
   onClick: () => void;
@@ -96,7 +98,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       {([1, 2, 3, 4] as const).map((level) => (
         <ToolbarButton
           key={level}
-          label={`Heading ${level}`}
+          label={`H${level} (Heading ${level})`}
           active={editor.isActive('heading', { level })}
           onClick={() => run().toggleHeading({ level }).run()}
         >
