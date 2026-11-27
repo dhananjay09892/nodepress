@@ -12,3 +12,56 @@ hero:
       link: /reference/hooks/
       variant: minimal
 ---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## What NodePress is
+
+NodePress is a website system you run yourself. Write posts and pages in a block editor, choose a theme, add plugins, and publish. The same content is also available through a REST API when you want a headless site. It is open source (MIT) and written in TypeScript, from the server to the themes and plugins.
+
+## Why it exists
+
+WordPress made publishing easy and grew a huge plugin ecosystem, but it runs on an old stack. Headless systems such as Strapi and Payload are modern but are built for developers and have no themes. NodePress aims for both: the ease and the plugins of WordPress, on a modern JavaScript stack, with headless as an option and not a requirement.
+
+## Start in three steps
+
+1. **Install and build.** You need Node.js 22 or newer and pnpm: `pnpm install` then `pnpm build`.
+2. **Run it.** `pnpm dev` serves the site at `http://localhost:3000` and the admin at `/admin/`.
+3. **Set it up.** Open `/install`, enter the setup code from the server log, name your site and create your administrator.
+
+The [getting started guide](/guides/getting-started/) covers configuration, Docker and the command line.
+
+## What you get
+
+<CardGrid>
+  <Card title="Block editor" icon="pencil">
+    Posts and pages in blocks, with revisions, scheduled publishing and a media library.
+  </Card>
+  <Card title="Themes" icon="open-book">
+    A themes system with a template hierarchy, menus, widget areas and a customizer. The default
+    theme, Aurora, is responsive and has a dark mode.
+  </Card>
+  <Card title="Plugins" icon="puzzle">
+    Hooks everywhere, plugin settings and admin pages, and a permission review before a plugin is
+    turned on.
+  </Card>
+  <Card title="REST API" icon="document">
+    Every content type has routes for list, read, create, update and delete, with an OpenAPI
+    document.
+  </Card>
+  <Card title="Move from WordPress" icon="random">
+    Import a WordPress export; old addresses become redirects so links keep working.
+  </Card>
+  <Card title="Run it anywhere" icon="rocket">
+    SQLite or PostgreSQL, a Docker image, and media on local disk or S3-compatible storage.
+  </Card>
+</CardGrid>
+
+## Keep reading
+
+<CardGrid>
+  <LinkCard title="Getting started" href="/guides/getting-started/" description="Install, configure and run NodePress." />
+  <LinkCard title="Write a plugin" href="/guides/plugins/" description="Hooks, settings, routes and packaging." />
+  <LinkCard title="Build a theme" href="/guides/themes/" description="Templates, assets and theme settings." />
+  <LinkCard title="Source on GitHub" href="https://github.com/dhananjay09892/nodepress" description="Issues, code and the build plan." />
+</CardGrid>

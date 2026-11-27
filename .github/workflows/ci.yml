@@ -366,6 +366,25 @@ jobs:
           audit business light /
           audit blog dark /
           audit business dark /
+      - name: Audit the documentation landing page
+        run: |
+          set -e
+          test -f apps/docs/dist/index.html
+          python3 -m http.server 4321 --directory apps/docs/dist > docs-server.log 2>&1 &
+          pid=$!
+          sleep 2
+          # Same retry rule as above: only a run that produced no result is repeated.
+          ran=0
+          for attempt in 1 2 3; do
+            if npx --yes lighthouse@12.3.0 "http://localhost:4321/" \
+              --only-categories=accessibility --output=json --output-path=lh-docs.json --quiet \
+              --chrome-flags="--headless=new --no-sandbox"; then ran=1; break; fi
+            echo "Lighthouse did not produce a result (attempt $attempt of 3)"
+          done
+          kill "$pid" || true
+          [ "$ran" = 1 ]
+          echo "docs landing page: accessibility $(jq '.categories.accessibility.score * 100' lh-docs.json)"
+          jq -e '.categories.accessibility.score >= 0.95' lh-docs.json > /dev/null
       - name: Show server logs
         if: always()
         run: cat apps/server/server-*.log || true
