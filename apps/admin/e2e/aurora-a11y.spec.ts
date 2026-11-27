@@ -112,7 +112,9 @@ test('zoomed to 200 % (a 640 px wide window) nothing scrolls sideways', async ({
   }
 });
 
-test('the skip link is the first tab stop and moves focus to the main content', async ({ page }) => {
+test('the skip link is the first tab stop and moves focus to the main content', async ({
+  page,
+}) => {
   await page.goto(`/${PAGE}`);
   await page.keyboard.press('Tab');
   const skip = page.getByRole('link', { name: 'Skip to content' });
@@ -128,10 +130,16 @@ test('every page has one h1 and no skipped heading levels', async ({ page }) => 
     const levels = await page.evaluate(() =>
       [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].map((h) => Number(h.tagName[1])),
     );
-    expect(levels.filter((l) => l === 1), `${target.name}: number of h1`).toHaveLength(1);
+    expect(
+      levels.filter((l) => l === 1),
+      `${target.name}: number of h1`,
+    ).toHaveLength(1);
     levels.forEach((level, i) => {
       if (i > 0)
-        expect(level - levels[i - 1]!, `${target.name}: heading order ${levels.join(',')}`).toBeLessThanOrEqual(1);
+        expect(
+          level - levels[i - 1]!,
+          `${target.name}: heading order ${levels.join(',')}`,
+        ).toBeLessThanOrEqual(1);
     });
   }
 });
@@ -144,7 +152,8 @@ test('with reduced motion requested, nothing animates or transitions', async ({ 
       [...document.querySelectorAll('body, body *')]
         .filter((el) => {
           const s = getComputedStyle(el);
-          const seconds = (value: string) => Math.max(...value.split(',').map((v) => parseFloat(v)));
+          const seconds = (value: string) =>
+            Math.max(...value.split(',').map((v) => parseFloat(v)));
           return seconds(s.transitionDuration) > 0 || seconds(s.animationDuration) > 0;
         })
         .map((el) => el.tagName.toLowerCase() + (el.className ? `.${String(el.className)}` : '')),
