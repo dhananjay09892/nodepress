@@ -50,7 +50,7 @@ interface Target {
 
 const TARGETS: Target[] = [
   { name: 'front page (blog layout)', path: '/', status: 200 },
-  { name: 'post', path: `/${POST}`, status: 200 },
+  { name: 'post', path: `/blog/${POST}`, status: 200 },
   { name: 'page', path: `/${PAGE}`, status: 200 },
   { name: 'contact form page', path: `/${CONTACT}`, status: 200 },
   { name: '404 page', path: `/no-such-page-${tag}`, status: 404 },
