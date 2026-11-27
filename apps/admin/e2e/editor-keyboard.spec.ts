@@ -20,11 +20,11 @@ test('the editor toolbar can be used with the keyboard alone', async ({ page }) 
   const focusedName = () =>
     page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? '');
   let name = await focusedName();
-  for (let i = 0; i < 40 && name !== 'Heading 2 (H2)'; i += 1) {
+  for (let i = 0; i < 40 && name !== 'H2 (Heading 2)'; i += 1) {
     await page.keyboard.press('Shift+Tab');
     name = await focusedName();
   }
-  expect(name).toBe('Heading 2 (H2)');
+  expect(name).toBe('H2 (Heading 2)');
 
   // Activate with Space, as a keyboard user would.
   await page.keyboard.press('Space');
