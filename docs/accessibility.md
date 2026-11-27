@@ -16,17 +16,24 @@ The admin is checked with [axe-core](https://github.com/dequelabs/axe-core) in t
 
 Everything else the run checked passed: names and labels of form fields, color contrast, landmarks (`main`, the `Main` navigation) and heading structure as far as axe tests them.
 
-## What is not covered yet (still to do for N71)
+## Added in N78 (skip link, focus, more states)
 
-Automated rules cannot judge these, and the first slice does not test them:
+- The admin shell has a "Skip to main content" link (the first tab stop, visible when focused) and a focusable `main`, so keyboard users can skip the sidebar.
+- A visible `:focus-visible` outline on every control (white inside the dark sidebar).
+- More axe states: the web installer, the posts list with content, the edit screen of a saved post, the new post form with a validation error and the editor with text selected.
+- Keyboard tests for the skip link and for the focus indicator.
+
+## What is not covered yet (still to do, tracked as N79)
+
+Not tested yet:
 
 - Dialogs and confirmation prompts (delete confirmations, the link prompt in the editor uses `window.prompt`).
-- The editor with a text selection, and reading order inside the editor.
+- Reading order inside the editor with a screen reader.
 - Keyboard operation of the media grid (selecting, deleting) and of the menu tree (the move up/down/indent buttons exist; a keyboard test does not).
-- Visible focus on every control, focus order after navigation and after saving, and live regions for status messages ("Saved", import progress): needs manual checks with a screen reader.
+- Focus order after navigation, saving and deleting, and whether status messages ("Saved", import progress) are announced: needs manual checks with a screen reader.
 - Moderate and minor findings from newer axe rules (`best-practice` tag) are not part of the run.
 
-These remain as a follow-up task in `docs/QUEUE.md`.
+These are task N79 in `docs/QUEUE.md`.
 
 ## Aurora (the default theme)
 

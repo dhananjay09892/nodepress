@@ -470,11 +470,17 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 - Scope: add `@axe-core/playwright` to the admin end-to-end suite and run it (WCAG 2.1 A and AA rules) on every admin screen in its main states (empty list, filled list, form with errors, dialogs, the editor with a selection), then fix what it finds: names and labels, focus order and visible focus, color contrast, landmarks, live regions for status messages, keyboard operation of the media grid and menu tree. Write what was fixed and what remains to `docs/accessibility.md`.
 - Done when: the axe run is part of the Playwright job and passes with no serious or critical violations; remaining minor ones are listed in the doc with a reason.
 
-### N78 · Admin accessibility: dialogs, keyboard and live regions
+### N78 · Admin accessibility: skip link, focus and more audit states
 
 - Depends on: N71
-- Scope: follow-up to N71, whose axe run (`apps/admin/e2e/a11y.spec.ts`) covers every admin screen in its default states and fixed the editor's heading button names (see `docs/accessibility.md`). Add what automated rules cannot judge: axe runs with dialogs open and the editor with a selection, Playwright keyboard-only tests for the media grid and the menu tree, a check that status messages ("Saved", errors, import progress) are announced (`role="status"` or `role="alert"`), visible focus on every control and focus returned to a sensible place after navigation, saving and closing a dialog; replace the editor's `window.prompt` for links with an accessible dialog; fix what these find and update `docs/accessibility.md`.
-- Done when: the new tests pass in the Playwright job and `docs/accessibility.md` has no open items without a reason.
+- Scope: follow-up to N71, whose axe run (`apps/admin/e2e/a11y.spec.ts`) covers every admin screen in its default states and fixed the editor's heading button names (see `docs/accessibility.md`). First slice: a "Skip to main content" link and a focusable `main` in the admin shell, a visible `:focus-visible` outline everywhere, axe runs for the web installer, the posts list with content, the edit screen of a saved post, a form with a validation error and the editor with a selection, and keyboard tests for the skip link and the focus indicator. Dialogs, the media grid, the menu tree and the editor's prompts are split off as N79.
+- Done when: the new tests pass in the Playwright job and `docs/accessibility.md` records what changed.
+
+### N79 · Admin accessibility: dialogs, media grid and menu tree
+
+- Depends on: N78
+- Scope: split from N78. Replace the editor's `window.prompt` calls (link address, image alt text in `packages/editor/src/react/BlockEditor.tsx`) with an accessible dialog (labelled, focus moved into it, Escape closes, focus returned to the toolbar button); run axe with that dialog open; Playwright keyboard-only tests for the media library (select an item, edit its alt text, delete with the confirmation) and for the menu tree (move up/down/indent and outdent with the buttons only); check that status messages ("Saved", errors, import progress) are announced (`role="status"` or `role="alert"`) and that focus lands somewhere sensible after saving, deleting and navigating; fix what these find and update `docs/accessibility.md`. Existing e2e tests that answer the browser prompts must be updated.
+- Done when: the new tests pass in the Playwright job and `docs/accessibility.md` has no open item without a reason.
 
 ### N72 · Accessibility audit of the default theme
 

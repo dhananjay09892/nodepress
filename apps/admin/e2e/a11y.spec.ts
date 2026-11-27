@@ -67,3 +67,84 @@ test.describe('accessibility (axe, WCAG 2.1 A and AA)', () => {
     await expectNoSeriousViolations(page, 'redirects (filled list)');
   });
 });
+
+test.describe('more states', () => {
+  test('web installer', async ({ page }) => {
+    await page.goto('http://localhost:3101/install');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expectNoSeriousViolations(page, 'web installer');
+  });
+
+  test('posts list with content, and the edit screen of a saved post', async ({ page }) => {
+    const title = `A11y post ${Date.now()}`;
+    await signIn(page);
+    await page.goto('/admin/posts/new');
+    await page.getByLabel('Title', { exact: true }).fill(title);
+    await page.getByRole('textbox', { name: 'Content' }).click();
+    await page.keyboard.type('Text for the accessibility audit');
+    await page.getByRole('button', { name: 'Save draft' }).click();
+    await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
+    await expect(page.getByRole('heading', { name: 'Edit post' })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await expectNoSeriousViolations(page, 'edit post');
+
+    await page.goto('/admin/posts');
+    await expect(page.getByText(title)).toBeVisible();
+    await expectNoSeriousViolations(page, 'posts list with content');
+  });
+
+  test('new post form with a validation error', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/admin/posts/new');
+    await page.getByRole('button', { name: 'Save draft' }).click();
+    await page.waitForLoadState('networkidle');
+    await expectNoSeriousViolations(page, 'new post (validation)');
+  });
+
+  test('the editor with text selected', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/admin/editor-preview');
+    const editor = page.getByRole('textbox', { name: 'Preview content' });
+    await expect(editor).toBeVisible();
+    await editor.click();
+    await page.keyboard.type('Selected text for the audit');
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.getByRole('button', { name: 'Bold' }).click();
+    await expect(page.getByRole('button', { name: 'Bold' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expectNoSeriousViolations(page, 'editor with a selection');
+  });
+});
+
+test.describe('keyboard', () => {
+  test('the skip link is the first tab stop and moves focus to the main content', async ({
+    page,
+  }) => {
+    await signIn(page);
+    await page.goto('/admin/posts');
+    await expect(page.getByRole('heading', { name: 'Posts' })).toBeVisible();
+    await page.keyboard.press('Tab');
+    const skip = page.getByRole('link', { name: 'Skip to main content' });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('main#main-content')).toBeFocused();
+  });
+
+  test('a focused control has a visible focus indicator', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/admin/redirects');
+    const field = page.getByRole('form', { name: 'Add redirect' }).getByLabel('From');
+    await field.focus();
+    await page.keyboard.press('Tab'); // move away and back by keyboard so :focus-visible applies
+    await page.keyboard.press('Shift+Tab');
+    const outline = await field.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { width: parseFloat(s.outlineWidth), style: s.outlineStyle };
+    });
+    expect(outline.style).not.toBe('none');
+    expect(outline.width).toBeGreaterThan(0);
+  });
+});

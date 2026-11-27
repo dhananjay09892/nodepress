@@ -84,6 +84,17 @@ export function Shell() {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-slate-900"
+        onClick={(event) => {
+          // A hash link would fight the router's base path, so move focus by hand.
+          event.preventDefault();
+          document.getElementById('main-content')?.focus();
+        }}
+      >
+        Skip to main content
+      </a>
       <aside className="flex w-60 shrink-0 flex-col bg-slate-900 p-4">
         <p className="mb-6 px-3 text-lg font-semibold text-white">NodePress</p>
         <nav aria-label="Main" className="flex-1 space-y-1">
@@ -148,7 +159,7 @@ export function Shell() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 p-8 focus:outline-none">
         <Outlet />
       </main>
     </div>
