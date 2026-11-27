@@ -10,9 +10,9 @@ The admin is checked with [axe-core](https://github.com/dequelabs/axe-core) in t
 
 ## What was fixed
 
-| Finding (rule)                                                                                                                             | Fix                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Heading buttons in the editor toolbar showed "H1" to "H4" but were named "Heading 1" and so on (`label-content-name-mismatch`, WCAG 2.5.3) | The accessible name is now "Heading 1 (H1)" and so on, so it contains the visible text. The keyboard test for the toolbar expects the new name.            |
+| Finding (rule)                                                                                                                             | Fix                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Heading buttons in the editor toolbar showed "H1" to "H4" but were named "Heading 1" and so on (`label-content-name-mismatch`, WCAG 2.5.3) | The accessible name is now "Heading 1 (H1)" and so on, so it contains the visible text. The keyboard test for the toolbar expects the new name. |
 
 Everything else the run checked passed: names and labels of form fields, color contrast, landmarks (`main`, the `Main` navigation) and heading structure as far as axe tests them.
 
