@@ -52,3 +52,12 @@ img.ProseMirror-separator {
 .ProseMirror-focused .ProseMirror-gapcursor {
   display: block;
 }
+
+/* A visible keyboard focus indicator everywhere (WCAG 2.4.7). */
+:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+aside :focus-visible {
+  outline-color: #ffffff;
+}
