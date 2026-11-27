@@ -345,6 +345,13 @@ jobs:
               curl -fs http://localhost:3000/api/health > /dev/null && break
               sleep 1
             done
+            # Warm the server first: the first requests after a start render the theme and fill the
+            # page cache, and the audit is about the page a visitor gets, not about a cold process.
+            # (Both red runs on main had a low performance score only on the first, cold audit:
+            # 74 and 93, against 99 to 100 in every other run.)
+            for i in 1 2 3 4 5; do
+              curl -fs -o /dev/null "http://localhost:3000$path"
+            done
             # Chrome sometimes fails to record the page load (NO_NAVSTART) on a busy runner. That is a
             # run that produced no score, not a bad score, so it is tried again (up to 3 times); the
             # score check below is never retried.
