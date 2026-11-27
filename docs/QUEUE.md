@@ -433,7 +433,7 @@ The daily builder (a Claude scheduled task) takes **one task per run**, top to b
 ### N38 · Built-in updater
 
 - Depends on: N28
-- Needs you: decide where updates come from (npm registry, GitHub releases or a NodePress update server), then delete this line.
+- Needs you: decide where updates come from (npm registry, GitHub releases or a NodePress update server): see `docs/adr/0004-updater.md`, fill in its `Decision:` line, check that this task's scope still matches, then delete this line.
 - Scope: check for and apply core, plugin and theme updates from the admin.
 - Done when: tests cover version check and update flow with a mock registry.
 
