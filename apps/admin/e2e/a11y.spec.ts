@@ -110,7 +110,10 @@ test.describe('more states', () => {
     await page.keyboard.type('Selected text for the audit');
     await page.keyboard.press('ControlOrMeta+A');
     await page.getByRole('button', { name: 'Bold' }).click();
-    await expect(page.getByRole('button', { name: 'Bold' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Bold' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await expectNoSeriousViolations(page, 'editor with a selection');
   });
 });
