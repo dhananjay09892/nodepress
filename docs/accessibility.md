@@ -10,8 +10,8 @@ The admin is checked with [axe-core](https://github.com/dequelabs/axe-core) in t
 
 ## What was fixed
 
-| Finding (rule)                                                                                                                             | Fix                                                                                                                                             |
-| ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Finding (rule)                                                                                                                             | Fix                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Heading buttons in the editor toolbar showed "H1" to "H4" but were named "Heading 1" and so on (`label-content-name-mismatch`, WCAG 2.5.3) | The accessible name now starts with the visible text: "H1 (Heading 1)" and so on (a first attempt, "Heading 1 (H1)", still failed axe). The keyboard test for the toolbar expects the new name. |
 
 Everything else the run checked passed: names and labels of form fields, color contrast, landmarks (`main`, the `Main` navigation) and heading structure as far as axe tests them.
