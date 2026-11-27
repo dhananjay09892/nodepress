@@ -355,3 +355,102 @@ describe('custom post fields', () => {
     expect(np.plugins.list()[0]?.status).toBe('failed');
   });
 });
+
+describe('report pages', () => {
+  const report = {
+    route: '/summary',
+    defaultDays: 14,
+    totals: [{ key: 'views', label: 'Page views' }],
+    chart: {
+      title: 'Per day',
+      rows: 'days',
+      x: 'day',
+      series: [{ key: 'views', label: 'Views' }],
+    },
+    tables: [
+      {
+        rows: 'pages',
+        title: 'Top pages',
+        columns: [
+          { key: 'path', label: 'Page' },
+          { key: 'views', label: 'Views', numeric: true },
+        ],
+      },
+    ],
+  };
+  const reportPage = { id: 'overview', title: 'Overview', panels: [], report };
+
+  const plugin = definePlugin({
+    name: 'stats',
+    setup({ admin }) {
+      admin.addPage(reportPage);
+      admin.addMenuItem({ id: 'overview', label: 'Overview', page: 'overview' });
+    },
+  });
+
+  it('lists a report-only page with its report and no panels', async () => {
+    const { np } = await boot(plugin);
+    const view = await np.admin.describe(allow('manage_options'));
+    expect(view.pages).toHaveLength(1);
+    expect(view.pages[0]?.panels).toEqual([]);
+    expect(view.pages[0]?.report).toEqual({ ...report, maxDays: 366 });
+    expect(view.menu.map((m) => m.page)).toEqual(['overview']);
+  });
+
+  it('applies the page capability to a report like to any page', async () => {
+    const { np } = await boot(plugin);
+    expect(await np.admin.describe(allow('edit_posts'))).toEqual({ menu: [], pages: [] });
+  });
+
+  it('does not let the plugin change a report after adding it', async () => {
+    const mutable = structuredClone(report);
+    const { np } = await boot(
+      definePlugin({
+        name: 'stats',
+        setup({ admin }) {
+          admin.addPage({ ...reportPage, report: mutable });
+          mutable.route = '/other';
+          mutable.totals[0]!.label = 'Changed';
+        },
+      }),
+    );
+    const view = await np.admin.describe(allow('manage_options'));
+    expect(view.pages[0]?.report?.route).toBe('/summary');
+    expect(view.pages[0]?.report?.totals?.[0]?.label).toBe('Page views');
+  });
+
+  it.each([
+    ['a route with a query', { ...report, route: '/summary?x=1' }],
+    ['a route that climbs out', { ...report, route: '/a/../b' }],
+    ['a route without a slash', { ...report, route: 'summary' }],
+    ['an absolute URL', { ...report, route: 'https://evil.example/x' }],
+    ['a report with nothing to show', { route: '/summary' }],
+    ['a bad key', { ...report, totals: [{ key: 'a b', label: 'A' }] }],
+    ['no chart series', { ...report, chart: { ...report.chart, series: [] } }],
+    ['no table columns', { ...report, tables: [{ ...report.tables[0], columns: [] }] }],
+    ['a default range longer than the maximum', { ...report, defaultDays: 90, maxDays: 30 }],
+    ['a fractional range', { ...report, defaultDays: 1.5 }],
+  ])('rejects %s', async (_label, bad) => {
+    const { np } = await boot(
+      definePlugin({
+        name: 'strict',
+        setup({ admin }) {
+          admin.addPage({ ...reportPage, report: bad as never });
+        },
+      }),
+    );
+    expect(np.plugins.list()[0]?.status).toBe('failed');
+  });
+
+  it('still needs a panel when the page has no report', async () => {
+    const { np } = await boot(
+      definePlugin({
+        name: 'strict',
+        setup({ admin }) {
+          admin.addPage({ id: 'empty', title: 'Empty', panels: [] });
+        },
+      }),
+    );
+    expect(np.plugins.list()[0]?.status).toBe('failed');
+  });
+});

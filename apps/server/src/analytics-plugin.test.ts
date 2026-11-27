@@ -364,3 +364,53 @@ describe('the pages', () => {
     expect(await res.text()).toContain('sendBeacon');
   });
 });
+
+describe('the admin pages', () => {
+  const allow =
+    (...caps: string[]) =>
+    async (c: string) =>
+      caps.includes(c);
+
+  it('adds an Analytics overview and a settings page for administrators only', async () => {
+    const admin = await np.admin.describe(allow('manage_options'));
+    expect(admin.menu.map((m) => [m.label, m.page])).toEqual([
+      ['Analytics', 'overview'],
+      ['Analytics retention', 'settings'],
+    ]);
+    expect(admin.pages.map((p) => p.id).sort()).toEqual(['overview', 'settings']);
+    expect(await np.admin.describe(allow('edit_posts'))).toEqual({ menu: [], pages: [] });
+  });
+
+  it('declares a report that reads only what the summary route answers', async () => {
+    await hit('/hello', { referrer: 'https://news.example.com/x' });
+    const report = (await np.admin.describe(allow('manage_options'))).pages.find(
+      (p) => p.id === 'overview',
+    )?.report;
+    expect(report?.route).toBe('/summary');
+    expect(report?.maxDays).toBe(366);
+    const { body } = await summary();
+    const answer = body as unknown as Record<string, unknown>;
+    for (const total of report?.totals ?? []) {
+      expect(Object.keys(answer['totals'] as object)).toContain(total.key);
+    }
+    const lists = [report?.chart, ...(report?.tables ?? [])];
+    expect(lists).toHaveLength(3);
+    for (const list of lists) {
+      const rows = answer[list!.rows] as Record<string, unknown>[];
+      expect(Array.isArray(rows)).toBe(true);
+      expect(rows.length).toBeGreaterThan(0);
+      const keys =
+        'series' in list!
+          ? [list.x, ...list.series.map((s) => s.key)]
+          : list!.columns.map((c) => c.key);
+      for (const key of keys) expect(Object.keys(rows[0]!)).toContain(key);
+    }
+  });
+
+  it('keeps the settings page working next to the report', async () => {
+    const values = await np.admin.writePanel('analytics', 'settings', 'retention', {
+      retention_days: 45,
+    });
+    expect(values).toEqual({ retention_days: 45 });
+  });
+});

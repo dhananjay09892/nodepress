@@ -28,6 +28,7 @@ export type {
   AdminPageDefinition,
   AdminPanelDefinition,
   AdminPostFieldDefinition,
+  AdminReportDefinition,
   PanelField,
   ScopedAdmin,
 } from '@nodepress/core';

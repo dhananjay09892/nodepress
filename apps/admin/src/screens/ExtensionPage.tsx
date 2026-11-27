@@ -16,6 +16,7 @@ import {
 } from '../extensions.js';
 import { describeError } from '../api.js';
 import { sessionQuery } from '../session.js';
+import { ReportView } from './ReportView.js';
 
 const buttonClass =
   'rounded border border-slate-400 bg-white px-3 py-1.5 text-sm text-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50';
@@ -200,13 +201,17 @@ function PanelForm({
 }
 
 function PageBody({ page }: { page: ExtensionPageInfo }) {
+  // A report-only page has no settings to load.
+  const hasPanels = page.panels.length > 0;
   const values = useQuery({
     queryKey: ['admin-extension-values', page.plugin, page.id],
     queryFn: () => fetchPageValues(page.plugin, page.id),
+    enabled: hasPanels,
   });
   return (
     <>
       {page.description && <p className="mt-2 text-sm text-slate-700">{page.description}</p>}
+      {page.report && <ReportView plugin={page.plugin} report={page.report} />}
       {values.isError && (
         <p role="alert" className="mt-2 rounded bg-red-50 px-3 py-2 text-sm text-red-800">
           {describeError(values.error)}

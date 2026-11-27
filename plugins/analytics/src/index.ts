@@ -95,7 +95,55 @@ export default definePlugin({
         },
       ],
     });
-    admin.addMenuItem({ id: 'analytics', label: 'Analytics', page: 'settings', order: 80 });
+    admin.addPage({
+      id: 'overview',
+      title: 'Analytics',
+      description: 'Page views and visitors. Visitors are counted once per day, without cookies.',
+      panels: [],
+      report: {
+        route: '/summary',
+        defaultDays: 30,
+        maxDays: MAX_RANGE_DAYS,
+        totals: [
+          { key: 'views', label: 'Page views' },
+          { key: 'visitors', label: 'Visitors' },
+        ],
+        chart: {
+          title: 'Per day',
+          rows: 'days',
+          x: 'day',
+          series: [
+            { key: 'views', label: 'Page views' },
+            { key: 'visitors', label: 'Visitors' },
+          ],
+        },
+        tables: [
+          {
+            rows: 'pages',
+            title: 'Top pages',
+            columns: [
+              { key: 'path', label: 'Page' },
+              { key: 'views', label: 'Page views', numeric: true },
+            ],
+          },
+          {
+            rows: 'referrers',
+            title: 'Top referrers',
+            columns: [
+              { key: 'host', label: 'Referrer' },
+              { key: 'views', label: 'Page views', numeric: true },
+            ],
+          },
+        ],
+      },
+    });
+    admin.addMenuItem({ id: 'analytics', label: 'Analytics', page: 'overview', order: 80 });
+    admin.addMenuItem({
+      id: 'analytics-settings',
+      label: 'Analytics retention',
+      page: 'settings',
+      order: 81,
+    });
 
     // The beacon never fails the page: a hit that cannot be stored is logged and forgotten.
     async function hit(

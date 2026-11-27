@@ -1,4 +1,5 @@
 import { ApiError, request, toError } from './api.js';
+import type { ReportDefinition } from './report.js';
 
 /** A field of a plugin's settings panel, as the server describes it. */
 export interface PanelField {
@@ -28,7 +29,9 @@ export interface ExtensionPageInfo {
   id: string;
   title: string;
   description?: string;
+  /** Settings panels; empty on a page that only shows a report. */
   panels: PanelDefinition[];
+  report?: ReportDefinition;
 }
 
 export interface ExtensionMenuItem {
