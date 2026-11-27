@@ -7,15 +7,15 @@ minor and moderate ones are not blocking and are listed below.
 
 ## What is audited
 
-| State | How |
-| --- | --- |
-| Login screen, and with a wrong-password error | `a11y.spec.ts` |
-| Web installer | `a11y.spec.ts` |
+| State                                                                                                                                                   | How                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Login screen, and with a wrong-password error                                                                                                           | `a11y.spec.ts`      |
+| Web installer                                                                                                                                           | `a11y.spec.ts`      |
 | Dashboard, Posts, Pages, Media, Users, Settings (general, reading, permalinks), Menus, Widgets, Plugins, Customize, Redirects, Import, Backup, Messages | one test per screen |
-| Add post and add page forms, and the edit screen of a saved post | `a11y.spec.ts` |
-| Posts list with content | `a11y.spec.ts` |
-| A form with a field error (Redirects) and a save with nothing to save (new post) | `a11y.spec.ts` |
-| The editor with text selected and bold applied | `a11y.spec.ts` |
+| Add post and add page forms, and the edit screen of a saved post                                                                                        | `a11y.spec.ts`      |
+| Posts list with content                                                                                                                                 | `a11y.spec.ts`      |
+| A form with a field error (Redirects) and a save with nothing to save (new post)                                                                        | `a11y.spec.ts`      |
+| The editor with text selected and bold applied                                                                                                          | `a11y.spec.ts`      |
 
 Run it locally with `pnpm build && pnpm --filter @nodepress/admin e2e a11y`.
 
